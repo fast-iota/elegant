@@ -1,0 +1,13 @@
+SDDS1
+&column name=TextFile, type=string,  &end
+&column name=InstallLocation, type=string,  &end
+&data mode=ascii, no_row_counts=1 &end
+oag/apps/src/physics/spectraCLITemplates/undulatorPinholeFluxSpectrum.spin /usr/local/oag/apps/configData/spectraCLI/undulatorPinholeFluxSpectrum.spin
+oag/apps/src/physics/spectraCLITemplates/undulatorSpatialFluxDensity.spin /usr/local/oag/apps/configData/spectraCLI/undulatorSpatialFluxDensity.spin
+oag/apps/src/physics/spectraCLITemplates/undulatorSpatialPowerDensity.spin /usr/local/oag/apps/configData/spectraCLI/undulatorSpatialPowerDensity.spin
+oag/apps/src/physics/spectraCLITemplates/undulatorSpectrum.spin /usr/local/oag/apps/configData/spectraCLI/undulatorSpectrum.spin
+oag/apps/src/physics/spectraCLITemplates/undulatorTotalFluxSpectrum.spin /usr/local/oag/apps/configData/spectraCLI/undulatorTotalFluxSpectrum.spin
+oag/apps/src/physics/spectraCLITemplates/undulatorTuningCurve.spin /usr/local/oag/apps/configData/spectraCLI/undulatorTuningCurve.spin
+oag/apps/src/physics/spectraCLITemplates/undulatorTuningCharacteristics.spin /usr/local/oag/apps/configData/spectraCLI/undulatorTuningCharacteristics.spin
+oag/apps/src/physics/spectraCLITemplates/undulatorFluxDensityKSpectrum.spin /usr/local/oag/apps/configData/spectraCLI/undulatorFluxDensityKSpectrum.spin
+oag/apps/src/physics/spectraCLITemplates/undulatorPinholeFluxKSpectrum.spin /usr/local/oag/apps/configData/spectraCLI/undulatorPinholeFluxKSpectrum.spin

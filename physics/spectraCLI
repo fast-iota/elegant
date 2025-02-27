@@ -1,0 +1,389 @@
+#!/bin/sh  
+# \
+exec oagtclsh "$0" "$@"
+
+if {![info exists env(OAG_TOP_DIR)] || [string length $env(OAG_TOP_DIR)]==0} {
+    set env(OAG_TOP_DIR) /usr/local
+}
+set auto_path [linsert $auto_path 0  $env(OAG_TOP_DIR)/oag/apps/lib/$env(HOST_ARCH)]
+
+APSStandardSetup
+set templateDir $OAGGlobal(OAGAppConfigDataDirectory)/spectraCLI
+set solverExec spectra_solver9.0
+
+set modeList [list undulatorPinholeFluxSpectrum undulatorSpectrum undulatorSpatialFluxDensity undulatorSpatialPowerDensity undulatorTotalFluxSpectrum \
+    undulatorTuningCurve undulatorTuningCharacteristics undulatorFluxDensityKSpectrum undulatorPinholeFluxKSpectrum]
+set descriptionList [list "Pinhole flux vs photon energy for undulator with fixed K." \
+    "Brightness and flux density vs photon energy for undulator with fixed K." \
+    "(x, y) flux density map for undulator with fixed K." \
+    "(x, y) power density map for undulator with fixed K." \
+    "Total flux vs photon energy for undulator with fixed K." \
+    "Undulator tuning curve, giving peak brightness and flux density vs photon energy for various harmonics as K is varied." \
+    "Undulator tuning characteristics, giving photon beam sizes, divergences, coherence etc. vs photon energy for various harmonics as K is varied." \
+    "Undulator flux density vs K for fixed observation photon energy." \
+    "Undulator pinhole flux vs K for fixed observation photon energy." ]
+
+set usage {spectraCLI -mode <mode> [-keepSpectraFiles 1] <mode-arguments>}
+set mode ""
+set keepSpectraFiles 0
+set args $argv
+APSParseArguments {mode templateDir solverExec keepSpectraFiles}
+if {![string length $mode]} {
+    puts stderr "usage: $usage"
+    puts stderr "Modes are as follows"
+    foreach mode $modeList description $descriptionList {
+        puts stderr [format "%s:\n     %s" $mode $description]
+    }
+    puts stderr "Units are SI unless otherwise noted."
+    puts stderr "This version works with spectra 9.0 and looks for the spectra_solver under the name spectra_solver9.0"
+    exit 1
+}
+
+set origList ""
+set replList ""
+proc addToLists {originals replacements} {
+    global origList replList
+    eval lappend origList [split $originals ,]
+    eval lappend replList [split $replacements ,]
+}
+
+set coupling 0.01
+        
+proc addBeamParamsToLists {twiss} {
+    global coupling
+    set dataList [exec sddsprocess $twiss -pipe=out -process=*eta*,last,%s -process=alpha*,last,%s \
+        "-redefine=parameter,E,pCentral mev * 1e3 /" \
+        | sdds2stream -pipe -parameter=E,Sdelta0,betax,alphax,etax,etaxp,betay,alphay,etay,etayp]
+    addToLists <beamEnergy-GeV>,<Sdelta0>,<betax>,<alphax>,<etax>,<etaxp>,<betay>,<alphay>,<etay>,<etayp> \
+        [join $dataList ,]
+    set dataList [exec sdds2stream $twiss -parameter=ex0,taux,tauy]
+    APSSetVarsFromList -valueList $dataList -variableList [list ex0 taux tauy]
+    set ex [expr $ex0/(1+$coupling*$taux/$tauy)]
+    set ey [expr $ex*$coupling]
+    set ex0 [expr $ex+$ey]
+    set coupling [expr $ey/$ex]
+    addToLists <ex0>,<coupling> $ex0,$coupling
+}
+
+proc determineUndulatorType {args} {
+    set Kx 0
+    set Ky 0
+    APSStrictParseArguments {Kx Ky}
+    if [expr $Ky==0] {
+        if [expr $Kx==0] {
+            puts stderr "Error: Kx=0 and Ky=0. No calculation possible."
+            exit 1
+        }
+        # Vertical undulator
+        return 1
+    } else {
+        if [expr $Kx==0] {
+            # Horizontal undulator
+            return 0
+        }
+        if [expr $Kx==$Ky] {
+            # Helical undulator
+            return 2
+        }
+        # Elliptical undulator
+        return 3
+    }
+}
+
+switch $mode {
+    undulatorSpatialPowerDensity {
+        # Need Twiss input file, coupling, current; undulator period, length, Kx, Ky
+        #      distance to observation point, size and grid points in x and y
+        #      output filename
+        set twiss ""
+        set coupling 0.01
+        set current 0.1
+        set period 0.033
+        set length 2.4
+        set Kx 0
+        set Ky 0
+        set distance 30.0
+        set xMax 5e-3
+        set nx 25
+        set yMax 5e-3
+        set ny 25
+        set output ""
+        set usage "spectraCLI -mode $mode -twiss <filename> -coupling <value> -current <Amps> -period <meters> -length <meters> -Ky <value> -Kx <value> -distance <meters> -xMax <meters> -yMax <meters> -nx <points> -ny <points> -output <filename>"
+        if {[APSStrictParseArguments {twiss coupling current period length Kx Ky distance xMax yMax nx ny output}] || \
+              ![string length $twiss] || [expr $coupling<=0] || [expr $current<=0] || [expr $period<=0] || [expr $length<=0] || \
+              [expr $Kx<0] || [expr $Ky<=0] || \
+              [expr $distance<=0] || [expr $xMax<=0] || [expr $yMax<=0] || ![string length $output]} {
+            puts stderr "usage: $usage"
+            exit 1
+        }
+        set type [determineUndulatorType -Kx $Kx -Ky $Ky]
+        if ![file exists $twiss] {
+            puts stderr "not found: $twiss"
+            exit 1
+        }
+        addBeamParamsToLists $twiss 
+        addToLists <outputRoot>,<beamCurrent-mA>,<kappa>,<period-cm>,<length-m>,<Kx>,<Ky>,<pinholeDistance>,<xMax-mm>,<yMax-mm>,<nx>,<ny>,<sourceType> \
+                  $output,[expr $current*1e3],$coupling,[expr $period*1e2],$length,$Kx,$Ky,$distance,[expr $xMax*1e3],[expr $yMax*1e3],$nx,$ny,$type
+        exec replaceText $templateDir/$mode.spin $output.spin \
+          -original=[join $origList ,] -replace=[join $replList ,]
+        catch {file delete -force $output.spout $output}
+        catch {exec $solverExec $output.spin} result
+        if ![file exists $output.spout] {
+            puts stderr "no spectra output file\n$result"
+            exit 1
+        }
+        file delete -force $output
+        exec spectra2sdds -input $output.spout -output $output 
+        set tmpRoot [APSTmpString]
+        exec sddsconvert $output -pipe=out -rename=col,PowerDensity=AngularPowerDensity \
+          | sddsprocess -pipe=in $tmpRoot -nowarning \
+          "-define=col,x,xp $distance *,units=mm" "-define=col,y,yp $distance *,units=mm" \
+          "-define=col,SpatialPowerDensity,AngularPowerDensity $distance sqr /,units=kW/mm\$a2\$n"
+        file delete $output
+        file rename $tmpRoot $output
+    }
+    undulatorSpatialFluxDensity {
+        # Need Twiss input file, coupling, current; undulator period, length, Kx, Ky
+        #      distance to observation point, size and grid points in x and y
+        #      observation energy
+        #      output filename
+        set twiss ""
+        set coupling 0.01
+        set current 0.1
+        set period 0.033
+        set length 2.4
+        set Kx 0
+        set Ky 0
+        set distance 30.0
+        set xMax 5e-3
+        set nx 25
+        set yMax 5e-3
+        set ny 25
+        # eV
+        set EpFixed 8000
+        set output ""
+        set usage "spectraCLI -mode $mode -twiss <filename> -coupling <value> -current <Amps> -period <meters> -length <meters> -Ky <value> -Kx <value> -distance <meters> -xMax <meters> -yMax <meters> -nx <points> -ny <points> -EpFixed <eV> -output <filename>"
+        if {[APSStrictParseArguments {twiss coupling current period length Kx Ky distance xMax yMax nx ny EpFixed output}] || \
+              ![string length $twiss] || [expr $coupling<=0] || [expr $current<=0] || [expr $period<=0] || [expr $length<=0] || \
+              [expr $Kx<0] || [expr $Ky<=0] || \
+              [expr $distance<=0] || [expr $xMax<=0] || [expr $yMax<=0] || [expr $EpFixed<=0] || ![string length $output]} {
+            puts stderr "usage: $usage"
+            exit 1
+        }
+        set type [determineUndulatorType -Kx $Kx -Ky $Ky]
+        if ![file exists $twiss] {
+            puts stderr "not found: $twiss"
+            exit 1
+        }
+        addBeamParamsToLists $twiss 
+        addToLists <outputRoot>,<beamCurrent-mA>,<kappa>,<period-cm>,<length-m>,<Kx>,<Ky>,<pinholeDistance>,<EpFixed-eV>,<xMax-mm>,<yMax-mm>,<nx>,<ny>,<sourceType> \
+                  $output,[expr $current*1e3],$coupling,[expr $period*1e2],$length,$Kx,$Ky,$distance,$EpFixed,[expr $xMax*1e3],[expr $yMax*1e3],$nx,$ny,$type
+        exec replaceText $templateDir/$mode.spin $output.spin \
+          -original=[join $origList ,] -replace=[join $replList ,]
+        catch {file delete -force $output.spout $output}
+        catch {exec $solverExec $output.spin} result
+        if ![file exists $output.spout] {
+            puts stderr "no spectra output file\n$result"
+            exit 1
+        }
+        file delete -force $output
+        exec spectra2sdds -input $output.spout -output $output 
+    }
+    undulatorPinholeFluxSpectrum {
+        # Need Twiss input file, coupling, current; undulator period, length, K
+        #      distance to slit, slit size
+        #      min energy, max energy, energy pitch
+        #      output filename
+        set twiss ""
+        set coupling 0.01
+        set current 0.1
+        set period 0.033
+        set length 2.4
+        set Kx 0
+        set Ky 0
+        set distance 30.0
+        set dx 5e-4
+        set dy 5e-4
+        # eV
+        set Ep1 1000
+        set Ep2 25000
+        set dEp 10
+        set output ""
+        set usage "spectraCLI -mode $mode -twiss <filename> -coupling <value> -current <Amps> -period <meters> -length <meters> -Ky <value> -Kx <value> -distance <meters> -dx <meters> -dy <meters> -Ep1 <eV> -Ep2 <eV> -dEp <eV> -output <filename>"
+        if {[APSStrictParseArguments {twiss coupling current period length Kx Ky distance dx dy Ep1 Ep2 dEp output}] || \
+              ![string length $twiss] || [expr $coupling<=0] || [expr $current<=0] || [expr $period<=0] || [expr $length<=0] || \
+              [expr $Kx<0] || [expr $Ky<=0] || \
+              [expr $distance<=0] || [expr $dx<=0] || [expr $dy<=0] || [expr $Ep1<=0] || [expr $Ep2<=$Ep1] || [expr $dEp<=0] || ![string length $output]} {
+            puts stderr "usage: $usage"
+            exit 1
+        }
+        set type [determineUndulatorType -Kx $Kx -Ky $Ky]
+        if ![file exists $twiss] {
+            puts stderr "not found: $twiss"
+            exit 1
+        }
+        addBeamParamsToLists $twiss 
+        addToLists <outputRoot>,<beamCurrent-mA>,<kappa>,<period-cm>,<length-m>,<Kx>,<Ky>,<pinholeDistance>,<EpMin-eV>,<EpMax-eV>,<dEp-eV>,<dxSlit-mm>,<dySlit-mm>,<sourceType> \
+                  $output,[expr $current*1e3],$coupling,[expr $period*1e2],$length,$Kx,$Ky,$distance,$Ep1,$Ep2,$dEp,[expr $dx*1e3],[expr $dy*1e3],$type
+        exec replaceText $templateDir/$mode.spin $output.spin \
+          -original=[join $origList ,] -replace=[join $replList ,]
+        catch {file delete -force $output.spout $output}
+        catch {exec $solverExec $output.spin} result
+        if ![file exists $output.spout] {
+            puts stderr "no spectra output file\n$result"
+            exit 1
+        }
+        file delete -force $output
+        exec spectra2sdds -input $output.spout -output $output 
+    }
+    undulatorSpectrum -
+    undulatorTotalFluxSpectrum {
+        # Need Twiss input file, coupling, current; undulator period, length, K
+        #      min energy, max energy, energy pitch
+        #      output filename
+        set twiss ""
+        set coupling 0.01
+        set current 0.1
+        set period 0.033
+        set length 2.4
+        set Kx 0
+        set Ky 0
+        # eV
+        set Ep1 1000
+        set Ep2 25000
+        set dEp 10
+        set output ""
+        set usage "spectraCLI -mode $mode -twiss <filename> -coupling <value> -current <Amps> -period <meters> -length <meters> -Ky <value> -Kx <value> -Ep1 <eV> -Ep2 <eV> -dEp <eV> -output <filename>"
+        if {[APSStrictParseArguments {twiss coupling current period length Kx Ky Ep1 Ep2 dEp output}] || \
+              ![string length $twiss] || [expr $coupling<=0] || [expr $current<=0] || [expr $period<=0] || [expr $length<=0] || \
+              [expr $Kx<0] || [expr $Ky<=0] || \
+              [expr $Ep1<=0] || [expr $Ep2<=$Ep1] || [expr $dEp<=0] || ![string length $output]} {
+            puts stderr "usage: $usage"
+            exit 1
+        }
+        set type [determineUndulatorType -Kx $Kx -Ky $Ky]
+        if ![file exists $twiss] {
+            puts stderr "not found: $twiss"
+            exit 1
+        }
+        addBeamParamsToLists $twiss 
+        addToLists <outputRoot>,<beamCurrent-mA>,<kappa>,<period-cm>,<length-m>,<Kx>,<Ky>,<EpMin-eV>,<EpMax-eV>,<dEp-eV>,<sourceType> \
+                  $output,[expr $current*1e3],$coupling,[expr $period*1e2],$length,$Kx,$Ky,$Ep1,$Ep2,$dEp,$type
+        exec replaceText $templateDir/$mode.spin $output.spin \
+          -original=[join $origList ,] -replace=[join $replList ,]
+        catch {file delete -force $output.spout $output}
+        catch {exec $solverExec $output.spin} result
+        if ![file exists $output.spout] {
+            puts stderr "no spectra output file\n$result"
+            exit 1
+        }
+        file delete -force $output
+        exec spectra2sdds -input $output.spout -output $output
+    }
+    undulatorFluxDensityKSpectrum -
+    undulatorPinholeFluxKSpectrum -
+    undulatorTuningCharacteristics -
+    undulatorTuningCurve {
+        # Need Twiss input file, coupling, current; undulator period, length, Kmin, Kmax, #K points
+        #      output filename
+        # May also need observation energy, min harm, max harm, pinhole parameters
+        set twiss ""
+        set coupling 0.01
+        set current 0.1
+        set period 0.033
+        set length 2.4
+        set KMin 0
+        set KMax 1.5
+        set KPoints 100
+        set hMin 1
+        set hMax 5
+        set helical 0
+        # In eV
+        set EpFixed 8000
+        set distance 30.0
+        set xMax 5e-3
+        set nx 25
+        set yMax 5e-3
+        set ny 25
+        set output ""
+        set usage "spectraCLI -mode $mode -twiss <filename> -coupling <value> -current <Amps> -period <meters> -length <meters> -KMin <value> -KMax <value> -KPoints <number> -helical {0|1} "
+        switch $mode {
+            undulatorPinholeFluxKSpectrum {
+                append usage "-distance <meters> -xMax <meters> -yMax <meters> -nx <points> -ny <points> --EpFixed <eV> -output <filename>"
+            }
+            undulatorFluxDensityKSpectrum {
+                append usage "-EpFixed <eV> -output <filename>"
+            }
+            default {
+                append usage "-hMin <number> -hMax <number> -output <filename>"
+            }
+        }
+        if {[APSStrictParseArguments {twiss coupling current period length KMin KMax KPoints hMin hMax helical EpFixed output distance xMax yMax nx ny}] || \
+              ![string length $twiss] || [expr $coupling<=0] || [expr $current<=0] || [expr $period<=0] || [expr $length<=0] || \
+              [expr $KMin<0] || [expr $KMax<$KMin] || [expr $KPoints<1] || [expr $helical<0] || [expr $helical>1] || \
+              [expr $hMin<1] || [expr $hMax<$hMin] || [expr $EpFixed<=0] || \
+              [expr $distance<=0] || [expr $xMax<=0] || [expr $yMax<=0] || ![string length $output]} {
+            puts stderr "usage: $usage"
+            exit 1
+        }
+        if {[expr $hMin%2!=1] || [expr $hMax%2!=1]} {
+            puts stderr "hMin and hMax must be odd integers"
+            exit 1
+        }
+        set type [expr $helical==0?0:2]
+        if ![file exists $twiss] {
+            puts stderr "not found: $twiss"
+            exit 1
+        }
+        addBeamParamsToLists $twiss 
+        addToLists <outputRoot>,<beamCurrent-mA>,<kappa>,<period-cm>,<length-m>,<KMin>,<KMax>,<KPoints>,<hMin>,<hMax>,<sourceType>,<EpFixed> \
+                  $output,[expr $current*1e3],$coupling,[expr $period*1e2],$length,$KMin,$KMax,$KPoints,$hMin,$hMax,$type,$EpFixed
+        addToLists <nx>,<ny>,<pinholeDistance>,<dxSlit-mm>,<dySlit-mm> \
+            $nx,$ny,$distance,[expr $xMax*1e3],[expr $yMax*1e3]
+        exec replaceText $templateDir/$mode.spin $output.spin \
+          -original=[join $origList ,] -replace=[join $replList ,]
+        catch {file delete -force [glob -nocomplain $output.d?? $output.spout $output]}
+        catch {exec $solverExec $output.spin} result
+        switch $mode {
+            undulatorPinholeFluxKSpectrum -
+            undulatorFluxDensityKSpectrum {
+                append usage "-EpFixed <eV> -output <filename>"
+                file delete $output 
+                exec spectra2sdds -input $output.spout -output $output 
+            }
+            default {
+                set fileList ""
+                set deleteList ""
+                for {set h $hMin} {$h<=$hMax} { incr h 2} {
+                    if $h<10 {
+                        set fout $output.d[format %02d $h]
+                    } else {
+                        set fout $output.d[format %03d $h]
+                    }
+                    if ![file exists $fout] {
+                        puts stderr "not found: $fout\n$result"
+                        exit 1
+                    }
+                    file delete -force $fout.sdds
+                    exec spectra2sdds -input $fout -output $fout.sdds
+                    exec sddsconvert $fout.sdds -nowarning \
+                      -rename=col,photonEnergy=photonEnergy$h,FluxDensity=FluxDensity$h,Brightness=Brightness$h,Flux=Flux$h \
+                      -rename=col,CoherentFlux=CoherentFlux$h,CoherentPower=CoherentPower$h,Sr=Sr$h,Srp=Srp$h \
+                      -rename=col,Sx=Sx$h,Sxp=Sxp$h,Sy=Sy$h,Syp=Syp$h
+                    file delete -force $fout.sdds~
+                    lappend fileList $fout.sdds
+                    lappend deleteList $fout.sdds $fout
+                }
+                eval exec sddsxref $fileList $output -take=*
+                eval file delete $deleteList
+            }
+        }
+    }
+    default {
+        puts stderr "known modes: [join $modeList ,]"
+    }
+}
+
+if !$keepSpectraFiles {
+    file delete $output.spin $output.spout
+}

@@ -1,0 +1,171 @@
+#!/bin/sh  
+# \
+exec oagtclsh "$0" "$@"
+
+set auto_path [linsert $auto_path 0  /usr/local/oag/apps/lib/$env(HOST_ARCH)]
+set auto_path [linsert $auto_path 0 /usr/local/oag/lib_patch/$env(HOST_ARCH)]
+APSStandardSetup
+
+set usage {usage: spectra2sdds2 -input <filename> -output <filename>}
+set input ""
+set output ""
+# The "type" parameter is accepted for backward compatibility with older versions, but not actually used.
+set type ""
+set args $argv
+if {[APSStrictParseArguments {input output type}] || ![string length $input] || ![string length $output]} {
+    return -code error "$usage"
+}
+if ![file exists $input] {
+    return -code error "not found: $input"
+}
+if [file exists $output] {
+    return -code error "in use: $output"
+}
+
+# Remove boundary and repeated spaces
+proc trimString {text} {
+    set text [join [os editstring "1000(a%/  / /)" [string trim $text]]]
+    return $text
+}
+
+# Translate parameters into something nicer
+lappend spectraParamList EB(GeV) EMITTANCEx EMITTANCEy SIZEx(m)   SIZEy(m)   DIVx(rad)  DIVy(rad)
+lappend paramConversionList 1 1 1 1 1 1 1
+lappend paramNewNameList E ex ey Sx Sy Sxp Syp
+lappend paramUnitsList GeV m m m m "" ""
+
+lappend spectraParamList betax      alphax     betay      alphay     eta        deta       E_spread
+lappend paramConversionList 1 1 1 1 1 1 1
+lappend paramNewNameList betax      alphax     betay      alphay     etax        etaxp Sdelta
+lappend paramUnitsList m "" m "" m "" ""
+
+lappend spectraParamList Ibeam(A) period(cm) \#periods Kx Ky Kymax Energy(ev)
+lappend paramConversionList 1 0.01 1 1 1 1 1
+lappend paramNewNameList I period NPeriods Kx Ky KyMax Ep
+lappend paramUnitsList A m "" "" "" "" "eV"
+
+lappend spectraParamList x(m) y(m)
+lappend paramConversionList 1 1
+lappend paramNewNameList x y
+lappend paramUnitsList m m
+
+proc translateParameter {name} {
+    global spectraParamList paramConversionList paramNewNameList paramUnitsList
+    if {[llength $spectraParamList]!=[llength $paramConversionList] || \
+          [llength $spectraParamList]!=[llength $paramNewNameList] || \
+          [llength $spectraParamList]!=[llength $paramUnitsList]} {
+        puts stderr "programming error: parameter list length mismatch"
+        foreach listName [list spectraParamList paramConversionList paramNewNameList paramUnitsList] {
+            puts stderr "$listName: [llength [set $listName]]"
+        }
+        exit 1
+    }
+    if [set index [lsearch $spectraParamList $name]]==-1 {
+        # Attempt to use the literal name SPECTRA gives. Could fail if the name is illegal in SDDS
+        if [set p1Index [string first "(" $name]]!=-1 {
+            # Extract units
+            set newName [string range $name 0 [expr $p1Index-1]]
+            if [set p2Index [string first ")" $name]]!=-1 {
+                set units [string range $name [expr $p1Index+1] [expr $p2Index-1]]
+            }
+            return [list "&parameter name=$newName  type=float units=$units &end" 1]
+        }
+        return [list "&parameter name=$name type=float &end" 1]
+    } else {
+        return [list "&parameter name=[lindex $paramNewNameList $index] type=float units=\"[lindex $paramUnitsList $index]\" &end" [lindex $paramConversionList $index]]
+    }
+}
+
+# End of section related to parameter name/value translation
+
+proc translateColumn {name units} {
+    set nameList [list Energy F.Density Brilliance PL PC PL45 1-|PL| Flux P.Density theta_x theta_y K_Value Tot.Power Nat.Size Nat.Div. Size.x Size.y Div.x Div.y Coh.Flux Coh.Power CohFrac.x CohFrac.y P.Energy]
+    set newNameList [list photonEnergy FluxDensity Brightness PL PC PL45 OneMinusPL Flux PowerDensity xp yp K TotalPower Sr Srp Sx Sy Sxp Syp CoherentFlux CoherentPower xCoherentFraction yCoherentFraction peakEnergy]
+
+    set unitsList [list eV ph/s/mr^2/0.1% ph/s/mm^2/0.1% F.Dens/mm^2 ph/s/0.1% - kW/mrad^2]
+    set newUnitsList [list keV ph/s/mrad\$a2\$n/0.1%BW ph/s/mm\$a2\$n/0.1%BW ph/s/mm\$a2\$n/mrad\$a2\$n/0.1%BW ph/s/0.1%BW "" kW/mrad\$a2\$n]
+    set conversionList [list 0.001 1 1 1 1 1 1]
+
+    if [set nIndex [lsearch $nameList $name]]==-1 {
+        set newName $name
+    } else {
+        set newName [lindex $newNameList $nIndex]
+    }
+    if [set uIndex [lsearch $unitsList $units]]==-1 {
+        set newUnits $units
+        set conversionFactor 1
+    } else {
+        set newUnits [lindex $newUnitsList $uIndex]
+        set conversionFactor [lindex $conversionList $uIndex]
+    }
+    return [list $newName $newUnits $conversionFactor]
+}
+
+set fdi [open $input r]
+set fdo [open $output w]
+puts $fdo "SDDS1"
+puts $fdo "&parameter name=SpectraOutputFilename, type=string, fixed_value=\"$input\" &end"
+
+# Parse parameters
+set counter 0
+while {![eof $fdi] && $counter<8} {
+    gets $fdi data
+    incr counter
+    if [string length $data] {
+        set data [trimString $data]
+        set parameterList [split $data]
+        gets $fdi data2
+        incr counter
+        set valueList [split [trimString $data2]]
+        if [llength $valueList]!=[llength $parameterList] {
+            puts stderr "parameter/data mismatch:"
+            puts stderr "parameter names: $data"
+            puts stderr "values: $data2"
+            exit 1
+        }
+        foreach parameter $parameterList value $valueList {
+            set definitionList [translateParameter $parameter]
+            puts $fdo [lindex $definitionList 0]
+            lappend allParameterValueList [expr $value*[lindex $definitionList 1]]
+        }
+    }
+}
+
+# Parse columns
+gets $fdi data
+if ![string length $data] {
+    puts stderr "Error: column header line is blank or not in expected line in file"
+    exit 1
+}
+set nameList [split [trimString $data]]
+gets $fdi data2
+if ![string length $data2] {
+    puts stderr "Error: column units line is blank or not in expected line in file"
+}
+set unitsList [split [trimString $data2]]
+
+set columnConversionList ""
+foreach name $nameList units $unitsList {
+    set list1 [translateColumn $name $units]
+    puts $fdo "&column name=[lindex $list1 0], units=\"[lindex $list1 1]\", type=float &end"
+    lappend columnConversionList [lindex $list1 2]
+}
+puts $fdo "&data mode=ascii no_row_counts=1 &end"
+
+foreach value $allParameterValueList {
+    puts $fdo $value
+}
+
+set outputLines ""
+while {![eof $fdi]} {
+    gets $fdi data
+    set dataList [split [trimString $data]]
+    if [llength $dataList]==0 break
+    foreach conversion $columnConversionList datum $dataList {
+        append outputLines "[expr $conversion*$datum] "
+    }
+    append outputLines "\n"
+}
+puts $fdo $outputLines
+close $fdi
+close $fdo

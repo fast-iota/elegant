@@ -66,7 +66,7 @@
 #define HAVE_STRING_H 1
 
 /* Define to 1 if you have the `strndup' function. */
-#ifndef _MINGW
+#ifndef _WIN32
 #define HAVE_STRNDUP 1
 #endif
 

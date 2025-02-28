@@ -14,14 +14,30 @@
  *            Proc. IEEE Int'l. Conf. on Neural Networks (Perth, Australia)
  */
 
-#ifndef USE_GSL
-#  error The GSL library must be available to build Pelegant.
-#endif
+#if defined(USE_GSL)
 #include "gsl/gsl_vector.h"
 #include "gsl/gsl_matrix.h"
+#endif
 #include "track.h"
 #include "mdb.h"
 
+#if !defined(USE_GSL)
+long swarmMin(
+  double *yReturn,
+  double *xGuess,
+  double *xLowerLimit,
+  double *xUpperLimit,
+  double *stepSize,
+  long dimensions,
+  double target,
+  double (*func)(double *x, long *invalid),
+  long populationSize,
+  long n_iterations,
+  long max_iterations) {
+    fprintf(stderr, "Error: cannot run swarmMin because elegant was not compiled with GSL support.\n");
+    exit(1);
+  }
+#else
 long swarmMin(
   double *yReturn,
   double *xGuess,
@@ -195,4 +211,6 @@ long swarmMin(
   }
 
   return local_populations;
+
 }
+#endif

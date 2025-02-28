@@ -47,6 +47,7 @@ ifeq ($(OS), Darwin)
 endif
 
 ifeq ($(OS), Windows)
+  CFLAGS += -wd4047 -wd4244
   NO_DLL = 1
 endif
 

@@ -19,6 +19,7 @@ ifeq ($(OS), Darwin)
 endif
 
 ifeq ($(OS), Windows)
+  CFLAGS += -I$(SDDS_REPO)/lzma -wd4244
   NO_DLL = 1
 endif
 

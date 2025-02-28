@@ -30,7 +30,7 @@ typedef struct {
 extern "C" {
 #endif
 
-#if (defined(_WIN32) && !defined(__CYGWIN32__)) || (defined(__BORLANDC__) && defined(__linux__))
+#if (defined(_WIN32) && defined(_MSC_VER))
 __declspec(dllexport) void readGasPressureData(char *filename, PRESSURE_DATA *pressureData);
 #else
 void readGasPressureData(char *filename, PRESSURE_DATA *pressureData);

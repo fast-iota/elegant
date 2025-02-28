@@ -790,7 +790,7 @@ long BRAT_lorentz_integration(
 #  ifdef USE_GSL
           gsl_poly_solve_cubic(tm_a, tm_b, tm_c, &theta0, &theta1, &theta2);
 #  else
-          bombElegant("gsl_poly_solve_cubic function is not available becuase this version of elegant was not built against the gsl library", NULL);
+          bombElegant("gsl_poly_solve_cubic function is not available because this version of elegant was not built with the gsl library", NULL);
 #  endif
         } else if (A[0][2]) {
           tm_a = A[1][2] * p[1] / p[2] + A[2][2];

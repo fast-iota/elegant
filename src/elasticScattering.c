@@ -436,9 +436,11 @@ long runElasticScattering(
     printf("Done tracking nLeft = %ld, nLost = %ld\n", nLeft, nLost);
     fflush(stdout);
     if (verbosity > 9) {
+      /*
       for (ip = 0; ip < nLost; ip++)
         printf("ip = %ld, particleID = %ld\n", ip, (long)lostParticles[ip][6]);
       fflush(stdout);
+      */
     }
     setTrackingOmniWedgeFunction(NULL);
   }

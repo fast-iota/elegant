@@ -11,15 +11,12 @@
  *  based on: tfeedback.c
  *
  */
-
-#if defined(SOLARIS) && !defined(__GNUC__)
-#include <sunmath.h>
-#endif
-
 #include "mdb.h"
 #include "track.h"
+#if defined(USE_GSL)
 #include <gsl/gsl_sf_bessel.h>
 #include <gsl/gsl_integration.h>
+#endif
 #include <float.h>
 
 #define cms c_mks
@@ -249,6 +246,7 @@ struct E_params {
   double lambda;
 };
 
+#if (USE_GSL)
 double Ex(double theta, void *params) {
   //unpacking parameters
   struct E_params *p = (struct E_params *)params;
@@ -268,7 +266,15 @@ double Ex(double theta, void *params) {
 
   return (J0_term + J2_term) * I0_term;
 }
+#endif
 
+#if !def(USE_GSL)
+void coolerKicker(CKICKER *ckicker, double **part0, long np0, LINE_LIST *beamline,
+  long pass, long nPasses, char *rootname, double Po, long idSlotsPerBunch) {
+    fprintf(stderr, "Error: Cannot run generateBunchForMoments, elegant was not build with GSL support.\n");
+   exit(1);
+}
+#else
 void coolerKicker(CKICKER *ckicker, double **part0, long np0, LINE_LIST *beamline,
 		  long pass, long nPasses, char *rootname, double Po, long idSlotsPerBunch) {
   long i,j;
@@ -673,6 +679,7 @@ void coolerKicker(CKICKER *ckicker, double **part0, long np0, LINE_LIST *beamlin
     MPI_Barrier(MPI_COMM_WORLD);
 #endif
 }
+#endif
 
 // Kicker initialization function
 void initializeCoolerKicker(CKICKER *ckicker, LINE_LIST *beamline, long nPasses, char *rootname, double Po) {

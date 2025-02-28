@@ -10,10 +10,6 @@
  *
  * Joe Calvey, Michael Borland 2017
  */
-#if defined(SOLARIS) && !defined(__GNUC__)
-#include <sunmath.h>
-#endif
-
 #include "mdb.h"
 #include "SDDS.h"
 #include "constants.h"

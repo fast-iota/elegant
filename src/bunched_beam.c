@@ -436,9 +436,6 @@ long new_bunched_beam(
   double s_offset, beta;
   double p_central, dummy, p, gamma;
   long i, offset;
-#ifdef VAX_VMS
-  char s[100];
-#endif
 #if USE_MPI
   double save_emit_x = 0, save_emit_y = 0,
          save_sigma_dp = 0, save_sigma_s = 0; /* initialize these to prevent spurious compiler warning */
@@ -1374,65 +1371,13 @@ void fill_longitudinal_structure(
   log_exit("fill_longitudinal_structure");
 }
 
-#ifdef VAX_VMS
-char *brief_number(double x, char *buffer) {
-  long i, n_p10;
-#  define N_PREFIXES 17
-  struct {
-    char letter;
-    long power;
-  } prefix[N_PREFIXES] = {
-    {'A', 18}, {'F', 15}, {'T', 12}, {'G', 9}, {'M', 6}, {'K', 3}, {'h', 2}, {'D', 1}, {'|', 0}, {'d', -1}, {'c', -2}, {'m', -3}, {'u', -6}, {'n', -9}, {'p', -12}, {'f', -15}, {'a', -18}};
-
-  if (x == 0) {
-    sprintf(buffer, "0|");
-    return (buffer);
+#if !defined(USE_GSL)
+long generateBunchForMoments(double **particle, long np, long symmetrize,
+  long *haltonID, long haltonOpt, double cutoff) {
+    bombElegant("Error: Cannot run generateBunchForMoments, elegant was not build with GSL support.", NULL);
+    return(0);
   }
-
-  n_p10 = (long)log10(FABS(x));
-  for (i = 0; i < N_PREFIXES; i++) {
-    if (n_p10 >= prefix[i].power)
-      break;
-  }
-  if (i == N_PREFIXES)
-    sprintf(buffer, "%1.0lg|", x);
-  else {
-    if (n_p10 >= 0) {
-      switch (n_p10 - prefix[i].power) {
-      case 0:
-        sprintf(buffer, "%.2f%c",
-                x / ipow(10., prefix[i].power), prefix[i].letter);
-        break;
-      case 1:
-        sprintf(buffer, "%.1f%c",
-                x / ipow(10., prefix[i].power), prefix[i].letter);
-        break;
-      default:
-        sprintf(buffer, "%.0f%c",
-                x / ipow(10., prefix[i].power), prefix[i].letter);
-        break;
-      }
-    } else {
-      switch (n_p10 - prefix[i].power) {
-      case 0:
-        sprintf(buffer, "%.2f%c",
-                x / ipow(10., prefix[i].power), prefix[i].letter);
-        break;
-      case 1:
-        sprintf(buffer, "%.1f%c",
-                x / ipow(10., prefix[i].power), prefix[i].letter);
-        break;
-      default:
-        sprintf(buffer, "%.0f%c",
-                x / ipow(10., prefix[i].power), prefix[i].letter);
-        break;
-      }
-    }
-  }
-  return (buffer);
-}
-#endif
-
+#else
 #include "gsl/gsl_linalg.h"
 
 long generateBunchForMoments(double **particle, long np, long symmetrize,
@@ -1511,3 +1456,4 @@ long generateBunchForMoments(double **particle, long np, long symmetrize,
 
   return np;
 }
+#endif

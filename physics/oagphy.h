@@ -23,12 +23,8 @@
 #include "mdb.h"
 #undef epicsShareFuncOAGPHY
 
-#if (defined(_WIN32) && !defined(__CYGWIN32__)) || (defined(__BORLANDC__) && defined(__linux__))
-#if defined(EXPORT_OAGPHYLIB)
+#if (defined(_WIN32) && defined(_MSC_VER) && defined(EXPORT_OAGPHYLIB))
 #define epicsShareFuncOAGPHY  __declspec(dllexport)
-#else
-#define epicsShareFuncOAGPHY
-#endif
 #else
 #define epicsShareFuncOAGPHY
 #endif

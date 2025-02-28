@@ -15,7 +15,7 @@
 #include "mdb.h"
 #include "track.h"
 #include "vary.h"
-#if defined(__APPLE__)
+#if defined(__APPLE__) || defined(__linux__)
 #  include <unistd.h>
 #endif
 

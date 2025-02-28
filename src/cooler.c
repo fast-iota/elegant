@@ -246,7 +246,7 @@ struct E_params {
   double lambda;
 };
 
-#if (USE_GSL)
+#if defined(USE_GSL)
 double Ex(double theta, void *params) {
   //unpacking parameters
   struct E_params *p = (struct E_params *)params;
@@ -268,7 +268,7 @@ double Ex(double theta, void *params) {
 }
 #endif
 
-#if !def(USE_GSL)
+#if !defined(USE_GSL)
 void coolerKicker(CKICKER *ckicker, double **part0, long np0, LINE_LIST *beamline,
   long pass, long nPasses, char *rootname, double Po, long idSlotsPerBunch) {
     fprintf(stderr, "Error: Cannot run generateBunchForMoments, elegant was not build with GSL support.\n");

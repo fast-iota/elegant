@@ -655,7 +655,10 @@ void track_through_rfmode(
           dup2(fdStdout, fileno(stdout));
           printf((char *)"The effective Q<=0.5 for RFMODE.  Use the ZLONGIT element.\n");
           fflush(stdout);
-          freopen("/dev/null", "w", stdout);
+          if (!freopen("/dev/null", "w", stdout)) {
+            perror("freopen failed");
+            exit(EXIT_FAILURE);
+          }
           MPI_Abort(MPI_COMM_WORLD, T_RFMODE);
         }
       }

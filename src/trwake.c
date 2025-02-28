@@ -174,7 +174,10 @@ void track_through_trwake(double **part0, long np0, TRWAKE *wakeData, double Po,
               dup2(fdStdout, fileno(stdout));
               printWarningForTracking("Some particles not binned in TRWAKE.",
                                       "Consider setting N_BINS=0 to invoke autoscaling.");
-              freopen("/dev/null", "w", stdout);
+              if (!freopen("/dev/null", "w", stdout)) {
+                perror("freopen failed");
+                exit(EXIT_FAILURE);
+              }
             }
           }
         }
@@ -183,7 +186,10 @@ void track_through_trwake(double **part0, long np0, TRWAKE *wakeData, double Po,
           dup2(fdStdout, fileno(stdout));
           printWarningForTracking("Some particles not binned in TRWAKE.",
                                   "Consider setting N_BINS=0 to invoke autoscaling.");
-          freopen("/dev/null", "w", stdout);
+          if (!freopen("/dev/null", "w", stdout)) {
+            perror("freopen failed");
+            exit(EXIT_FAILURE);
+          }
         }
       }
 #endif

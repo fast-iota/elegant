@@ -589,7 +589,10 @@ long read_matrices(VMATRIX *M, char *filename, FILE *fp) {
     found = 0;
     while (!feof(fp) && !found) {
       s[0] = 0;
-      fgets(s, 256, fp);
+      if (!fgets(s, 256, fp)) {
+        log_exit("read_matrices");
+        return (1);
+      }
       if (strncmp(s, "C: ", 3) == 0) {
         found = 1;
       }

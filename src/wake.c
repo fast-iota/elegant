@@ -148,7 +148,10 @@ void track_through_wake(double **part0, long np0, WAKE *wakeData, double *PoInpu
           printWarningForTracking("The beam is longer than the longitudinal wake function.", warningBuffer);
 #if USE_MPI
           if (myid == 1)
-            freopen("/dev/null", "w", stdout);
+            if (!freopen("/dev/null", "w", stdout)) {
+              perror("freopen failed");
+              exit(EXIT_FAILURE);
+            }
 #endif
           /*
             if (abs(tmax-tmean)<abs(tmin-tmean)) 
@@ -165,7 +168,10 @@ void track_through_wake(double **part0, long np0, WAKE *wakeData, double *PoInpu
             dup2(fdStdout, fileno(stdout));
             printWarningForTracking("Beam shorter than 20 times the spacing of the wake points.",
                                     "May produce poor results. Consider using finer time spacing in wake data.");
-            freopen("/dev/null", "w", stdout);
+            if (!freopen("/dev/null", "w", stdout)) {
+              perror("freopen failed");
+              exit(EXIT_FAILURE);
+            }
           }
 #else
           printWarningForTracking("Beam shorter than 20 times the spacing of the wake points.",

@@ -526,7 +526,7 @@ long do_load_parameters(LINE_LIST *beamline, long change_definitions) {
         if ((occurence && (!find_element_hash(element[j], occurence[j], &eptr, beamline->elem))) ||
             (!occurence && (!find_element_hash(element[j], 1, &eptr, beamline->elem)))) {
           if (occurence) {
-            snprintf(warningText, 16834,
+            snprintf(warningText, 16384,
                      "Unable to find occurence %" PRId32 " of element %s, listed in file %s.",
                      occurence[j], element[j], load_request[i].filename);
             if (load_request[i].flags & ALLOW_MISSING_ELEMENTS) {

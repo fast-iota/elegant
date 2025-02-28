@@ -87,7 +87,8 @@ void executeCshCommand(char *cmd, char *rootname) {
   fprintf(fp, "%s\n", cmd);
   fclose(fp);
   snprintf(cmd2, 16384, "csh %s\n", filename);
-  system(cmd2);
+  if (!system(cmd2)) {
+  }
   remove(filename);
 
 #if defined(CONDOR_COMPILE)

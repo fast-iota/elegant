@@ -516,7 +516,10 @@ char **argv;
     freopen("NUL", "w", stdout);
     /* freopen("NUL","w",stderr); */
 #    else
-    freopen("/dev/null", "w", stdout);
+    if (!freopen("/dev/null", "w", stdout)) {
+      perror("freopen failed");
+      exit(EXIT_FAILURE);
+    }
     /*    freopen("/dev/null","w",stderr); */
 #    endif
 #  endif

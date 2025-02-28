@@ -266,7 +266,8 @@ long transformBeamWithScript_s(SCRIPT *script, double pCentral, CHARGE *charge,
   if (script->useCsh)
     executeCshCommand(cmdBuffer1, mainRootname);
   else
-    system(cmdBuffer1);
+    if (!system(cmdBuffer1)) {
+    }
 
 #if defined(CONDOR_COMPILE)
   _condor_ckpt_enable();
@@ -634,7 +635,8 @@ long transformBeamWithScript_p(SCRIPT *script, double pCentral, CHARGE *charge,
     if (script->useCsh)
       executeCshCommand(cmdBuffer1, mainRootname);
     else
-      system(cmdBuffer1);
+      if (!system(cmdBuffer1)) {
+      }
   }
 #  if defined(CONDOR_COMPILE)
   _condor_ckpt_enable();

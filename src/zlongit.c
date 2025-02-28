@@ -309,7 +309,10 @@ void track_through_zlongit(double **part0, long np0, ZLONGIT *zlongit, double Po
             freopen("NUL", "w", stdout);
 #    else
           if (myid == 1)
-            freopen("/dev/null", "w", stdout);
+            if (!freopen("/dev/null", "w", stdout)) {
+              perror("freopen failed");
+              exit(EXIT_FAILURE);
+            }
 #    endif
 #  endif
         }
@@ -729,7 +732,10 @@ void set_up_zlongit(ZLONGIT *zlongit, RUN *run, long pass, long particles, CHARG
         printf("Error: unable to write layout for ZLONGIT wake file %s\n", zlongit->wakes);
         fflush(stdout);
 #  ifndef MPI_DEBUG
-        freopen("/dev/null", "w", stdout);
+        if (!freopen("/dev/null", "w", stdout)) {
+          perror("freopen failed");
+          exit(EXIT_FAILURE);
+        }
 #  endif
         MPI_Abort(MPI_COMM_WORLD, T_ZLONGIT);
         return;

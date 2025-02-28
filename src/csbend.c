@@ -3520,7 +3520,10 @@ for (iKick = 0; iKick < nKicks; iKick++) {
 #  if defined(_WIN32)
     freopen("NUL", "w", stdout);
 #  else
-    freopen("/dev/null", "w", stdout);
+    if (!freopen("/dev/null", "w", stdout)) {
+      perror("freopen failed");
+      exit(EXIT_FAILURE);
+    }
 #  endif
 #endif
   }
@@ -3956,7 +3959,10 @@ long track_through_driftCSR_Stupakov(double **part, long np, CSRDRIFT *csrDrift,
 #  if defined(_WIN32)
       freopen("NUL", "w", stdout);
 #  else
-      freopen("/dev/null", "w", stdout);
+      if (!freopen("/dev/null", "w", stdout)) {
+        perror("freopen failed");
+        exit(EXIT_FAILURE);
+      }
 #  endif
 #endif
     }
@@ -4146,7 +4152,10 @@ long track_through_driftCSR_Stupakov(double **part, long np, CSRDRIFT *csrDrift,
 #  if defined(_WIN32)
       freopen("NUL", "w", stdout);
 #  else
-      freopen("/dev/null", "w", stdout);
+      if (!freopen("/dev/null", "w", stdout)) {
+        perror("freopen failed");
+        exit(EXIT_FAILURE);
+      }
 #  endif
 #endif
     }

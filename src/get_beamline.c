@@ -205,7 +205,10 @@ LINE_LIST *get_beamline(char *madfile, char *use_beamline, double p_central, lon
         if (type == T_RENAME)
           process_rename_request(s, entity_name, N_TYPES);
         else if (type == T_TITLE) {
-          fgets(s, MAX_LINE_LENGTH, fp_mad[iMad]);
+          if (!fgets(s, MAX_LINE_LENGTH, fp_mad[iMad])) {
+            fprintf(stderr, "Error reading line from file\n");
+            exit(EXIT_FAILURE);
+          }
           compressString(s, " ");
           if (s[i = strlen(s) - 1] == ' ')
             s[i] = 0;

@@ -376,7 +376,10 @@ long doChaosMap(
 #  if defined(_WIN32)
     freopen("NUL", "w", stdout);
 #  else
-    freopen("/dev/null", "w", stdout);
+    if (!freopen("/dev/null", "w", stdout)) {
+      perror("freopen failed");
+      exit(EXIT_FAILURE);
+    }
 #  endif
   }
 #endif

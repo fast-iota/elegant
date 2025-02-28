@@ -69,8 +69,14 @@ void processGlobalSettings(NAMELIST_TEXT *nltext) {
     SDDS_SetDefaultWriteBufferSize(mpi_io_write_buffer_size);
 #endif
   if (log_file)
-    freopen(log_file, "w", stdout);
+    if (!freopen(log_file, "w", stdout)) {
+      perror("freopen failed");
+      exit(EXIT_FAILURE);
+    }
   if (error_log_file)
-    freopen(error_log_file, "w", stderr);
+    if (!freopen(error_log_file, "w", stderr)) {
+      perror("freopen failed");
+      exit(EXIT_FAILURE);
+    }
 }
 

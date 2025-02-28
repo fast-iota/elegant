@@ -34,6 +34,10 @@
 **
 ***************************************************************************/
 
+#if defined(__APPLE__)
+#  define ACCELERATE_NEW_LAPACK
+#  include <Accelerate/Accelerate.h>
+#endif
 #include "SDDS.h"
 #include "mdb.h"
 
@@ -55,7 +59,7 @@ int dgemm_(char *transa, char *transb, const MKL_INT *m, const MKL_INT *n, const
 #endif
 
 #ifdef CLAPACK
-#  if !defined(_WIN32)
+#  if !defined(_WIN32) && !defined(__APPLE__)
 #    include "cblas.h"
 #  endif
 #  ifdef F2C
@@ -69,7 +73,9 @@ typedef struct {
 } doublecomplex;
 #    endif
 #  endif
-#  include "clapack.h"
+#  if !defined(__APPLE__)
+#    include "clapack.h"
+#  endif
 #  if defined(_WIN32)
 int f2c_dgemm(char *transA, char *transB, integer *M, integer *N, integer *K,
               doublereal *alpha,
@@ -380,9 +386,16 @@ MAT *matrix_mult(MAT *mat1, MAT *mat2) {
          (MKL_INT *)&new_mat->m, (MKL_INT *)&new_mat->n, (MKL_INT *)&kk, &alpha, mat1->base,
          (MKL_INT *)&lda, mat2->base, (MKL_INT *)&ldb, &beta, new_mat->base, (MKL_INT *)&new_mat->m);
 #          else
+#            if defined(ACCELERATE_NEW_LAPACK)
+  dgemm_("N", "N",
+           (__LAPACK_int *)&new_mat->m, (__LAPACK_int *)&new_mat->n, &kk, &alpha, mat1->base,
+           (__LAPACK_int *)&lda, mat2->base, &ldb, &beta, new_mat->base, (__LAPACK_int *)&new_mat->m);
+#            else
+
   dgemm_("N", "N",
          &new_mat->m, &new_mat->n, &kk, &alpha, mat1->base,
          &lda, mat2->base, &ldb, &beta, new_mat->base, &new_mat->m);
+#            endif
 #          endif
 #        endif
 #      endif
@@ -694,9 +707,15 @@ MAT *matrix_invert
          (MKL_INT *)&U->m, (MKL_INT *)&V->n, (MKL_INT *)&kk, &alpha, U->base,
          (MKL_INT *)&lda, V->base, (MKL_INT *)&ldb, &beta, Invt->base, (MKL_INT *)&U->m);
 #        else
+#          if defined(ACCELERATE_NEW_LAPACK)
+  dgemm_("N", "N",
+           (__LAPACK_int *)&U->m, (__LAPACK_int *)&V->n, &kk, &alpha, U->base,
+           (__LAPACK_int *)&lda, V->base, &ldb, &beta, Invt->base, (__LAPACK_int *)&U->m);
+#          else
   dgemm_("N", "N",
          &U->m, &V->n, &kk, &alpha, U->base,
          &lda, V->base, &ldb, &beta, Invt->base, &U->m);
+#          endif
 #        endif
 #      endif
 #    endif

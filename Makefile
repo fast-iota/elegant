@@ -15,6 +15,9 @@ DIRS += $(SDDS_REPO)/SDDSlib
 DIRS += $(SDDS_REPO)/fftpack
 DIRS += $(SDDS_REPO)/matlib
 DIRS += $(SDDS_REPO)/mdbcommon
+ifneq ($(MPI_CC),)
+DIRS += $(SDDS_REPO)/pgapack
+endif
 DIRS += physics
 DIRS += xraylib
 DIRS += src

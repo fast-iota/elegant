@@ -15,6 +15,9 @@
 #include "mdb.h"
 #include "track.h"
 #include "vary.h"
+#if defined(__APPLE__)
+#  include <unistd.h>
+#endif
 
 long load_enumerated_values(double **value, char *file, char *column);
 void reset_parameter_values(char **elem_name, long *param_number, long *type, long n_elems,

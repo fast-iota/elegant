@@ -220,6 +220,11 @@ ifeq ($(OS), Linux)
 endif
 
 ifeq ($(OS), Darwin)
+  CFLAGS += -DCLAPACK
+  CCFLAGS += -DCLAPACK
+  LDFLAGS := -L$(SDDS_REPO)/lib/$(OS)-$(ARCH) $(LDFLAGS)
+  PROD_SYS_LIBS := -framework Accelerate $(LZMA_LIB) $(GSL_LIB) $(GSLCBLAS_LIB) $(Z_LIB) $(FFTW3_LIB)  $(MKL_LIB) $(LAPACK_LIB) $(PROD_SYS_LIBS)
+  PROD_LIBS = -lmdbcommon -lmatlib -lfftpack -lSDDS1 -lnamelist -lrpnlib -lmdbmth -lmdblib
 endif
 
 ifeq ($(OS), Windows)

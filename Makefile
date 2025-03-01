@@ -5,7 +5,8 @@ endif
 
 include Makefile.rules
 
-DIRS = $(SDDS_REPO)/zlib
+DIRS = $(SDDS_REPO)/meschach
+DIRS += $(SDDS_REPO)/zlib
 DIRS += $(SDDS_REPO)/lzma
 DIRS += $(SDDS_REPO)/mdblib
 DIRS += $(SDDS_REPO)/mdbmth
@@ -21,12 +22,15 @@ endif
 DIRS += physics
 DIRS += xraylib
 DIRS += src
+DIRS += src/elegantTools
 
 .PHONY: all $(DIRS) clean distclean
 
 all: $(DIRS)
 
-$(SDDS_REPO)/zlib:
+$(SDDS_REPO)/meschach:
+	$(MAKE) -C $@
+$(SDDS_REPO)/zlib: $(SDDS_REPO)/meschach
 	$(MAKE) -C $@
 $(SDDS_REPO)/lzma: $(SDDS_REPO)/zlib
 	$(MAKE) -C $@
@@ -56,7 +60,6 @@ ifneq ($(MPI_CC),)
 $(SDDS_REPO)/pgapack: $(SDDS_REPO)/mdbcommon
 	$(MAKE) -C $@
 endif
-
 physics: $(SDDS_REPO)/mdbcommon
 	$(MAKE) -C $@
 xraylib: physics
@@ -69,11 +72,14 @@ src: xraylib
 	$(MAKE) -C $@
 	$(MAKE) -C $@ -f Makefile.mpi
 endif
+src/elegantTools: src
+	$(MAKE) -C $@
 
 clean:
 	$(MAKE) -C physics clean
 	$(MAKE) -C xraylib clean
 	$(MAKE) -C src clean
+	$(MAKE) -C src/elegantTools clean
 
 distclean: clean
 	rm -rf bin/$(OS)-$(ARCH)

@@ -126,5 +126,5 @@ $(OBJ_DIR)/elegant$(EXEEXT): $(elegant_OBJS) $(PROD_DEPS)
 $(OBJ_DIR)/sddsrandmult.$(OBJEXT): $(OBJ_DIR)/sddsrandmult.h
 
 $(OBJ_DIR)/sddsrandmult.h: sddsrandmult.nl
-	../../../SDDS/bin/$(OS)-$(ARCH)/nlpp sddsrandmult.nl $(OBJ_DIR)/sddsrandmult.h
+	../../../SDDS/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables sddsrandmult.nl $(OBJ_DIR)/sddsrandmult.h
 

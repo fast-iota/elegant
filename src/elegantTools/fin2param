@@ -1,0 +1,36 @@
+#!/bin/sh  
+# \
+exec oagtclsh "$0" "$@"
+
+if {![info exists env(OAG_TOP_DIR)]} { set env(OAG_TOP_DIR) /usr/local }
+set auto_path [linsert $auto_path 0  $env(OAG_TOP_DIR)/oag/apps/lib/$env(HOST_ARCH)]
+
+APSStandardSetup
+
+set usage "usage: fin2param <input> <output>\n\
+Converts an elegant final output file from an optimization\n\
+to a file that can be loaded with load_parameters.\n\
+Used if you forgot to ask for a parameter output or if the\n\
+job is running and hasn't written a parameter output yet.\n"
+
+if [llength $argv]!=2 {
+    return -code error "$usage"
+}
+set input [lindex $argv 0]
+set output [lindex $argv 1]
+
+if ![file exists $input] {
+    return -code error "not found: $input"
+}
+if [file exists $output] {
+    return -code error "exists: $output"
+}
+
+exec sddscollapse $input -pipe=out | sddssort -pipe -column=optimizationFunction,incr \
+  | sddsprocess -pipe -clip=1,0,invert \
+  | sddsconvert -pipe -retain=column,*.* \
+  | sddsconvert -pipe -delete=column,*.LowerLimit,*.UpperLimit \
+  | sddstranspose -pipe -oldColumnNames=NameString -root=ParameterValue \
+  | sddsprocess -pipe=in $output \
+    "-edit=column,ElementName,NameString,S/./100D" \
+    "-edit=column,ElementParameter,NameString,Z." \

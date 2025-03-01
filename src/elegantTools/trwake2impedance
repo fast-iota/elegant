@@ -1,0 +1,21 @@
+#!/bin/bash
+
+if [ $# -ne 5 ] ; then 
+    echo "usage: wake2impedance <wakeFile> <timeName> <WxName> <WyName> <impedanceFile>"
+    exit 1
+fi
+
+wake=$1
+tName=$2
+WxName=$3
+WyName=$4
+imped=$5
+
+sddsfft $wake -pipe=out -col=$tName,$WxName,$WyName -full -nowarning \
+    | sddsprocess -pipe=in $imped \
+    "-define=col,ZxReal,RealFFT$WxName fftFrequencySpacing / 2 /,units=V/C/m" \
+    "-define=col,ZxImag,ImagFFT$WxName fftFrequencySpacing / 2 /,units=V/C/m" \
+    "-define=col,ZyReal,RealFFT$WyName fftFrequencySpacing / 2 /,units=V/C/m" \
+    "-define=col,ZyImag,ImagFFT$WyName fftFrequencySpacing / 2 /,units=V/C/m" 
+
+

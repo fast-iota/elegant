@@ -1,0 +1,107 @@
+#!/bin/sh  
+# \
+exec oagtclsh "$0" "$@"
+
+if {![info exists env(OAG_TOP_DIR)]} { set env(OAG_TOP_DIR) /usr/local }
+set auto_path [linsert $auto_path 0  $env(OAG_TOP_DIR)/oag/apps/lib/$env(HOST_ARCH)]
+
+APSStandardSetup
+
+set usage "usage: weightedBunch -twiss <filename> \[-location <elementName>\] -output <filename> -particles <number> \[-pages <num>(1)\] -ex <meters> -ey <meters> -Sdelta <fraction> -St <seconds> -nx <num-sigmas> -ny <num-sigmas> -nz <num-sigmas> \[-seed <integer>\] \[-scale 1\] \[-particleID 0\]\nCreates an input file for tracking in elegant with uniformly distributed particles assigned gaussian weights."
+set twiss ""
+set location ""
+set output ""
+set particles 0
+set pages 1
+set ex 0
+set ey 0
+set Sdelta 0
+set St 0
+set nx 0
+set ny 0
+set nz 0
+set scale 0
+set particleID 1
+set seed -1
+set args $argv
+if {[APSStrictParseArguments {particleID twiss scale location particles pages output ex ey Sdelta St nx ny nz seed}] || ![string length $twiss] || ![string length $output]} {
+    puts stderr "$usage"
+    exit 1
+}
+if ![file exists $twiss] {
+    return -code error "Not found: $twiss"
+}
+if {[file exists $output]} {
+    return -code error "exists: $output"
+}
+foreach item {ex ey Sdelta St nx ny nz} {
+    if [expr [set $item]<=0] {
+        puts stderr "$item must be positive"
+        puts stderr "$usage"
+        exit 1
+    }
+}
+
+set tmpRoot [APSTmpString]
+APSAddToTempFileList $tmpRoot.1 $tmpRoot.2
+if [string length $location] {
+    exec sddsprocess $twiss $tmpRoot.1 -match=col,ElementName=$location \
+        -process=beta?,first,%s0 -process=eta*,first,%s0 \
+        -process=alpha?,first,%s0 -clip=1,0,invert
+} else {
+    exec sddsprocess $twiss $tmpRoot.1 -process=beta?,first,%s0 -process=eta*,first,%s0 \
+        -process=alpha?,first,%s0 -clip=1,0,invert
+}
+
+exec sddssequence -pipe=out -define=z -sequence=begin=-1,end=1,n=1001 | sddsprocess -pipe=in $tmpRoot.2 -define=col,P,1
+
+if $particleID {
+    # Use particleID as the weight column
+    set weightColumn particleID
+    set weightType long
+    set weightOffset 1
+} else {
+    set weightColumn Weight
+    set weightType double
+    set weightOffset 0
+}
+
+if [catch {exec sddssampledist $tmpRoot.2 -pipe=out -samples=[expr $pages*$particles] -optimalHalton -seed=$seed \
+	       -column=output=a,factor=$nx,independentVariable=z,df=P \
+	       -column=output=ap,factor=$nx,independentVariable=z,df=P \
+	       -column=output=b,factor=$ny,independentVariable=z,df=P \
+	       -column=output=bp,factor=$ny,independentVariable=z,df=P \
+	       -column=output=c,factor=$nz,independentVariable=z,df=P \
+	       -column=output=d,factor=$nz,independentVariable=z,df=P \
+	       | sddsxref -pipe $tmpRoot.1 -leave=* -transfer=parameter,*0,pCentral \
+	       | sddsbreak -pipe -rowlimit=$particles \
+	       | sddsprocess -pipe \
+	       "-define=column,$weightColumn,a sqr ap sqr +  b sqr + bp sqr +  c sqr +  d sqr + -2 / exp 2 30 pow * $weightOffset + ,type=$weightType" \
+	       -process=\[abcd\]*,stand,%sStDev,weight=$weightColumn \
+	       "-redefine=col,%s,$scale 0 == ? 1 : 1 %sStDev / $ %s *,select=\[ab\]*" \
+	       "-redefine=col,%s,$scale 0 == ? 1 : 1 %sStDev / $ %s *,select=\[cd\]" \
+	       "-define=parameter,ex,$ex,units=m" \
+	       "-define=parameter,ey,$ey,units=m" \
+	       "-define=parameter,St,$St,units=s" \
+	       "-define=parameter,Sdelta,$Sdelta" \
+	       "-define=column,delta,Sdelta c *" \
+	       "-define=column,t,St d *,units=s" \
+	       "-define=column,x,a ex betax0 * sqrt *,units=m" \
+	       "-define=column,xp,ap a alphax0 * - ex betax0 / sqrt * delta etaxp0 * +" \
+	       "-redefine=column,x,x delta etax0 * +,units=m" \
+	       "-define=column,y,b ey betay0 * sqrt *,units=m" \
+	       "-define=column,yp,bp b alphay0 * - ey betay0 / sqrt * delta etayp0 * +" \
+	       "-redefine=column,y,y delta etay0 * +,units=m" \
+	       "-define=column,p,delta 1 + pCentral *" \
+	       | sddsconvert -pipe=in $output \
+	       -retain=parameter,ex,ey,St,Sdelta \
+	       -retain=column,x,xp,y,yp,t,p,$weightColumn} result] {
+    puts stderr "$result"
+    exit 1
+}
+
+if !$particleID {
+    exec sddsprocess -nowarning $output "-define=column,particleID,i_page 1 - $particles * i_row + 1 +,type=long"
+    file delete ${output}~
+}
+

@@ -1,0 +1,36 @@
+#!/bin/sh  
+# \
+exec oagtclsh "$0" "$@"
+
+if {![info exists env(OAG_TOP_DIR)]} { set env(OAG_TOP_DIR) /usr/local }
+set auto_path [linsert $auto_path 0  $env(OAG_TOP_DIR)/oag/apps/lib/$env(HOST_ARCH)]
+
+APSStandardSetup
+
+set usage {usage: plotTwissBeamsize -rootname <filename> -coupling <value> }
+set rootname ""
+set coupling -1
+set args $argv
+if {[APSStrictParseArguments {rootname coupling}] || \
+    ![string length $rootname] || [expr $coupling<0] || [expr $coupling>1]} {
+    return -code error "$usage"
+}
+
+exec sddsprocess $rootname.twi $rootname.bs \
+    "-define=param,ex,ex0 1 $coupling + /" "-define=param,ey,ex $coupling *" \
+    "-define=col,Sx,betax ex * etax Sdelta0 * sqr + sqrt 1e6 *,symbol=\$gs\$r\$bx\$n,units=\$gm\$rm" \
+    "-define=col,Sy,betay ey * etay Sdelta0 * sqr + sqrt 1e6 *,symbol=\$gs\$r\$by\$n,units=\$gm\$rm" \
+    "-define=col,Sxp,1 alphax sqr + betax / ex * etaxp Sdelta0 * sqr + sqrt 1e6 *,symbol=\$gs\$r\047\$bx\$n,units=\$gm\$rrad" \
+    "-define=col,Syp,1 alphay sqr + betay / ey * etayp Sdelta0 * sqr + sqrt 1e6 *,symbol=\$gs\$r\047\$by\$n,units=\$gm\$rrad" 
+
+
+exec sddsplot "-title=[pwd]/$rootname" \
+        -column=s,Sx -legend=ysymbol -unsup=y \
+        $rootname.bs -graphic=line,type=1 \
+        -column=s,Sy -legend=ysymbol -unsup=y \
+        $rootname.bs -graphic=line,type=2 -end \
+        -column=s,Sxp -legend=ysymbol -unsup=y \
+        $rootname.bs -graphic=line,type=1 \
+        -column=s,Syp -legend=ysymbol -unsup=y \
+        $rootname.bs -graphic=line,type=2 -end \
+	-column=s,Profile $rootname.mag -overlay=xmode=norm,yfactor=0.04 -omnipresent &

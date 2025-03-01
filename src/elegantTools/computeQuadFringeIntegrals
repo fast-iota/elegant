@@ -1,0 +1,117 @@
+#!/bin/sh  
+# \
+exec oagtclsh "$0" "$@"
+
+set auto_path [linsert $auto_path 0  /usr/local/oag/apps/lib/$env(HOST_ARCH)]
+set auto_path [linsert $auto_path 0 /usr/local/oag/lib_patch/$env(HOST_ARCH)]
+APSStandardSetup
+
+#
+# The input file is expected to have the gradient as a function of z, z=0 should be the center of the magnet.
+#
+
+set usage {usage: computeQuadFringeIntegrals -input <filename> -output <filename> -magnetList <string>[,<string>...] -zColumn <name> -gradientColumn <name>}
+set input ""
+set output ""
+set magnetList ""
+set zColumn ""
+set gradientColumn ""
+set args $argv
+if {[APSStrictParseArguments {input output magnetList zColumn gradientColumn}] || ![string length $input] || \
+      ![string length $output] || ![string length $magnetList] || ![string length $zColumn] || ![string length $gradientColumn]} {
+    return -code error "$usage"
+}
+if ![file exists $input] {
+   return -code error "in use: $input"
+}
+if [file exists $output] {
+   return -code error "in use: $output"
+}
+set magnetList [split [string trim $magnetList] " ,"]
+
+# Find center of the magnet, defined as point at which 50% of integrated strength is reached
+set zCenter [exec sddssort $input -pipe=out -column=$zColumn,incr -unique \
+    | sddsinteg -pipe -versus=$zColumn -integrate=$gradientColumn -method=GillMiller \
+    | sddsnormalize -pipe -column=mode=signedLargest,${gradientColumn}Integ \
+    | sddsprocess -pipe -filter=col,${gradientColumn}Integ,0.1,0.9 \
+    | sddsinterp -pipe -column=${gradientColumn}Integ,$zColumn -at=0.5 \
+    | sdds2stream -pipe -column=$zColumn]
+
+# Normalize the gradient data to average of central 5 samples
+
+exec sddssort $input -pipe=out -column=$zColumn,incr -unique \
+    | sddsprocess -pipe=in $output.tmp1 \
+  "-redefine=column,$zColumn,$zColumn $zCenter -,units=m" \
+  -process=$zColumn,spread,zRange \
+  -process=$zColumn,count,zCount \
+  "-redefine=param,dz,zRange zCount 1 - /" \
+  "-redefine=column,zOffsetNorm,$zColumn dz /" \
+  -process=$gradientColumn,ave,%sAve,functionof=zOffsetNorm,lower=-2.5,upper=2.5 \
+  "-redefine=column,GNorm,$gradientColumn ${gradientColumn}Ave /" \
+  -filter=column,zOffsetNorm,-0.5,1e300 \
+  -process=$gradientColumn,gminteg,GHalfInteg,functionOf=$zColumn \
+  -process=GNorm,gminteg,GHalfNormInteg,functionOf=$zColumn \
+  "-redefine=parameter,LEFFECTIVE,GHalfNormInteg 2 *,units=m" \
+  "-redefine=column,GradientHE,$zColumn abs LEFFECTIVE  2 / > ? 0 : 1 $ " \
+  "-redefine=column,g0,GNorm GradientHE -" \
+  "-redefine=parameter,s1,0.0,units=m" \
+  "-redefine=parameter,s0,LEFFECTIVE 2 /,units=m" \
+  -process=$zColumn,max,s2 
+
+set s0 [exec sdds2stream -parameter=s0 $output.tmp1]
+set s1 [exec sdds2stream -parameter=s1 $output.tmp1]
+set s2 [exec sdds2stream -parameter=s2 $output.tmp1]
+
+exec sddsprocess $output.tmp1 $output.tmp2 \
+  "-define=column,ds,$zColumn $s0 -" \
+  "-define=col,g1,g0 ds *" \
+  "-define=col,g2,g1 ds *" \
+  "-define=col,g3,g2 ds *" \
+  "-process=g0,gminteg,I0M,functionOf=$zColumn,lower=$s1,upper=$s0" \
+  "-process=g0,gminteg,I0P,functionOf=$zColumn,lower=$s0,upper=$s2" \
+  "-process=g1,gminteg,I1M,functionOf=$zColumn,lower=$s1,upper=$s0" \
+  "-process=g1,gminteg,I1P,functionOf=$zColumn,lower=$s0,upper=$s2" \
+  "-process=g2,gminteg,I2M,functionOf=$zColumn,lower=$s1,upper=$s0" \
+  "-process=g2,gminteg,I2P,functionOf=$zColumn,lower=$s0,upper=$s2" \
+  "-process=g3,gminteg,I3M,functionOf=$zColumn,lower=$s1,upper=$s0" \
+  "-process=g3,gminteg,I3P,functionOf=$zColumn,lower=$s0,upper=$s2" 
+
+exec sddsprocess $output.tmp1 -pipe=out -filter=col,$zColumn,$s1,$s0 \
+  "-define=col,h1,$zColumn g0 *" \
+  | sddsinteg -pipe -method=gillmiller -versus=$zColumn -integrate=g0 -integrate=h1 -method=GillMiller \
+  | sddsprocess -pipe -process=*Integ,last,%sLast \
+  "-define=column,g0Integ1,g0IntegLast g0Integ -" \
+  "-define=column,h1Integ1,h1IntegLast h1Integ -" \
+  | sddsxref -pipe $output.tmp2 -take=g0 -equate=$zColumn \
+  | sddsprocess -pipe=in $output.tmp3 \
+  "-define=column,I2,h1Integ1 g0Integ1 $zColumn * - g0 *" \
+  -process=I2,gminteg,LAMBDA2M,functionOf=$zColumn
+
+exec sddsprocess $output.tmp1 -pipe=out -filter=col,$zColumn,$s0,$s2 \
+  "-define=col,h1,$zColumn g0 *" \
+  | sddsinteg -pipe -method=gillmiller -versus=$zColumn -integrate=g0 -integrate=h1 -method=GillMiller \
+  | sddsprocess -pipe -process=*Integ,last,%sLast \
+  "-define=column,g0Integ1,g0IntegLast g0Integ -" \
+  "-define=column,h1Integ1,h1IntegLast h1Integ -" \
+  | sddsxref -pipe $output.tmp2 -take=g0 -equate=$zColumn \
+  | sddsprocess -pipe=in $output.tmp4 \
+  "-define=column,I2,h1Integ1 g0Integ1 $zColumn * - g0 *" \
+  -process=I2,gminteg,LAMBDA2P,functionOf=$zColumn \
+  "-define=parameter,zCenter,$zCenter"
+  
+exec sddsxref $output.tmp2 $output.tmp3 $output.tmp4 -leave=* -transfer=param,LAMBDA2?,zCenter $output
+file delete $output.tmp1 $output.tmp2 $output.tmp3 $output.tmp4 
+
+set paramFileList ""
+foreach magnet $magnetList {
+    puts stderr "$magnet"
+    APSAddToTempFileList $output.$magnet
+    exec sddscollapse $output -pipe=out \
+      | sddsconvert -pipe -retain=column,I??,LAMBDA??,LEFFECTIVE \
+      | sddstranspose -pipe \
+      | sddsconvert -pipe -rename=col,OldColumnNames=ElementParameter,Column=ParameterValue \
+      | sddsprocess -pipe=in $output.$magnet -print=column,ElementName,$magnet
+    lappend paramFileList $output.$magnet
+}
+eval exec sddscombine $paramFileList -merge $output.param -overwrite
+

@@ -1,0 +1,169 @@
+#!/bin/sh  
+# \
+exec oagtclsh "$0" "$@"
+
+# $Log: not supported by cvs2svn $
+# Revision 1.7  2011/06/14 18:09:04  borland
+# Added use of "failed" semaphores.
+#
+# Revision 1.6  2010/01/25 22:51:52  borland
+# Copy the correct parameter file for case with emittance target.
+#
+# Revision 1.5  2010/01/15 18:45:47  borland
+# Changes to workaround an apparent bug in elegant.
+#
+# Revision 1.4  2010/01/15 17:31:35  borland
+# Further refinements, mostly to make the filenames more sensible.
+#
+# Revision 1.3  2010/01/15 15:47:07  borland
+# Use cp for some copy operations to avoid stupid tcl copying of links.
+#
+# Revision 1.2  2010/01/15 15:10:47  borland
+# Various refinements and improvements after testing.
+#
+
+if {![info exists env(OAG_TOP_DIR)]} { set env(OAG_TOP_DIR) /usr/local }
+set auto_path [linsert $auto_path 0  $env(OAG_TOP_DIR)/oag/apps/lib/$env(HOST_ARCH)]
+
+APSStandardSetup
+
+set usage {usage: correctCoupling -rootname <string> -input <parameterFile> -eyTarget <pm>  -inverse <filename> -diagnostic <markerName> -skewLimit <K1Value> -fraction <value> -iterations <num>}
+set inverse ""
+set rootname ""
+set input ""
+set eyTarget 0
+set fraction 1.0
+set iterations 1
+set diagnostic S35BM#1
+set skewLimit 0.12
+set srcDir $OAGGlobal(OAGAppConfigDataDirectory)/elegant
+set args $argv
+if {[APSStrictParseArguments {rootname iterations input eyTarget fraction inverse diagnostic skewLimit srcDir}] || ![string length $rootname] || ![string length $input] || \
+    ![string length $inverse]} {
+    return -code error "$usage"
+}
+if {[string length $input] && ![file exists $input]} {
+    return -code error "not found: $input"
+}
+if {![file exists $inverse]} {
+    return -code error "not found: $inverse"
+}
+
+# Get relevant data from the inverse response matrix.  This ensures that we have consistent parameters 
+# between computing the response matrix and doing the correction
+
+set itemList [list skewPattern bpmPattern hcPattern vcPattern lattice beamline fixedLength energy order]
+set dataList [exec sdds2stream $inverse  -parameter=[join $itemList ,]]
+foreach var $itemList value $dataList {
+    set $var $value
+}
+if {![file exists $lattice]} {
+    return -code error "not found: $lattice"
+}
+
+set fdo [open $rootname.cc-log w]
+puts $fdo "rootname = $rootname, input = $input, eyTarget = $eyTarget"
+flush $fdo
+
+# First, perform SVD correction of vertical dispersion and cross-plane matrix
+# We perform several iterations with fractional correction
+
+set input0 $input
+set e2Last 1e300
+set goBack 0
+for {set iteration 1} {$iteration<=$iterations} {incr iteration} {
+    # Compute moments and response matrix with input errors
+    set runName ${rootname}-iter[format %02d $iteration]
+    catch {exec elegant $srcDir/etayCPCorrTemplate.ele -macro=pCentralMeV=$energy,rootname=$runName,inputParameters=$input,hcPattern=$hcPattern,vcPattern=$vcPattern,lattice=$lattice,beamline=$beamline,bpmPattern=$bpmPattern,order=$order,fixedLength=$fixedLength > $runName.log} result
+    puts $fdo "Computed moments with input errors: $result"
+    flush $fdo
+    if [file exists $runName.failed] {
+        puts $fdo "Correction failed. Terminating."
+	set goBack 1
+	break
+    }
+    set e2This [exec sdds2stream -parameter=e2 $runName.mom]
+    if [ expr $e2This<$eyTarget/1e12] {
+	puts $fdo "Target achieved. Terminating iteration." 
+	break
+    }
+    if [expr $e2This>$e2Last] {
+	puts $fdo "e2 increased from $e2Last to $e2This. Terminating iteration."
+	set goBack 1
+	break
+    }
+    set e2Last $e2This
+    # Create error vector
+    # This code needs to closely follow that in makeSkewResponseCP to get the order the same
+    set index 0
+    set fileList ""
+    foreach pattern [list $vcPattern $hcPattern] cplane {v h} type {hv vh} Type {HV VH} {
+        # Process cross-plane matrix 
+        set rmFile $runName.${type}rm
+        set corList [APSGetSDDSNames -class column -fileName $rmFile]
+        foreach cor $corList {
+            # Process specific corrector data
+            # Make a file with the error in a single column
+            if ![string match $pattern $cor] continue
+            if [catch {exec sddsconvert $rmFile $rootname-error.$index -retain=col,BPMName,$cor -rename=column,$cor=Error,BPMName=ElementName} result] {
+                puts stderr "$result"
+                exit 1
+            }
+            lappend fileList $rootname-error.$index
+            incr index
+        }
+    }
+    # Vertical dispersion error
+    exec sddsconvert  $runName.twi  -pipe=out -retain=column,ElementName,etay -rename=col,etay=Error \
+      | sddsprocess -pipe=in -match=col,ElementName=$bpmPattern $rootname-error.$index 
+    lappend fileList $rootname-error.$index
+
+    # Combine all the responses for this skew quad into a single-column file.
+    eval exec sddscombine $fileList $rootname-error.all -merge -overwrite -delete=col,ElementType,s36,s66
+    eval file delete -force $fileList
+    
+    # Multiply inverse matrix with error vector and convert to parameter format
+    catch {exec sddsmatrixmult $inverse $rootname-error.all -pipe=out \
+             | sddsxref $inverse -take=OldColumnNames -rename=col,OldColumnNames=ElementTag -pipe \
+             | sddsprocess -pipe=in $rootname-correction.param \
+             "-edit=column,ElementName,ElementTag,S/#/100d" \
+             "-scan=column,ElementOccurence,ElementTag,%ld,edit=Z#,type=long" \
+             -print=col,ElementParameter,K1 "-define=col,ParameterValue,Error $fraction * chs" \
+             -print=col,ParameterMode,differential} result
+    puts $fdo "Multiplied with inverse matrix: $result"
+    flush $fdo
+
+    set tmpInput [APSTmpDir]/[APSTmpString]
+    APSAddToTempFileList $tmpInput
+    # Combine the previous parameter input file with the correction parameter file to make
+    # starting point for the next iteration
+    exec sddscombine $input $rootname-correction.param -merge -overwrite $tmpInput
+    set input $tmpInput
+}
+if $goBack {
+    if { $iteration==1 } {
+	puts $fdo "No improvement from correction attempt."
+	return -code error "No improvement from correction attempt."
+    } else {
+	incr iteration -1
+    }
+}
+set runName ${rootname}-iter[format %02d $iteration]
+file copy -force $runName.param $rootname-bestCorrected.param
+
+# In the next step, we evaluate the correction.
+catch {exec elegant $srcDir/couplingCorrTemplate1.ele \
+	   -macro=pCentralMeV=$energy,lattice=$lattice,beamline=$beamline,rootname=${rootname}-corrected \
+	   -macro=inputParameters=$rootname-bestCorrected.param \
+	   -macro=bpmPattern=$bpmPattern,hcPattern=$hcPattern,vcPattern=$vcPattern \
+	   -macro=order=$order,fixedLength=$fixedLength > ${rootname}-corrected.log} result
+puts $fdo "$result"
+if {![file exists ${rootname}-corrected.done] || [file exists ${rootname}-corrected.failed]} {
+    puts stderr "Run failed (1)."
+    exit 1
+}
+exec sddsprocess ${rootname}-corrected.param ${rootname}.param -nowarning \
+    -match=col,ElementName=$skewPattern,ElementName=$hcPattern,|,ElementName=$vcPattern,|
+eval file delete [glob -nocomplain ${rootname}-iter??.*]
+
+

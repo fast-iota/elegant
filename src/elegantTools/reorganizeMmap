@@ -1,0 +1,26 @@
+#!/bin/bash
+
+if [ $# -ne 1 ] ; then
+   echo "usage: reorgMmap <mmapFilename>"
+   exit 1
+fi
+
+input=$1
+
+# Negative LMA
+sddssort $input -pipe=out -column=s \
+    | sddsprocess -pipe -filter=col,direction,-2,0 \
+    | sddsconvert -pipe=in $input.neg \
+    -rename=column,delta=deltaNegative,lostOnPass=lostOnPassNegative,sLost=sLostNegative,xLost=xLostNegative,yLost=yLostNegative \
+    -rename=column,nuxLost=nuxLostNegative,nuyLost=nuyLostNegative,deltaLost=deltaLostNegative \
+    -rename=column,deltaFound=deltaNegativeFound \
+# Positive LMA
+sddssort $input -pipe=out -column=s \
+    | sddsprocess -pipe -filter=col,direction,0,2 \
+    | sddsconvert -pipe=in $input.pos \
+    -rename=column,delta=deltaPositive,lostOnPass=lostOnPassPositive,sLost=sLostPositive,xLost=xLostPositive,yLost=yLostPositive \
+    -rename=column,nuxLost=nuxLostPositive,nuyLost=nuyLostPositive,deltaLost=deltaLostPositive \
+    -rename=column,deltaFound=deltaPositiveFound \
+# Combine
+sddsxref $input.neg $input.pos -take=* ${input}1
+\rm $input.neg $input.pos

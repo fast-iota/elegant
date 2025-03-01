@@ -1,0 +1,380 @@
+#!/bin/sh  
+# \
+exec oagtclsh "$0" "$@"
+
+if {![info exists env(OAG_TOP_DIR)]} { set env(OAG_TOP_DIR) /usr/local }
+set auto_path [linsert $auto_path 0  $env(OAG_TOP_DIR)/oag/apps/lib/$env(HOST_ARCH)]
+
+APSStandardSetup
+
+#
+# replaces the transverse distribution with an idealized distribution 
+# reflecting the median slice properties.  
+#
+
+set usage {usage: smoothDist6 -input <name> -output <name> -factor <number> -rippleAmplitude <%> -rippleWavelength <um> -smoothPasses <num(500)> -energyMod <%> -betaSlices <n> -seed <integer> -haltonOffset <integer> -semaphore <filename>}
+set debug 0
+set args $argv
+set output ""
+set input ""
+set rippleAmplitude 0
+set rippleWavelength 100
+set smoothPasses 500
+set factor 0
+set betaSlices 1
+set energyMod 0
+set seed 987654321
+set haltonOffset 0
+set semaphore ""
+if {[APSStrictParseArguments {input output factor rippleAmplitude rippleWavelength smoothPasses energyMod betaSlices debug seed haltonOffset semaphore}]} {
+    puts "$usage"
+    exit 1
+}
+if {![string length $input]} {
+    puts "Error: missing -input option\n$usage"
+    exit 1
+}
+if {![string length $output]} {
+    puts "Error: missing -output option\n$usage"
+    exit 1
+}
+if {$factor<1} {
+    puts "Error: -factor option < 1\n$usage"
+    exit 1
+}
+if {$rippleAmplitude<0} {
+    puts "Error: -rippleAmplitude option < 0\n$usage"
+    exit 1
+}
+if {$rippleWavelength<=0} {
+    puts "Error: -rippleWavelength option <= 0\n$usage"
+    exit 1
+}
+if {$smoothPasses<=0} {
+    puts "Error: -smoothPasses option <= 0\n$usage"
+    exit 1
+}
+if {$betaSlices<=0} {
+    puts "Error: -betaSlices option <= 0\n$usage"
+    exit 1
+}
+
+if ![file exists $input] {
+    puts "$input: not found"
+    exit 1
+}
+if [file exists $output] {
+    puts "$output: already exists"
+    exit 1
+}
+
+if [string length $semaphore] {
+    if [file exists $semaphore] {
+        return -code error "semaphore file ($semaphore) already exists"
+    }
+}
+
+set factor [expr int($factor)]
+
+set np [exec sdds2stream -rows=bare $input]
+if [expr $np<12000] {
+    puts "Error0: need at least 12k points in the input file. $input has only $np points"
+    exit 1
+}
+
+set tmpRoot [APSTmpDir]/tmp[pid]-$env(USER)
+exec sddsconvert $input -pipe=out -delete=parameter,tAve \
+    | sddsprocess -pipe=in $tmpRoot.inp -process=t,ave,tAve "-redefine=column,t,t tAve -,units=s" 
+if $debug {
+    exec sddsplot -column=t,p $tmpRoot.inp -graph=dot
+}
+
+# fit a polynomial to the (t,p) data to make a table for computing p(t)
+if {[catch {exec sddspfit $tmpRoot.inp $tmpRoot.fit -terms=12 -evaluate=$tmpRoot.eval,number=10000 -column=t,p} results]} {
+    puts "Error1: $results"
+    exit 1
+}
+if $debug {
+    exec sddsplot -col=t,p $tmpRoot.inp -graph=dot -col=t,p $tmpRoot.eval -graph=line,type=1 "-title=momentum fit"
+}
+
+# find the StDev(pResidual) and make a table for computing pStDev(t)
+if {[catch {exec sddssort $tmpRoot.fit -col=t,incr -pipe=out \
+              | sddsbreak -rowlimit=1000 -pipe \
+              | sddsprocess -pipe "-test=parameter,n_rows 10 >" -process=t,ave,tAve -process=pResidual,stand,pStDev \
+              | sddscollapse -pipe \
+              | sddspfit -pipe=in $tmpRoot.tmp -terms=12 \
+              -evaluate=$tmpRoot.pStDev,number=10000 -column=tAve,pStDev} results]} {
+    puts "Error2: $results"
+    exit 1
+}
+file delete $tmpRoot.tmp
+if $debug {
+    exec sddsplot -col=tAve,pStDev $tmpRoot.pStDev "-title=momentum spread"
+}
+
+# compute number of particles that we'll generate
+if {[catch {exec sdds2stream -rows=bare $tmpRoot.inp} results]} {
+    puts "Error3: $results"
+    exit 1
+}
+
+set samples [expr $results * $factor]
+if $debug {
+    puts stdout "Will generate $samples particles"
+    flush stdout
+}
+
+# find average momentum
+if {[catch {exec sddsprocess $tmpRoot.inp -pipe=out -process=p,ave,pAve \
+              | sdds2stream -pipe -param=pAve} results]} {
+    puts "Error4: $results"
+    exit 1
+}
+set pAve $results
+if $debug {
+    puts stdout "Average momentum from input beam: $pAve"
+    flush stdout
+}
+
+# smooth the longitudinal density to get a function for generating
+# the distribution, and apply the modulation
+if {[catch {exec sddshist $tmpRoot.inp -pipe=out -bins=1000 -data=t -expand=1.2 \
+              | sddssmooth -pipe -column=t -savit=2,2,1 -column=frequency -pass=50 -newcolumns \
+              | sddsprocess -pipe=in $tmpRoot.this \
+              "-define=parameter,rippleOmega,c_mks $rippleWavelength 1e6 / / 2 * pi *,units=Hz" \
+              "-define=parameter,rippleAmplitude,$rippleAmplitude 100 /" \
+              "-redefine=column,frequency,frequency 0 > ? frequencySmoothed : 0 $ " \
+              "-redefine=column,frequency,frequency 1 t rippleOmega * cos rippleAmplitude * + *"} results]} {
+    puts "Error5: $results"
+    exit 1
+}
+if $debug {
+    exec sddsplot -column=t,frequency $tmpRoot.this "-title=time distribution"
+}
+
+# slice the beam up and compute slice emittances
+if [catch {exec sddssort $tmpRoot.inp -pipe=out -column=t \
+             | sddsbreak -rowlimit=1000 -pipe \
+             | sddsprocess -pipe "-test=parameter,n_rows 10 >" "-test=parameter,i_page 10 > i_page 90 < &&" \
+             | sddsanalyzebeam -pipe \
+             | sddsprocess -pipe -process=en?,median,%sMedian \
+             | sdds2stream -pipe -parameter=enxMedian,enyMedian} emitList] {
+    puts "$emitList"
+    exit 1
+}
+if $debug {
+    puts stdout "Mean slice emittances: $emitList"
+    flush stdout
+}
+APSSetVarsFromList -variableList "enx eny" -valueList $emitList
+
+# find the projected twiss parameters (which LCLS is matched to)
+if {[catch {exec sddsanalyzebeam $tmpRoot.inp -pipe=out \
+              | sdds2stream -pipe -column=betax,betay,alphax,alphay} results]} {
+    puts "Error6: $results"
+    exit 1
+}
+set betaList $results
+if $debug {
+    puts stdout "Twiss parameters: $betaList"
+    flush stdout
+}
+APSSetVarsFromList -variableList "betax betay alphax alphay" -valueList $betaList
+
+# make a gaussian distribution function (3 sigma)
+if {[catch {exec sddssequence -pipe=out -defi=z,type=double -sequence=begin=-3,end=3,delta=0.01 \
+              | sddsprocess -pipe=in $output.gdf  \
+              "-define=column,gaussianDF,z sqr -2 / exp"} results]} {
+    puts "Error7: $results"
+    exit 1
+}
+
+# Generate quiet samples from the longitudinal DF (for t) and the
+# gaussian DF for (x, xp, y, yp).
+# Set p = pAve for now.
+# Match beam to the right emittance and twiss parameters.
+if {[catch {exec sddssampledist -pipe=out -samples=$samples -seed=$seed \
+              -column=indep=t,df=frequency,output=t,units=s,haltonRadix=2,datafile=$tmpRoot.this,haltonOffset=$haltonOffset \
+              -column=indep=z,df=gaussianDF,output=x,units=m,haltonRadix=3,datafile=$output.gdf,factor=1e-4,haltonOffset=$haltonOffset  \
+              -column=indep=z,df=gaussianDF,output=xp,haltonRadix=5,datafile=$output.gdf,factor=1e-4,haltonOffset=$haltonOffset  \
+              -column=indep=z,df=gaussianDF,output=y,units=m,haltonRadix=7,datafile=$output.gdf,factor=1e-4,haltonOffset=$haltonOffset  \
+              -column=indep=z,df=gaussianDF,output=yp,haltonRadix=11,datafile=$output.gdf,factor=1e-4,haltonOffset=$haltonOffset  \
+              -column=indep=z,df=gaussianDF,output=delta1,haltonRadix=13,datafile=$output.gdf,haltonOffset=$haltonOffset  \
+              | sddsprocess -pipe -define=col,p,$pAve \
+              | sddssort -pipe=in -column=t $tmpRoot.partial0} results]} {
+    puts "Error8: $results"
+    exit 1
+}
+if $debug {
+    exec sddsplot -column=t,p -graph=dot $tmpRoot.partial0 "-title=longitudinal phase space step 1"
+}
+
+if $betaSlices<=1 {
+    if {[catch {exec sddsmatchtwiss $tmpRoot.partial0 $tmpRoot.partial \
+                  -xplane=beta=$betax,alpha=$alphax,nemit=$enx \
+                  -yplane=beta=$betay,alpha=$alphay,nemit=$eny} results]} {
+        puts "Error9: $results"
+        exit 1
+    }
+    file delete $tmpRoot.partial0
+} else {
+    catch {file delete $tmpRoot.partial}
+    file rename $tmpRoot.partial0 $tmpRoot.partial
+}
+if $debug {
+    exec sddsplot -column=t,p -graph=dot $tmpRoot.partial "-title=longitudinal phase space step 2"
+}
+
+# Generate value for standard deviation of p for each particle location.
+if {[catch {exec sddsinterp $tmpRoot.pStDev $tmpRoot.pStDevP \
+              -column=tAve,pStDev -fileValues=$tmpRoot.partial,column=t -order=2} results]} {
+    puts "Error10: $results"
+    exit 1
+}
+if $debug {
+    exec sddsplot -column=tAve,pStDev -graph=dot $tmpRoot.pStDevP "-title=longitudinal phase space step 3 (stand. dev. of p)"
+}
+
+# Interpolate <p>(t) at each particle location.
+# Xref in the standard deviation of p, plus (x, xp, y, yp).
+# Add the energy spread.
+
+if {[catch {exec sddsinterp $tmpRoot.eval -pipe=out \
+              -column=t,p -fileValues=$tmpRoot.partial,column=t -order=2 \
+              | sddsxref $tmpRoot.pStDevP -pipe -take=pStDev \
+              | sddsxref $tmpRoot.partial -pipe -take=* \
+              | sddsprocess -pipe \
+              "-define=parameter,rippleAmplitude,$rippleAmplitude,units=%" \
+              "-define=parameter,rippleWavelength,$rippleWavelength,units=\$gm\$rm" \
+              "-define=parameter,energyMod,$energyMod 100 /" \
+              "-define=parameter,energyModOmega,2 pi * c_mks * 1e-6 /,units=s" \
+              "-redefine=column,p,p pStDev delta1 * + energyModOmega t * sin energyMod * 1 + *" \
+              "-define=column,particleID,i_row,type=long" \
+              | sddsconvert -pipe=in $output \
+              -delete=column,pStDevP,delta1} results]} {
+    puts "Error11: $results"
+    exit 1
+}
+if $debug {
+    exec sddsplot $output -column=t,p -graph=dot "-title=output longitudinal phase space"
+}
+
+if $betaSlices>1 {
+    # quick-and-dirty implementation of beta, alpha variation along the bunch
+    puts stdout "Adding slice-to-slice Twiss parameter variation..."
+    set rootname [file root $output]
+
+    # split the output file into many parts 
+    if {[catch {exec sdds2stream -rows=bare $output} results]} {
+        puts "Error12: $results"
+        exit 1
+    }
+    set np $results
+    set sliceNp [expr $np/$betaSlices]
+    if {[catch {exec sddssort $output -column=t -pipe=out \
+                  | sddsbreak -rowlimit=$sliceNp -pipe \
+                  | sddsprocess -pipe=in "-test=param,n_rows 10 >" $rootname-grouped.sdds} results]} {
+        puts "Error13: $results"
+        exit 1
+    }
+    if {[catch {exec sddssplit $rootname-grouped.sdds -rootname=$rootname-split- -extension=sdds} results]} {
+        puts "Error14: $results"
+        exit 1
+    }
+
+    # compute and retriev slice parameters from input file
+    if {[catch {exec sdds2stream -rows=bare $tmpRoot.inp} results]} {
+        puts "Error15: $results"
+        exit 1
+    }
+    set np $results
+    set sliceNp [expr $np/$betaSlices]
+    if {[catch {exec sddssort $tmpRoot.inp -column=t -pipe=out \
+                  | sddsbreak -rowlimit=$sliceNp -pipe \
+                  | sddsprocess -pipe "-test=param,n_rows 10 >" \
+                  | sddsanalyzebeam -pipe=in $rootname.sliceTwiss} results]} {
+        puts "Error16: $results"
+        exit 1
+    }
+    if {[catch {exec sdds2stream -column=betax $rootname.sliceTwiss} results]} {
+        puts "Error17: $results"
+        exit 1
+    }
+    set betaxList $results
+    if {[catch {exec sdds2stream -column=alphax $rootname.sliceTwiss} results]} {
+        puts "Error18: $results"
+        exit 1
+    }
+    set alphaxList $results
+    if {[catch {exec sdds2stream -column=betay $rootname.sliceTwiss} results]} {
+        puts "Error19: $results"
+        exit 1
+    }
+    set betayList $results
+    if {[catch {exec sdds2stream -column=alphay $rootname.sliceTwiss} results]} {
+        puts "Error20: $results"
+        exit 1
+    }
+    set alphayList $results
+    if {[catch {exec sdds2stream -column=enx $rootname.sliceTwiss} results]} {
+        puts "Error21: $results"
+        exit 1
+    }
+    set enxList $results
+    if {[catch {exec sdds2stream -column=eny $rootname.sliceTwiss} results]} {
+        puts "Error22: $results"
+        exit 1
+    }
+    set enyList $results
+
+    file delete $rootname.sliceTwiss
+    file delete $rootname-grouped.sdds
+
+    # Loop over all slices and transform beam transverse phase space
+    set fileList [lsort [glob $rootname-split-???.sdds]]
+    set newList ""
+    foreach betax $betaxList alphax $alphaxList betay $betayList alphay $alphayList \
+      enx $enxList eny $enyList filename $fileList {
+          puts stdout "Working on $filename -xplane=beta=$betax,alpha=$alphax,nemit=$enx -yplane=beta=$betay,alpha=$alphay,nemit=$eny"
+          flush stdout
+          if {[catch {exec sddsmatchtwiss $filename [file rootname $filename].matched \
+                        -xplane=beta=$betax,alpha=$alphax,nemit=$enx \
+                        -yplane=beta=$betay,alpha=$alphay,nemit=$eny} results]} {
+              puts "Error23: $results"
+              exit 1
+          }
+          lappend newList [file rootname $filename].matched 
+          file delete $filename
+    }
+
+    # combine everything and clean up
+    if {[catch {eval exec sddscombine $newList -merge -overwrite $rootname.new} results]} {
+        puts "Error24: $results"
+        exit 1
+    }
+    eval file delete -force $newList
+    # replace the old output file
+    file delete $output
+    exec sddsxref $rootname.new $tmpRoot.inp -pipe=out -leave=* -transfer=parameter,tAve \
+        | sddsprocess -pipe=in $output "-redefine=column,t,t tAve +,units=s" 
+} else {
+    exec sddsxref $output $tmpRoot.inp -pipe=out -leave=* -transfer=parameter,tAve \
+      | sddsprocess -pipe=in $tmpRoot.out "-redefine=column,t,t tAve +,units=s" 
+    file delete $output
+    file rename $tmpRoot.out $output
+}
+
+
+if $debug {
+    exec sddsplot -sparse=10 -col=t,p $input $output -graph=dot,vary -separate -same &
+}
+
+eval file delete -force $tmpRoot.pStDevP $tmpRoot.partial $output.gdf $tmpRoot.fit $tmpRoot.eval $tmpRoot.pStDev $tmpRoot.this $tmpRoot.inp
+
+if [string length $semaphore] {
+    set fd [open $semaphore w]
+    close $fd
+}
+
+exit 0

@@ -1,0 +1,81 @@
+! Second step with zeroth harmonic to adjust ey
+
+&semaphores
+        failed = %s.failed
+        done = %s.done
+&end
+
+&run_setup
+	lattice = <lattice>,
+	use_beamline = <beamline>
+	p_central_mev = <pCentralMeV>,
+	default_order = <order>,
+        final = %s.finOpt
+        parameters = %s-final.param
+	suppress_parameter_defaults = 1
+        rootname = <rootname>
+	search_path = ". multipoleData/workingConfiguration septumFiles kickmaps" 
+&end
+
+&twiss_output
+        matched = 1
+        radiation_integrals = 1
+&end
+
+&twiss_output
+        matched = 1
+        radiation_integrals = 1
+        output_at_each_step = 1
+&end
+
+&moments_output
+        matched = 1,
+        equilibrium = 1,
+        radiation = 1,
+        output_at_each_step = 1
+&end
+
+&closed_orbit
+        fixed_length = 1
+&end
+
+&load_parameters
+        filename = <startingParameters>,
+        force_occurence_data = 1
+        change_defined_values = 1
+	allow_missing_parameters = 1
+&end
+
+&alter_elements name=<diagnostic0>, item=FITPOINT, value=1 &end
+
+&run_control &end
+
+&steering_element name = <hcPattern>, element_type = *HKICK, item = KICK, tweek = 1e-6, plane = "h" &end
+&steering_element name = <vcPattern>, element_type = *VKICK, item = KICK, tweek = 1e-6, plane = "v" &end
+
+&correct
+    mode = "orbit", method = "global",
+    verbose = 0, n_iterations = 10, n_xy_cycles = 4,
+    correction_fraction[0] = 2*0.5,
+    fixed_length = <fixedLength>,
+    fixed_length_matrix = <fixedLength>
+    prezero_correctors = 0,
+    trajectory_output = %s-correction.orb
+    closed_orbit_accuracy = 1e-9
+    closed_orbit_iterations = 500
+    closed_orbit_iteration_fraction = 0.5
+&end
+
+&optimization_setup
+        n_evaluations = 1500
+        n_passes = 3
+        n_restarts = 0
+        verbose = 1
+        log_file = /dev/tty
+        tolerance = 1e-12
+        target = 1e-6
+&end
+
+&optimization_term
+        term = "<diagnostic>.s33m <diagnostic>.s44m * <diagnostic>.s34m sqr - sqrt 1e12 * <eyTarget> 1 sene" &end
+

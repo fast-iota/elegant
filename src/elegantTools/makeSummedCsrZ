@@ -1,0 +1,93 @@
+#!/bin/sh  
+# \
+exec oagtclsh "$0" "$@"
+
+if {![info exists env(OAG_TOP_DIR)] || [string length $env(OAG_TOP_DIR)]==0} {
+    set env(OAG_TOP_DIR) /usr/local
+}
+set auto_path [linsert $auto_path 0  $env(OAG_TOP_DIR)/oag/apps/lib/$env(HOST_ARCH)]
+
+APSStandardSetup
+
+set usage "usage: makeSummedCsrZ -output <filename> -paramFile <filename> \[-fmax <Hz>(100e9)] \[-log2N <base-2LogOfNumberOfPoints>(14)] \[-height <meters>(0=free space)]\nMakes a combined CSR impedance for lattice that may have several types of dipoles.\nUses steady-state formula with parallel plate shielding or free-space limit for each unique bending radius, then sums."
+set paramFile ""
+set output ""
+set height 0.0
+set fmax 100e9
+set log2N 14
+set args $argv
+if {[APSStrictParseArguments {output paramFile fmax log2N height}] || ![string length $paramFile] || ![string length $output] || [expr $height<0]} {
+    puts stderr "$usage"
+    exit 1
+}
+
+if ![file exists $paramFile] {
+    puts stderr "not found: $paramFile"
+    exit 1
+}
+ 
+if [file exists $output] {
+    puts stderr "in use: $output"
+    exit 1
+}
+
+# Find the dipole magnet lengths and angles
+exec sddsprocess $paramFile $output.L -match=column,ElementType=*BEN* -match=column,ElementParameter=L \
+  -print=column,ElementTag,%s\#%ld,ElementName,ElementOccurence
+exec sddsprocess $paramFile -pipe=out -match=column,ElementType=*BEN* -match=column,ElementParameter=ANGLE \
+  -print=column,ElementTag,%s\#%ld,ElementName,ElementOccurence \
+  "-define=column,Angle,ParameterValue abs" \
+  | sddsxref $output.L -pipe -match=ElementTag -take=ParameterValue -rename=column,ParameterValue=L \
+  | sddsprocess -pipe \
+  -filter=column,Angle,0,0,! \
+  "-define=column,rho,L Angle abs /,units=m" \
+  | sddssort -pipe -column=rho \
+  | sddsbreak -pipe -change=rho \
+  | sddsprocess -pipe -process=ElementName,first,%s -process=Angle,sum,AngleContribution \
+  -process=rho,first,%s \
+  | sddscollapse -pipe \
+  | sddsprocess -pipe=in $output.bends -process=AngleContribution,sum,TotalAngle
+
+file delete $output.L
+
+if [catch {sdds load $output.bends data} result] {
+    puts stderr "$result"
+    exit 1
+}
+file delete $output.bends
+
+set total [lindex $data(Parameter.TotalAngle) 0]
+set pi [expr 4*atan(1)]
+set ratio [expr $total/(2*$pi)]
+set multiplier 1
+if [expr abs($ratio-1)>1e-6] {
+    set multiplier [expr int($ratio+0.5)]
+    puts stdout "Warning: Multiplying lattice by $multiplier to make complete ring"
+    flush stdout
+}
+
+set index 0
+set fileList ""
+set n [expr pow(2, $log2N)]
+foreach rho [lindex $data(Column.rho) 0] angle [lindex $data(Column.AngleContribution) 0] {
+    puts stdout "Working on rho=$rho, angle=$angle"
+    flush stdout
+    if [expr $height==0] {
+        # formula from Handbook of Accelerator Physics and Engineering.
+        # the sign of the imaginary part is changed to match elegant's convention
+        exec sddssequence -pipe=out -define=f,units=Hz,type=double -sequence=begin=0,end=$fmax,number=16385 \
+          | sddsprocess -pipe=in $output.$index \
+          "-define=parameter,Coef,120 pi * 2 3 / lngam exp * 2 / pi / 3 c_mks * $rho sqr * 3 rec pow / $rho $angle * *" \
+          "-define=col,ZReal,Coef pi 6 / cos * f 2 * pi * 3 rec pow *,units=Ohms" \
+          "-define=col,ZImag,Coef pi 6 / sin * f 2 * pi * 3 rec pow * chs,units=Ohms" 
+    } else {
+        exec csrImpedance $output.$index -radius=$rho -angle=$angle -frequencyLimit=maximum=$fmax,minimum=0 -n=$log2N -height=$height
+    }
+    lappend fileList $output.$index
+    incr index
+}
+
+eval exec sddscombine $fileList -pipe=out \
+  | sddsenvelope -pipe=in $output -copy=f -sum=1,Z*
+
+eval file delete -force $fileList

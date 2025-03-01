@@ -1,0 +1,208 @@
+#!/bin/sh  
+# \
+exec oagtclsh "$0" "$@"
+
+# $Log: not supported by cvs2svn $
+# Revision 1.2  2010/01/15 15:10:47  borland
+# Various refinements and improvements after testing.
+#
+
+if {![info exists env(OAG_TOP_DIR)]} { set env(OAG_TOP_DIR) /usr/local }
+set auto_path [linsert $auto_path 0  $env(OAG_TOP_DIR)/oag/apps/lib/$env(HOST_ARCH)]
+
+APSStandardSetup
+
+set usage {usage: makeSkewResponseCP -rootname <string> -lattice <filename> -input <parameterFile> -beamline <string> -skewPattern <string> -bpmPattern <string> -hcPattern <string> -vcPattern <string> -tweek <value> -order {1|2} -svalues <numberToKeep> -verbosity <integer>(1) -energy <MeV> -etayWeight <value> -fixedLength {0|1} [-submitCommand <command>]}
+set lattice ""
+set rootname ""
+set input ""
+set beamline RINGRF
+set skewPattern "S*QS"
+set bpmPattern {*[AB]:P[24]}
+set hcPattern "*A:H2"
+set vcPattern "*A:V2"
+set tweek 0.001
+set order 2
+set fixedLength 0
+set srcDir $OAGGlobal(OAGAppConfigDataDirectory)/elegant
+set svalues 10000
+set queue 1
+set submitCommand csub
+set verbosity 1
+set energy 7e3
+set etayWeight 1
+set args $argv
+if {[APSStrictParseArguments {input lattice beamline rootname skewPattern bpmPattern hcPattern vcPattern tweek srcDir order svalues queue verbosity energy etayWeight submitCommand fixedLength}] || \
+    ![string length $lattice] || ![string length $rootname]} {
+    return -code error "$usage"
+}
+if {[string length $input] && ![file exists $input]} {
+    return -code error "not found: $input"
+}
+if {![file exists $lattice]} {
+    return -code error "not found: $lattice"
+}
+
+# Do a basic run
+catch {exec elegant $srcDir/skewResponse0Template.ele -macro=rootname=${rootname}0,lattice=$lattice,beamline=$beamline,order=$order,pCentralMeV=$energy} result
+if ![file exists ${rootname}0.done] {
+    puts stderr "$result"
+    exit 1
+}
+APSAddToTempFileList ${rootname}0.done ${rootname}0.twi
+
+set hasCsub 0
+if $queue {
+    set hasCsub 1
+    catch {eval exec $submitCommand} result
+    if [string match "*no such file*" $result] {
+        puts stderr "No csub detected: using serial mode"
+        set hasCsub 0
+    }
+}
+
+# Make skew response matrix for cross-plane orbit response matrix
+# For each skew, we submit a job that computes the twiss parameters (for etay) and
+# cross-plane matrix for K1=tweek and K1=-tweek.
+set doneList ""
+set index 0
+foreach skew [exec sddsprocess ${rootname}0.twi -pipe=out -match=col,ElementName=$skewPattern -match=col,ElementType=*QUAD* | sdds2stream -col=ElementName -pipe] \
+    occurence [exec sddsprocess ${rootname}0.twi -pipe=out -match=col,ElementName=$skewPattern -match=col,ElementType=*QUAD* | sdds2stream -col=ElementOccurence -pipe] {
+
+    set fd [open ${rootname}-job$index.csh w]
+    puts $fd "elegant $srcDir/skewResponseCPTemplate.ele -macro=pCentralMeV=$energy,rootname=$rootname,skew=$skew,occurence=$occurence,tweek=$tweek,lattice=$lattice,hcPattern=$hcPattern,vcPattern=$vcPattern,bpmPattern=$bpmPattern,beamline=$beamline,input=$input,order=$order,fixedLength=$fixedLength > $rootname-$skew-$occurence.log"
+    close $fd
+
+    exec chmod +x ${rootname}-job$index.csh
+    APSAddToTempFileList ${rootname}-job$index.csh
+    if $hasCsub {
+        catch {eval exec $submitCommand ${rootname}-job$index.csh} result
+        if $verbosity { puts stderr "$result" }
+    } else {
+        if $verbosity {puts stderr "Running $rootname-job$index"}
+        catch {exec ${rootname}-job$index.csh} result
+    }
+    
+    lappend doneList ${rootname}-$skew-$occurence.done
+    incr index
+}
+
+# Wait for the jobs to finish
+
+set undone [llength $doneList]
+set undoneList $doneList
+while {$undone} {
+    if $verbosity { puts stderr "Waiting for $undone runs... ($undoneList)" }
+    set undone 0
+    set undoneList ""
+    foreach done $doneList {
+	if ![file exists $done] {
+	    incr undone 1
+            lappend undoneList $done
+	}
+    }
+    if $undone {
+        after 15000
+    }
+}
+catch {eval APSAddToTempFileList [glob -nocomplain ${rootname}-job*.csh.o*]}
+APSDeleteTempFiles
+
+# Process job for each skew
+foreach done $doneList {
+    set skew [os editstring Z-S/-/100D $done]
+    set occurence [os editstring 2Z-%/.done// $done]
+    if $verbosity { puts stderr "Working on $skew $occurence" }
+    set index 0
+    set fileList ""
+    foreach pattern [list $vcPattern $hcPattern] type {hv vh} Type {HV VH} {
+        # Process cross-plane matrix 
+	set rmFile0 [os editstring %/.done/.${type}rm0/ $done]
+	set rmFile1 [os editstring %/.done/.${type}rm1/ $done]
+	set corList [APSGetSDDSNames -class column -fileName $rmFile0]
+        set count 0
+	foreach cor $corList {
+            # Process specific corrector data
+            # Make a file with the response in a single column
+	    if ![string match $pattern $cor] continue
+            if $verbosity>1 { puts stderr "Processing data for $cor ($rmFile0, $rmFile1)" }
+	    if [catch {exec sddsxref $rmFile1 $rmFile0 -pipe=out -take=$cor -rename=column,${cor}=${cor}Ref \
+                         | sddsprocess -pipe "-print=col,ElementTag,%s_${cor}_${skew}_${occurence},BPMName" \
+                         "-define=col,$skew#$occurence,$cor ${cor}Ref -" \
+                         | sddsconvert -pipe=in ${rootname}-rvector.$index "-retain=col,$skew#$occurence,ElementTag" } result] {
+		puts stderr "$result"
+		exit 1
+	    }
+            incr count
+	    lappend fileList ${rootname}-rvector.$index
+	    incr index
+        }
+        if $count==0 {
+            puts stderr "No correctors selected for $Type ($pattern) from $corList"
+        }
+    }
+    # Process etay response
+    set rmFile0 [os editstring %/.done/.twi0/ $done]
+    set rmFile1 [os editstring %/.done/.twi1/ $done]
+    exec sddsxref $rmFile1 $rmFile0 -pipe=out -take=etay -rename=column,etay=etay0 \
+      | sddsprocess -pipe -match=col,ElementName=$bpmPattern \
+      "-print=column,ElementTag,%s#%ld,ElementName,ElementOccurence" "-define=col,$skew#$occurence,etay etay0 -" \
+      | sddsconvert  -pipe=in ${rootname}-retay.$index  "-retain=column,ElementTag,$skew#$occurence" 
+    lappend fileList ${rootname}-retay.$index
+
+    # Combine all the responses for this skew quad into a single-column file.
+    eval exec sddscombine $fileList ${rootname}-$skew-$occurence.resp -merge -overwrite -delete=column,ElementName,ElementOccurence
+    eval file delete -force $fileList
+    lappend respList ${rootname}-$skew-$occurence.resp
+}
+
+# Combine the single-column response files into a matrix
+# The size of the matrix is (BxCx2+B) by S, where B is the number of BPMs, C the number of correctors per plane,
+# and S the number of skews
+
+if $verbosity { puts stderr "Combining and inverting" }
+eval exec sddsxref $respList -pipe=out \
+    | sddsprocess -pipe=in "{-redefine=col,%s,%s $tweek / 2 /,select=${skewPattern}#*}" ${rootname}.qsResp \
+    {"-print=parameter,skewPattern,$skewPattern"} \
+    {"-print=parameter,bpmPattern,$bpmPattern"} \
+    {"-print=parameter,hcPattern,$hcPattern"} \
+    {"-print=parameter,vcPattern,$vcPattern"} \
+    {"-print=parameter,lattice,$lattice"} \
+    {"-print=parameter,beamline,$beamline"} \
+    "{-define=parameter,fixedLength,$fixedLength,type=short}"  \
+    "{-define=parameter,etayWeight,$etayWeight,type=double}" \
+    "{-define=parameter,energy,$energy,units=MeV}"  \
+    "{-define=parameter,order,$order,type=short}" 
+
+eval file delete -force $respList
+
+set n1 [exec sddsprocess ${rootname}.qsResp -pipe=out -match=col,ElementTag=*_*_*_* | sdds2stream -pipe -rows=bare]
+
+exec sddsconvert ${rootname}.qsResp -pipe=out -retain=col,ElementTag \
+    | sddsprocess -pipe=in ${rootname}.weight \
+    "-define=col,Weight,i_row $n1 < ? 1 : $etayWeight $" 
+
+# Invert the matrix
+
+exec sddspseudoinverse ${rootname}.qsResp -pipe=out -sFile=${rootname}.qsSval -largestSingularValues=$svalues \
+    -weight=${rootname}.weight,name=ElementTag,value=Weight \
+    | sddsprocess -pipe=in ${rootname}.qsInv \
+    "-print=parameter,skewPattern,$skewPattern" \
+    "-print=parameter,bpmPattern,$bpmPattern" \
+    "-print=parameter,hcPattern,$hcPattern" \
+    "-print=parameter,vcPattern,$vcPattern" \
+    "-print=parameter,lattice,$lattice" \
+    "-print=parameter,beamline,$beamline" \
+    "-define=parameter,fixedLength,$fixedLength,type=short"  \
+    "-define=parameter,etayWeight,$etayWeight,type=double" \
+    "-define=parameter,energy,$energy,units=MeV"  \
+    "-define=parameter,order,$order,type=short" 
+
+foreach done $doneList {
+    catch {eval file delete -force [glob -nocomplain [file root $done].*]}
+}
+
+
+
+
+

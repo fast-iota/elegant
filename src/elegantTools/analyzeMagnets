@@ -1,0 +1,195 @@
+#!/bin/sh  
+# \
+exec oagtclsh "$0" "$@"
+
+if {![info exists env(OAG_TOP_DIR)]} { set env(OAG_TOP_DIR) /usr/local }
+set auto_path [linsert $auto_path 0  $env(OAG_TOP_DIR)/oag/apps/lib/$env(HOST_ARCH)]
+
+APSStandardSetup
+
+set usage {usage: analyzeMagnets -rootname <string> [-H <T-m>] [-beamCurrent <mA>] [-angleOffset <radians>] [-latex 0] [-xls 0] [-caption <string>] [-useGroupData 1 | -groups <filename>]}
+set H 0
+set rootname ""
+set caption ""
+set groups ""
+set beamCurrent 200.0
+set useGroupData 0
+set angleOffset 0.0
+set latex 1
+set xls 1
+set args $argv
+if {[APSStrictParseArguments {rootname H xls latex angleOffset caption useGroupData groups beamCurrent angleOffset}] || ![string length $rootname]} {
+    return -code error "$usage"
+}
+if {$useGroupData && [string length $groups]} {
+    puts stderr "Error: give either -useGroupData 1 or -groups <filename>, not both"
+    puts stderr "These options are used to group sub-elements into elements"
+    puts stderr "-useGroupData 1 ==> use ElementGroup data from the .param file"
+    puts stderr "-groups <filename> ==> use ElementName and PartOfElement columns from <filename>"
+}
+
+set found 0
+foreach ext {param paramOpt} {
+    if [file exists $rootname.$ext] {
+        set paramFile $rootname.$ext
+        set found 1
+        break
+    }
+}
+if !$found {
+    return -code error "param and paramOpt files not found"
+}
+
+if ![file exists $rootname.twi] {
+    return -code error "twi file not found"
+}
+if [expr $H==0] {
+    set pCentral [exec sdds2stream -parameter=pCentral $rootname.twi]
+    set H [expr -$pCentral*0.51099906e6/2.99792458e+08]
+} else {
+    set pCentral [expr -$H/(0.51099906e6/2.99792458e+08)]
+}
+
+if [string length $groups] {
+    exec sddsxref $paramFile $groups -pipe=out -match=ElementName -take=PartOfElement -reuse=row -nowarning \
+        | sddsprocess -pipe=in $paramFile.tmp1 -match=col,ElementType=MARK,! 
+} elseif $useGroupData {
+    exec sddsprocess $paramFile $paramFile.tmp1 -match=col,ElementType=MARK,! \
+        -print=col,PartOfElement,%s,ElementGroup
+} else {
+    exec sddsprocess $paramFile -pipe=out -match=col,ElementType=MARK,! \
+        | sddsbreak -pipe -change=ElementName \
+        | sddsprocess -pipe \
+        "-define=parameter,page,i_page,type=long" \
+        -print=column,PartOfElement,%s\#%ld,ElementName,page \
+        | sddscombine -pipe=in $paramFile.tmp1  -merge
+}
+
+
+foreach wc {*QUAD *SEXT *OCT} parameter {K1 K2 K3} type {Q S O} KnUnits {1/m^2 1/m^3 1/m^4} units {T/m T/m^2 T/m^3} units2 {T T/m T/m^2} typeName {Quad Sext Oct} {
+    set grad [os editstring %/K/B/ $parameter]
+
+    # Get the total length
+    if [catch {eval exec sddsprocess $paramFile.tmp1 -pipe=out -match=col,ElementType=$wc \
+                -match=column,ElementParameter=L \
+                -filter=col,ParameterValue,0,0,! \
+                | tee $paramFile.nz \
+                | sddsbreak -pipe -change=PartOfElement \
+                | sddsprocess -pipe -process=Element*,first,%s -process=ParameterValue,sum,Length \
+                -process=ParameterValue,count,PartCount \
+                -print=parameter,ElementTag,%s.%.0lf,ElementName,ElementOccurence \
+                -convert=parameter,Length,m,,1 \
+                | sddscollapse -pipe=in $paramFile.1} result] {
+        puts stderr "No results for $wc"
+        file delete $paramFile.nz $paramFile.1
+        continue
+    }
+ 
+
+    # Get the strength 
+    if [catch {eval exec sddsprocess $paramFile.tmp1 -pipe=out -match=col,ElementType=$wc -match=column,ElementParameter=$parameter \
+	-print=column,ElementTag,%s.%ld,ElementName,ElementOccurence \
+	-define=col,$parameter,ParameterValue,units=$KnUnits \
+	| sddsxref -pipe $paramFile.1 -nowarning -match=ElementTag -take=* \
+        | sddssort -pipe -column=ElementName -unique=count \
+	| sddsprocess -pipe=in $rootname-$type.sdds \
+	-process=Length,max,%sMax -process=Length,min,%sMin \
+	-process=$parameter,largest,${parameter}Largest \
+	"{-define=col,$grad,$parameter $H *,units=$units}" \
+	"{-define=col,${grad}L,$parameter $H * Length *,units=$units2}"} result] {
+	puts stderr "No results for $wc: $result"
+        continue
+    } else {
+	if ![string length $caption] {
+	    set caption1 "$typeName data for [pwd]/$rootname"
+	} else {
+	    set caption1 "$typeName data $caption"
+	}
+        if $latex {
+            exec sddsprintout -format=double=%10.3f $rootname-$type.sdds $rootname-$type.tex \
+              "-latex=booktable,longtable,caption=$caption1,group=PartOfElement" \
+              "-column=ElementName,label=Element Name" -column=Length -column=$parameter  -column=$grad  -col=${grad}L \
+                -col=IdenticalCount,label=Count
+        }
+        if $xls {
+            # Don't insist on the XLS output, since -xls option isn't available on all systems
+            catch {file delete -force $rootname-$type.xls}
+            catch {exec sddsconvert $rootname-$type.sdds -pipe=out -retain=col,ElementName,PartOfElement,Length,$parameter,$grad,${grad}L,IdenticalCount \
+                     -delete=param,* "-description=contents=$typeName magnet parameters,text=[pwd]/$rootname"  \
+                     | sdds2spreadsheet -pipe=in -excel $rootname-$type.xls}
+        }
+    }
+    file delete $paramFile.nz $paramFile.1
+}
+# bends
+eval exec sddsprocess $paramFile.tmp1 -pipe=out -match=col,ElementType=*BEN* \
+  -match=column,ElementParameter=L \
+  -filter=col,ParameterValue,0,0,! \
+  | sddsbreak -pipe -change=PartOfElement \
+  | sddsprocess -pipe -process=Element*,first,%s -process=ParameterValue,sum,Length \
+  -process=ParameterValue,count,PartCount \
+  -print=parameter,ElementTag,%s.%.0lf,ElementName,ElementOccurence \
+  -convert=parameter,Length,m,,1 \
+  | sddscollapse -pipe \
+  | sddsxref -pipe $rootname.twi -match=ElementName -take=s \
+  | sddssort -pipe=in -column=s $paramFile.1 
+
+exec sddsprocess $paramFile.tmp1 $rootname-B-K1 -match=col,ElementType=*BEN* \
+  -match=column,ElementParameter=K1 \
+  -print=column,ElementTag,%s.%ld,ElementName,ElementOccurence 
+exec sddsprocess $paramFile.tmp1 $rootname-B-K2 -match=col,ElementType=*BEN* \
+  -match=column,ElementParameter=K2 \
+  -print=column,ElementTag,%s.%ld,ElementName,ElementOccurence 
+
+eval exec sddsprocess $paramFile.tmp1 -pipe=out -match=col,ElementType=*BEN* -match=column,ElementParameter=ANGLE \
+  -print=column,ElementTag,%s.%ld,ElementName,ElementOccurence \
+  | sddsxref -pipe $paramFile.1 -match=ElementTag -take=Length,PartCount,s -nowarning \
+  | sddsxref -pipe $rootname-B-K1 -match=ElementTag -take=ParameterValue -rename=col,ParameterValue=K1 -nowarning \
+  | sddsxref -pipe $rootname-B-K2 -match=ElementTag -take=ParameterValue -rename=col,ParameterValue=K2 -nowarning \
+  | sddsprocess -pipe \
+    "{-define=param,I0,$beamCurrent,units=mA}" \
+    "{-define=param,E,$H c_mks * 1e9 /,units=GeV}" \
+    "{-define=col,Angle,ParameterValue PartCount *}" \
+    "{-define=column,rho,Angle 0 == ? 1e300 : Length Angle / $ }" "{-define=col,B,$H rho /,units=T}" \
+    "{-define=col,AngleDeg,Angle rtod,units=deg}" \
+    "{-define=col,B1,K1 $H *,units=T/m}" \
+    "{-define=col,B2,K2 $H *,units=T/m^2}" \
+    "{-define=col,B1L,B1 Length *,units=T}" \
+    "{-define=col,B2L,B2 Length *,units=T/m}" \
+    "{-define=col,Ec,0.665 E sqr * B * abs,units=keV}" \
+    "{-define=col,TotalPower,E 4 pow 8.846e4 * rho / I0 1e3 / * 2 / pi / Angle *,units=W}" \
+    "{-define=col,IntegratedPowerDensity,TotalPower Angle abs 1e-16 + / 1e3 /,units=W/mrad}" \
+    "{-define=col,PowerDensity,TotalPower Angle abs 1e-16 + / 21 * 32 / $pCentral * 1e6 /,units=W/mrad\$a2\$n}" \
+  | sddssort -pipe -column=ElementName -unique=count  \
+  | sddssort -pipe -column=s \
+  | sddsprocess -pipe=in $rootname-B.sdds \
+    "-define=param,AngleSumOffset,$angleOffset" \
+    "{-rpnexpression=0 sto previousSum}" \
+    "{-define=col,AngleSum,Angle previousSum + sto previousSum AngleSumOffset -}" \
+  -process=Ide*,sum,%sTotal \
+  -process=B,largest,BLargest -process=Length,min,%sMin -process=Length,max,%sMax \
+
+if $xls {
+    # Don't insist on the XLS output, since -xls option isn't available on all systems
+    catch {file delete -force $rootname-B.xls}
+    catch {exec sddsconvert $rootname-B.sdds -pipe=out -retain=col,ElementName,PartOfElement,Length,AngleDeg,rho,B,B1,B2,IdenticalCount \
+             -delete=param,* "-description=contents=Bend magnet parameters,text=[pwd]/$rootname"  \
+             | sdds2spreadsheet -pipe=in -excel $rootname-B.xls}
+}
+
+set typeName Bend
+if ![string length $caption] {
+    set caption1 "$typeName data for [pwd]/$rootname"
+} else {
+    set caption1 "$typeName data $caption"
+}
+if $latex {
+    exec sddsprintout -format=double=%10.3f $rootname-B.sdds $rootname-B.tex \
+      "-latex=booktable,longtable,caption=$caption1,group=PartOfElement" \
+      "-column=ElementName,label=Name" -column=Length,label=L "-column=AngleDeg,label=Angle" -column=B -col=B1 -col=B2 \
+      "-column=Ec,label=Crit.En." "-column=IntegratedPowerDensity,label=Int.Pow.Dens." \
+      "-column=PowerDensity,label=Pow.Dens." -col=IdenticalCount,label=Count
+}
+
+file delete -force $paramFile.1 $rootname-B1 $rootname-B-K1 $rootname-B-K2 $paramFile.tmp1
+

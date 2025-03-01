@@ -1,0 +1,44 @@
+#!/bin/bash
+
+#
+# Convert parmela text output to elegant particle input
+# M. Borland, 11/13/2017
+#
+# Parmela columns are assumed to be (x[cm], xp[mrad], y[cm], yp[mrad], phi[deg], W[MeV], particleID),
+# where phi is relative to some rf frequency (user must specify on commandline)
+# and W is the kinetic energy.
+#
+
+if [ $# -ne 3 ] ; then
+   echo "usage: parmela2elegant <inputFileName> <outputFileName> <frequencyInMHz>"
+   exit 1
+fi
+
+if [ ! -e $1 ] ; then
+    echo "not found: $1"
+    exit 1
+fi
+
+if [ -e $2 ] ; then
+    echo "filename in use: $2"
+    exit 1
+fi
+
+plaindata2sdds $1 -pipe=out -inputMode=ascii -outputMode=binary \
+               -noRowCount -skipLines=3 \
+               -column=x,double,units=cm \
+               -column=xp,double,units=mr \
+               -column=y,double,units=cm \
+               -column=yp,double,units=mr \
+               -column=phi,double,units=deg \
+               -column=W,double,units=MeV \
+               -column=particleID,long \
+    | sddsprocess -pipe=in $2 \
+                  -convert=column,[xy],m,cm,1e-2 \
+                  -convert=column,[xy]p,,mr,1e-3 \
+                  "-define=parameter,frf,$3 1e6 *,units=Hz" \
+                  "-define=column,t,phi 360 / frf /,units=s" \
+                  "-define=column,p,W mev / 1 + sqr 1 - sqrt"
+
+
+    

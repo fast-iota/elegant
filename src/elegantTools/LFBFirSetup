@@ -1,0 +1,122 @@
+#!/bin/sh  
+# \
+exec oagtclsh "$0" "$@"
+
+if {![info exists env(OAG_TOP_DIR)] || [string length $env(OAG_TOP_DIR)]==0} {
+    set env(OAG_TOP_DIR) /usr/local
+}
+set auto_path [linsert $auto_path 0  $env(OAG_TOP_DIR)/oag/apps/lib/$env(HOST_ARCH)]
+
+APSStandardSetup
+
+set usage {usage: LFBFirSetup -twiss <filename> {-voltage <MV> | -sigmat <ps> [-nus <value> | -fs <Hz>]} -harmonic <number>(1296) -terms <number>(30) -interval <turns>(1) -driver <name> -pickup <name> -output <filename>}
+set twiss ""
+set harmonic 1296
+set voltage 0
+set output ""
+set driver ""
+set pickup ""
+set terms 30
+set interval 1
+set sigmat 0
+set nus -1
+set fs -1
+set args $argv
+if {[APSStrictParseArguments {twiss harmonic voltage sigmat nus fs driver pickup output terms interval}] || ![string length $output] || ![string length $driver] || ![string length $twiss] || ![string length $pickup] || [expr $terms>30]} {
+    return -code error "$usage"
+}
+
+if [file exists $output] {
+   return -code error "in use: $output"
+}
+if ![file exists $twiss] {
+    return -code error "not found: $twiss"
+}
+
+set C [exec sddsprocess $twiss -pipe=out -process=s,max,sMax | sdds2stream -pipe -parameter=sMax]
+set E0 [expr [exec sdds2stream -parameter=pCentral $twiss]*0.51099906]
+set alphac [exec sdds2stream -parameter=alphac $twiss]
+set frf [exec sddsprocess $twiss -pipe=out -process=s,max,sMax "-define=param,frf,c_mks pCentral beta.p * $harmonic * sMax /" | sdds2stream -pipe -parameter=frf]
+
+set pi [expr 4*atan(1)]
+
+if [expr $voltage>0] {
+    set k [expr 2*$pi*$harmonic/$C]
+    set U0 [exec sdds2stream -parameter=U0 $twiss]
+    set phis [expr $pi-asin($U0/$voltage)]
+    set Vt [expr $voltage/$E0*cos($phis)]
+    set mus [expr acos(1 + 2*$pi*$alphac*$harmonic*$Vt/2)]
+    set betaz [expr 2*$pi*$alphac*$harmonic/sin($mus)]
+} else {
+    set sigmat [expr $sigmat/1e12]
+    set c 2.997924580000000e+08
+    set sigmaDelta [exec sdds2stream -parameter=Sdelta0 $twiss]
+    set betaz [expr 2*$pi*$frf*$sigmat/$sigmaDelta]
+    if [expr $nus>0] {
+	set mus [expr 2*$pi*$nus]
+    } elseif [expr $fs>0] {
+	set mus [expr 2*$pi*$fs/($frf/$harmonic)]
+    } else {
+	set mus [expr asin($alphac*$harmonic*$sigmaDelta/($frf*$sigmat))]
+    }
+}
+
+puts stderr "nus: [expr $mus/(2*$pi)]"
+puts stderr "betaz: $betaz"
+
+set sum1 0.0
+set sum2 0.0
+for {set m 1} {$m<$terms} {incr m} {
+    set phi [expr $interval*$m*$mus]
+    set sum1 [expr $sum1+sin($phi)*cos($phi)]
+    set sum2 [expr $sum2+sin($phi)*sin($phi)]
+}
+set sum2 [expr $sum2*$betaz]
+
+exec sddssequence -pipe=out -define=m,type=long -sequence=begin=0,n=$terms,delta=1 \
+     | sddsprocess -pipe=in $output.1 \
+     "-define=parameter,mus,$mus" \
+     "-define=parameter,denominator,$sum2" \
+     "-print=column,ElementName,$driver" \
+     "-print=column,ElementParameter,A%ld,m" \
+     "-define=column,ParameterValue,m 0 == ? $sum1 : m $interval * mus * sin chs $ denominator /"
+
+exec sddsmakedataset $output.2 \
+     -column=ElementName,type=string -data=$driver,$pickup \
+     -column=ElementParameter,type=string -data=UPDATE_INTERVAL,REFERENCE_FREQUENCY \
+     -column=ParameterValue,type=double -data=$interval,$frf \
+     -column=m,type=long -data=-1,-1
+
+exec sddssequence -pipe=out -define=m,type=long -seq=begin=0,end=29,delta=1 \
+    | sddsprocess -pipe=in $output.3 \
+    "-print=column,ElementName,$pickup" \
+    "-print=column,ElementParameter,A%ld,m"  \
+    "-define=column,ParameterValue,i_row 0 == ? 1 : 0 $ " 
+
+set effectiveDelay [expr $terms*$interval]
+
+if $terms!=30 {
+    exec sddssequence -pipe=out -define=m,type=long -seq=begin=$terms,end=29,delta=1 \
+      | sddsprocess -pipe=in $output.4 \
+      "-print=column,ElementName,$driver" \
+      "-print=column,ElementParameter,A%ld,m"  \
+      "-define=column,ParameterValue,0"
+    set fileList [list $output.1 $output.2 $output.3 $output.4]
+} else {
+    set fileList [list $output.1 $output.2 $output.3]
+}
+eval exec sddscombine $fileList -merge -pipe=out \
+    | sddsprocess -pipe=in $output \
+    "-define=parameter,Terms,$terms,type=long" \
+    "-define=parameter,Interval,$interval,type=long" \
+    "-define=parameter,EffectiveDelay,$effectiveDelay,type=long" \
+    "-define=parameter,betaz,$betaz" \
+    "-define=parameter,HarmonicNumber,$harmonic,type=long" \
+    "-define=parameter,Voltage,$voltage,units=MV" \
+    "-define=parameter,sigmat,$sigmat,units=ps,type=double" \
+    "-print=parameter,TwissFile,$twiss"
+
+eval file delete $fileList
+
+
+

@@ -1,0 +1,210 @@
+#!/bin/sh  
+# \
+exec oagtclsh "$0" "$@"
+
+# Compute bremsstrahlung lifetime from momentum aperture statistics
+
+if {![info exists env(OAG_TOP_DIR)]} { set env(OAG_TOP_DIR) /usr/local }
+set auto_path [linsert $auto_path 0  $env(OAG_TOP_DIR)/oag/apps/lib/$env(HOST_ARCH)]
+
+APSStandardSetup
+
+set allowedNameList [list Min Max Median ""]
+for {set p 5} {$p<=100} {incr p 5} {
+    lappend allowedNameList ${p}Percentile
+}
+
+set knownGasMixList [list APS N2]
+
+set usage {usage: bremsstrahlungLifetime -aperture <mmapEnvFile> -name <string>(10Percentile) -output <filename> [-pressure nTorr(2)] {-gasMix {APS|N2} | -customGas <gas>:<frac>,...}}
+append usage "\nKnown gases for custom gas list are H2 H2O CH4 CO CO2 N2"
+set aperture ""
+set name 10Percentile
+set output ""
+set pressure -1
+set gasMix ""
+set customGas ""
+set args $argv
+if {[APSStrictParseArguments {aperture name output pressure gasMix customGas}] || ![string length $aperture] || ![string length $output]} {
+    return -code error "$usage"
+}
+
+if [string length $gasMix] {
+    if [lsearch -exact $knownGasMixList $gasMix]==-1 {
+        return -code error "Unknown gas mix \"$gasMix\". Use one of [join $knownGasMixList ,]"
+    }
+} elseif ![string length $customGas] {
+    return -code error "$usage"
+}
+
+if ![file exists $aperture] {
+   return -code error "not found: $aperture"
+}
+if [file exists $output] {
+   return -code error "in use: $output"
+}
+if [lsearch -exact $allowedNameList $name]==-1 {
+    return -code error "not valid: $name"
+}
+
+
+set tmpRoot [APSTmpString]
+
+# Gas fractional pressures
+if [string length $gasMix] {
+    switch $gasMix {
+        N2 {
+            set fGas(H2) 0.
+            set fGas(H2O) 0.
+            set fGas(CH4) 0.
+            set fGas(CO) 0.
+            set fGas(CO2) 0.
+            set fGas(N2) 1.0
+        }
+        default {
+            set fGas(H2) 0.65
+            set fGas(H2O) 0.02
+            set fGas(CH4) 0.07
+            set fGas(CO) 0.22
+            set fGas(CO2) 0.04
+            set fGas(N2) 0.0
+        }
+    }
+} else {
+    set knownGasList [list H2 H2O CH4 CO CO2 N2]
+    set fracSum 0
+    foreach pair [split $customGas " ,"] {
+        set gas [lindex [split $pair :] 0]
+        set frac [lindex [split $pair :] 1]
+        if [lsearch -exact $knownGasList $gas]==-1 {
+            puts stderr "Unknown gas: $gas\nKnown gases are [join $knownGasList ,]"
+            exit 1
+        }
+        set fGas($gas) $frac
+        set fracSum [expr $fracSum+$frac]
+    }
+    if [expr abs($fracSum-1)>1e-6] {
+        puts stderr "Gas fractions don't sum to 1 to within 1e-6"
+        exit 1
+    }
+}
+
+# Gas constituents (nAtomTypes=# of types of atoms, Z=nuclear charge, atomCount=# atoms of each type)
+set nAtomTypes(H2) 1
+set Z(H2,1) 1
+set atomCount(H2,1) 2
+
+set nAtomTypes(H2O) 2
+set Z(H2O,1) 1
+set atomCount(H2O,1) 2
+set Z(H2O,2) 8
+set atomCount(H2O,2) 1
+
+set nAtomTypes(CH4) 2
+set Z(CH4,1) 6
+set atomCount(CH4,1) 1
+set Z(CH4,2) 1
+set atomCount(CH4,2) 4
+
+set nAtomTypes(CO) 2
+set Z(CO,1) 6
+set atomCount(CO,1) 1
+set Z(CO,2) 8
+set atomCount(CO,2) 1
+
+set nAtomTypes(CO2) 2
+set Z(CO2,1) 6
+set atomCount(CO2,1) 1
+set Z(CO2,2) 8
+set atomCount(CO2,2) 2
+
+set nAtomTypes(N2) 1
+set Z(N2,1) 7
+set atomCount(N2,1) 2
+
+proc Tsai_f {Z} {
+    set a [expr $Z/137.0]
+    set a2 [expr pow($a,2)]
+    return [expr $a2*(1./(1+$a2) + 0.20206 + $a2*(-0.0369+$a2*(0.0083-$a2*0.002)))]
+}
+
+proc Tsai_Lrad {Z} {
+    switch $Z {
+        1 {
+            return 5.31
+        }
+        2 {
+            return 4.79
+        }
+        3 {
+            return 4.74
+        }
+        4 {
+            return 4.71
+        }
+        default {
+            return [expr log(184.15/pow($Z, 1./3.))]
+        }
+    }
+}
+
+proc Tsai_Lradp {Z} {
+    switch $Z {
+        1 {
+            return 6.144
+        }
+        2 {
+            return 5.621
+        }
+        3 {
+            return 5.805
+        }
+        4 {
+            return 5.924
+        }
+        default {
+            return [expr log(1194./pow($Z, 2./3.))]
+        }
+    }
+}
+
+set fSZSum1 0.0
+set fSZSum2 0.0
+foreach gas [array names fGas] {
+    # Compute sum over gas molecules
+    set sumF1 0.0
+    set sumF2 0.0
+    for {set con 1} { $con <= $nAtomTypes($gas) } {incr con} {
+        set Z0 $Z($gas,$con)
+        set fZ [Tsai_f $Z0]
+        set Lrad [Tsai_Lrad $Z0]
+        set Lradp [Tsai_Lradp $Z0]
+        set sumF1 [expr $sumF1+$atomCount($gas,$con)*($Z0*$Z0*($Lrad-$fZ)+$Z0*$Lradp)]
+        set sumF2 [expr $sumF2+$atomCount($gas,$con)*$Z0*($Z0+1)]
+    }
+    set f $fGas($gas)
+    set fSZSum1 [expr $fSZSum1+$f*$sumF1]
+    set fSZSum2 [expr $fSZSum2+$f*$sumF2]
+}
+# Convert to Pascals
+set P [expr 133.3224*1e-9*$pressure]
+
+exec sddssort -pipe=out $aperture -column=s -unique \
+    | sddsconvert -pipe -retain=col,s,deltaNegative$name \
+    | sddsprocess -pipe \
+    -process=s,max,sMax \
+    "-redefine=col,dap,deltaNegative$name chs" \
+    "-define=col,I1,-5 8 dap * + dap sqr 3 * - dap ln 8 * - 6 /" \
+    "-define=col,I2,-1 dap + dap ln - 9 /" \
+    "-define=param,K0,4 re_mks sqr * 137 /,units=1/m^2" \
+    "-define=col,CS,I1 $fSZSum1 * I2 $fSZSum2 * + K0 *,units=1/m^2" \
+    "-process=CS,integ,CSInteg,functionOf=s" \
+    "-define=param,CSMean,CSInteg sMax /" \
+    "-define=param,bremsstrahlungLifetime,CSMean c_mks * $P 298 / kb_mks / * rec 3600 /,units=h" \
+    | sddscollapse -pipe \
+    | sddsprocess -pipe=in $output \
+    -process=bremsstrahlungLifetime,ave,%sAve \
+    -process=bremsstrahlungLifetime,stand,%sStDev
+
+
+

@@ -1,0 +1,501 @@
+#!/bin/sh  
+# \
+exec oagwish "$0" "$@"
+
+if {![info exists env(OAG_TOP_DIR)]} { set env(OAG_TOP_DIR) /usr/local }
+set auto_path [linsert $auto_path 0  $env(OAG_TOP_DIR)/oag/apps/lib/$env(HOST_ARCH)]
+set auto_path [linsert $auto_path 0 /usr/local/oag/apps/lib/$env(HOST_ARCH)]
+
+set usage "usage: longitCalcs \[-gui 0\] \[-output <filename>\] -twiss <filename> \[-voltage <MV> -harmonic <number> -superPeriods <number>(1) \[-hh <ratio>(3) {-hcOpt 1 | -hVoltage <MV> -hphase <deg>(360)}\]\] \[-rfVoltagePV <pvname> \[-rfVoltagePVFactor <convertToMV>(1e-3)]] \[-hrfVoltagePV <pvname> \[-hrfVoltagePVFactor <convertToMV>(1e-3)]] \[-IDLossPV <pvname> \[-IDLossPVFactor <convertToMV>(1)]]"
+set twiss ""
+set voltage -1.0
+set harmonic 1296
+set hVoltage 0
+set hh 4
+set hcOpt 0
+set hphase 360
+set gui 1
+set output ""
+set superPeriods 1
+set rfVoltagePV ""
+set rfVoltagePVFactor 1e-3
+set hrfVoltagePV ""
+set hrfVoltagePVFactor 1e-3
+set IDLossPV ""
+set IDLossPVFactor 1
+set args $argv
+if {[APSStrictParseArguments {output superPeriods twiss voltage harmonic hVoltage hcOpt hh hphase gui rfVoltagePV rfVoltagePVFactor hrfVoltagePV hrfVoltagePVFactor IDLossPV IDLossPVFactor}] || ![string length $twiss]} {
+    puts stderr $usage
+    exit 1
+}
+if $gui==0 {
+    wm withdraw .
+    if ![string length $output] {
+        puts stderr "Supply output file with -output option"
+        exit 1
+    }
+}
+if [file exists $output] {
+    puts stderr "In use: $output"
+    exit 1
+}
+
+if ![file exists $twiss] {
+    puts stderr "Not found: $twiss"
+    exit 1
+}
+
+set dataItemList [list U0 Sdelta0 ex0 alphac pCentral revFreq sMax]
+if [catch {exec sddsconvert $twiss -pipe=out -topage=1 \
+             | sddsprocess -pipe -process=s,max,sMax \
+             "-define=parameter,revFreq,sMax pCentral beta.p c_mks * / rec" \
+             | sdds2stream -pipe \
+             -parameter=[join $dataItemList ,]} dataList] {
+    puts stderr "$dataList"
+    exit 1
+}
+set index 0
+foreach item $dataItemList {
+    set ${item} [lindex $dataList $index]
+    incr index
+}
+set revFreq1 [expr $revFreq]
+set sMax1 [expr $sMax]
+set gamma [expr sqrt(1+$pCentral*$pCentral)]
+set eta [expr $alphac-1./pow($gamma,2)]
+
+set extradE 0
+set harmonic2 $hh
+set voltage2 $hVoltage
+if [expr $voltage<0] {
+    # initial start with overvoltage of 1.5
+    # to avoid problem with arcsin function
+    set voltage [expr $superPeriods*($U0+$extradE) * 1.5]
+}
+
+set harmonicRatio $harmonic2 
+set voltageRatio [expr $hVoltage/$voltage]
+set harmonicVoltage $hVoltage
+set harmonicMode None
+if [expr $voltageRatio!=0] {
+    set harmonicMode Custom
+}
+if $hcOpt {
+    set harmonicMode OptLengthen
+}
+if  [string length $hrfVoltagePV] {
+    set harmonicMode PV
+}
+set harmonicPhase $hphase
+set lastHarmonicMode None
+
+
+set synchTune 0
+set bunchLength 0
+set bunchDuration 0
+set synchPhase 0
+set synchPhaseDeg 0
+set overVoltage 0
+set rfAcceptance 0
+set rfFrequency 0
+set synchFreq 0
+set coupling 0
+set fractionalSpan 0.25
+set harmonicPhaseDeg $hphase
+set usePVValues 0
+
+if $gui {
+    APSApplication . -name longitCalcs 
+    APSLabeledEntry .voltage -parent .userFrame \
+        -label "Voltage (MV): " -textVariable voltage -width 22
+    APSLabeledEntry .harmonic -parent .userFrame \
+        -label "Harmonic number: " -textVariable harmonic -width 22 -type integer
+    APSLabeledEntry .sdelta -parent .userFrame \
+        -label "Sigma P/P0: " -textVariable Sdelta0 -width 22
+    APSLabeledEntry .extradE -parent .userFrame \
+        -label "Additional dE (MeV/period/turn): " -textVariable extradE -width 22
+    APSLabeledEntry .super -parent .userFrame \
+        -label "Superperiods: " -textVariable superPeriods -width 22 
+    foreach item {voltage harmonic sdelta extradE super} {
+        bind .userFrame.$item.entry <Return> compute
+    }
+
+    if {[string length $IDLossPV] || [string length $rfVoltagePV]} {
+        set usePVValues 1
+        APSRadioButtonFrame .rbpv -parent .userFrame -label "Use PV values" \
+          -orientation horizontal -variable usePVValues -buttonList "Yes No" \
+          -valueList "1 0" -commandList [list compute compute] \
+          -contextHelp "If checked, use PV values for main rf voltage and extra energy loss"
+    }           
+
+    APSFrame .hharm -parent .userFrame  -label "Harmonic cavity" -width 22
+    if [string length $hrfVoltagePV] {
+        APSRadioButtonFrame  .mode -parent .userFrame.hharm.frame -label "Mode: " \
+          -orientation horizontal -variable harmonicMode \
+          -buttonList [list None "Opt.Lengthen" "Custom" "PV"] \
+          -valueList [list None OptLengthen Custom PV] \
+          -commandList [list compute compute compute compute]
+    } else {
+        APSRadioButtonFrame  .mode -parent .userFrame.hharm.frame -label "Mode: " \
+          -orientation horizontal -variable harmonicMode \
+          -buttonList [list None "Opt.Lengthen" "Custom"] \
+          -valueList [list None OptLengthen Custom] \
+          -commandList [list compute compute compute]
+    }
+    
+    APSLabeledEntry .harmonicRatio -parent .userFrame.hharm.frame \
+        -label "Freq. ratio" -textVariable harmonicRatio -type integer -width 22
+    APSLabeledEntry .voltageRatio -parent .userFrame.hharm.frame \
+        -label "Volt. ratio" -textVariable voltageRatio -width 22 -type real
+    APSLabeledEntry .hvoltage -parent .userFrame.hharm.frame \
+        -label "Voltage (kV)" -textVariable harmonicVoltage -width 22 -type real
+    APSLabeledEntry .harmonicPhaseDeg -parent .userFrame.hharm.frame \
+        -label "Phase (deg)" -textVariable harmonicPhaseDeg -width 22 -type real
+    bind .userFrame.hharm.frame.harmonicRatio.entry <Return> compute
+    bind .userFrame.hharm.frame.voltageRatio.entry <Return> "compute -harmonicVoltageRatioUpdated 1"
+    bind .userFrame.hharm.frame.hvoltage.entry <Return> "compute -harmonicVoltageUpdated 1"
+    bind .userFrame.hharm.frame.harmonicPhaseDeg.entry <Return> compute
+    APSLabeledOutput .length -parent .userFrame \
+        -label "Circumference (m): " -textVariable sMax1 -width 22
+    APSLabeledOutput .revFreq -parent .userFrame \
+        -label "Rev. frequency (MHz): " -textVariable revFreq1 -width 22
+    APSLabeledOutput .rfFreq -parent .userFrame \
+        -label "RF frequency (MHz): " -textVariable rfFrequency -width 22
+    APSLabeledOutput .synchphase -parent .userFrame \
+        -label "Synchronous Phase (deg): " -textVariable synchPhaseDeg -width 22
+    APSLabeledOutput .overvolt -parent .userFrame \
+        -label "Over Voltage: " -textVariable overVoltage  -width 22
+    APSLabeledOutput .accept -parent .userFrame \
+        -label "RF Acceptance (%): " -textVariable rfAcceptance -width 22
+    APSLabeledOutput .nus -parent .userFrame \
+        -label "Synchrotron Tune: " -textVariable synchTune  -width 22
+    APSLabeledOutput .nuf -parent .userFrame \
+        -label "Synchrotron Frequency (Hz): " -textVariable synchFreq  -width 22
+    APSLabeledOutput .blen -parent .userFrame \
+        -label "Bunch length (m): " -textVariable bunchLength -width 22
+    APSLabeledOutput .bdur -parent .userFrame \
+        -label "Bunch duration (s): " -textVariable bunchDuration -width 22
+    APSLabeledOutput .coupling -parent .userFrame \
+        -label "Longitudinal coupling: " -textVariable coupling -width 22
+    APSLabeledEntry .span -parent .userFrame \
+        -label "Calculation half-span: " -textVariable fractionalSpan -width 22 \
+        -contextHelp "Half-span of the bunch distribution calculation in units of the rf period. Changing this may resolve numerical problems for long bunches."
+} 
+
+set outputIndex -1
+proc compute {args} {
+    set plot 0
+    set harmonicVoltageRatioUpdated 0
+    set harmonicVoltageUpdated 0
+    APSStrictParseArguments {plot harmonicVoltageRatioUpdated harmonicVoltageUpdated}
+    global dataItemList gui output outputIndex
+    eval global $dataItemList bunchLength harmonic voltage synchPhaseDeg eta gamma
+    global overVoltage rfAcceptance rfFrequency synchFreq coupling extradE synchTune
+    global bunchDuration superPeriods revFreq1 sMax1 sMax
+    global harmonicRatio voltageRatio harmonicMode lastHarmonicMode harmonicPhaseDeg harmonicVoltage
+    global pi cMKS U1 sMax1 revFreq1 energy omegaRF rfFrequency output
+    global rfVoltagePV rfVoltagePVFactor IDLossPV IDLossPVFactor usePVValues hrfVoltagePV hrfVoltagePVFactor
+
+    if $usePVValues {
+        if [string length $rfVoltagePV] {
+            set voltage [expr [exec cavget -list=$rfVoltagePV]*$rfVoltagePVFactor]
+        }
+        if [string length $IDLossPV] {
+            set extradE [expr [exec cavget -list=$IDLossPV]*$IDLossPVFactor]
+        }
+        if {[string length $hrfVoltagePV] && [string compare $harmonicMode "PV"]==0} {
+            set harmonicVoltage [expr [exec cavget -list=$hrfVoltagePV]*$rfVoltagePVFactor*1e6]
+            set harmonicVoltageUpdated 1
+            set harmonicVoltageRatioUpdated 0
+        }
+    }
+
+    if [expr $harmonicRatio<=1] {
+        set harmonicMode None
+        set harmonicRatio 1
+    }
+    if $harmonicVoltageRatioUpdated {
+        set harmonicVoltage [expr $voltage*$voltageRatio*1e3]
+    }
+    if $harmonicVoltageUpdated {
+        set voltageRatio [expr $harmonicVoltage/$voltage/1e3]
+    }
+    
+    
+    set pi 3.141592653589793
+    set cMKS 2.997924580000000e+08
+    set U1 [expr $superPeriods*($U0+$extradE)]
+    set sMax1 [expr $superPeriods*$sMax]
+    set revFreq1 [expr $revFreq/$superPeriods]
+    set energy [expr $gamma*0.51099906]
+    set omegaRF [expr $harmonic*2*$pi*$revFreq1]
+    set rfFrequency [expr $omegaRF/(2*$pi*1.0e6)]
+
+    set overVoltage [expr $voltage/$U1]
+    switch $harmonicMode {
+        None {
+            set voltageRatio 0
+            set harmonicPhase 0.0
+            set harmonicPhaseDeg 0
+            set synchPhase [expr $pi-asin($U1/$voltage)]
+            set rfAcceptance [expr sqrt(2*$U1/($pi*$eta*$harmonic*$energy)*(sqrt($overVoltage*$overVoltage-1)-acos(1/$overVoltage)))]
+            set synchTune [expr sqrt(-$eta*$harmonic*cos($synchPhase)*$voltage/(2*$pi*$energy))]
+            set synchFreq [expr $synchTune*$revFreq1]
+            set bunchLength [expr $Sdelta0*$cMKS*sqrt($eta*$energy/(-$revFreq1*$omegaRF*cos($synchPhase)*$voltage))]
+            set coupling [expr sqrt(-$eta*$voltage*cos($synchPhase)*$omegaRF/($energy*$revFreq1*4.0))]
+            set bunchDuration [expr $bunchLength/$cMKS]
+        }
+        OptLengthen {
+            set m $harmonicRatio*1.0
+            set f1 [expr $m*$m/($m*$m-1)/$overVoltage]
+            set synchPhase [expr $pi-asin($f1)]
+            #puts stderr "cos(synchPhase) = [expr cos($synchPhase)]"
+            set k [expr sqrt(1/($m*$m) - 1/(($m*$m-1)*pow($overVoltage,2)))]
+            set voltageRatio $k
+            set harmonicPhase [expr asin(-1/($overVoltage*($m*$m-1)*$k))]
+            set harmonicPhaseDeg [expr $harmonicPhase*180/$pi]
+            if [expr $harmonicPhaseDeg<0] {
+                set harmonicPhaseDeg [expr $harmonicPhaseDeg+360]
+            }
+            #set check [expr $voltage*(sin($synchPhase) + $voltageRatio*sin($harmonicPhase))-$U1]
+            #puts stderr "check: $check"
+            set synchTune0 [expr sqrt(-$eta*$harmonic*cos($synchPhase)*$voltage/(2*$pi*$energy))]
+            set bunchLength [expr 2/3.6256*pow(3./($m*$m-1), 0.25)*sqrt(2*$harmonic*$eta*$Sdelta0/$synchTune0)*$cMKS/$omegaRF]
+            set bunchDuration [expr $bunchLength/$cMKS]
+            set synchFreq [expr 0.128*$eta*$Sdelta0/$bunchDuration]
+            set synchTune [expr $synchFreq/$revFreq1]
+            set rfAcceptance ?
+            set coupling ?
+        }
+        PV -
+        Custom {
+            if [expr $voltageRatio<0] {
+                set voltageRatio 0
+            }
+            set harmonicPhase [expr $harmonicPhaseDeg*$pi/180.]
+            set U2 [expr $U1-$voltageRatio*$voltage*sin($harmonicPhase)]
+            set synchPhase [expr $pi-asin($U2/$voltage)]
+            #set check [expr $voltage*(sin($synchPhase) + $voltageRatio*sin($harmonicPhase))-$U1]
+            #puts stderr "check: $check"
+            set synchPhaseDeg [expr $synchPhase*180/$pi]
+            set synchTune0 [expr sqrt(-$eta*$harmonic*cos($synchPhase)*$voltage/(2*$pi*$energy))]
+            set synchTune ?
+            set synchFreq ?
+            set bunchLength [expr $Sdelta0*$cMKS*sqrt($eta*$energy/(-$revFreq1*$omegaRF*cos($synchPhase)*$voltage))/sqrt(1 + $harmonicRatio*$voltageRatio/(-cos($synchPhase)))]
+            set coupling ?
+        }
+    }
+    set harmonicVoltage [expr $voltageRatio*$voltage*1e3]
+    
+    set synchPhaseDeg [expr 180.0*$synchPhase/$pi]
+    set lastHarmonicMode $harmonicMode
+
+    computeBunchShape -plot $plot
+    findFixedPoints
+    computeBucketHH
+    if $plot {
+        set Trf [expr 1e-6/$rfFrequency]
+        exec sddssequence -pipe=out -define=t,units=s -sequence=begin=[expr -$Trf*0.75],end=[expr $Trf*0.75],n=1000 \
+          | sddsprocess -pipe=in $output.volt  \
+            "-define=col,mainPhase,$omegaRF t * $synchPhase +" \
+            "-define=col,harmPhase,$omegaRF t * $harmonicRatio * $harmonicPhase +" \
+            "-define=col,VMain,mainPhase sin $voltage *,units=MV" \
+            "-define=col,VHarm,harmPhase sin $voltage * $voltageRatio *,units=MV" \
+            "-define=col,VTotal,VMain VHarm +,units=MV"  
+        set ts [expr $synchPhase/(2*$pi)*$Trf*1e9]
+        exec sddsplot -convert=col,t,ns,s,1e9 -graph=line,vary,type=1,thick=2 "-ylabel=Voltage (MV)" \
+          -column=t,VMain -legend=spec=Main $output.volt \
+          -column=t,VHarm -legend=spec=Harm. $output.volt \
+          -column=t,VTotal -legend=spec=Total $output.volt \
+          -axes -drawline=p0v=0.4,p1v=0.6,y0v=[expr $U0+$extradE],y1v=[expr $U0+$extradE],linetype=5 &
+        # -drawline=linetype=4,q0v=0,q1v=1,x0v=$ts,x1v=$ts 
+    }
+    update
+    if [string length $output] { 
+        if [string compare $synchTune ?]==0 {
+            set synchTuneNum -1
+            set synchFreqNum -1
+        } else {
+            set synchTuneNum $synchTune
+            set synchFreqNum $synchFreq
+        }
+        exec sddsmakedataset $output.tmp \
+            -column=MainVoltage,units=MV,type=double -data=$voltage \
+            -column=MainHarmonic,type=long -data=$harmonic \
+            -column=Sdelta0,type=double -data=$Sdelta0 \
+            -column=U0,type=double,units=MeV -data=$U0 \
+            -column=dU,type=double,units=MeV -data=$extradE \
+            -column=Superperiods,type=long -data=$superPeriods \
+            -column=HHRatio,type=short -data=$harmonicRatio \
+            -column=VhRatio,type=double -data=$voltageRatio \
+            -column=Vh,type=double,units=MV -data=[expr $voltageRatio*$voltage] \
+            -column=HPhase,type=double,units=deg -data=$harmonicPhaseDeg \
+            -column=Circumference,type=double,units=m -data=$sMax1 \
+            -column=RfFrequency,type=double,units=MHz -data=$rfFrequency \
+            -column=MainPhase,type=double,units=deg -data=$synchPhaseDeg \
+            -column=SynchrotronFrequency,type=double,units=Hz -data=$synchFreqNum \
+            -column=SynchrotronTune,type=double -data=$synchTuneNum \
+            -column=RfAcceptance,type=double -data=[expr $rfAcceptance/100.0] \
+            -column=BunchLength,type=double,units=m -data=$bunchLength \
+            -column=BunchDuration,type=double,units=s -data=$bunchDuration
+        if [file exists $output] {
+            exec sddscombine $output $output.tmp $output.tmp2 -merge -over
+            file rename -force $output.tmp2 $output
+            file delete $output.tmp
+        } else {
+            file rename $output.tmp $output
+        }
+    }
+}
+
+proc findFixedPoints {} {
+    global dataItemList gui
+    eval global $dataItemList bunchLength harmonic voltage synchPhaseDeg twiss eta gamma
+    global overVoltage rfAcceptance rfFrequency synchFreq coupling extradE synchTune energy
+    global bunchDuration superPeriods revFreq1 sMax1 sMax
+    global harmonicRatio voltageRatio harmonicMode lastHarmonicMode harmonicPhaseDeg
+    global pi cMKS U1 sMax1 revFreq1 energy omegaRF rfFrequency
+
+    #puts stderr "findFixedPoints: $voltage, $voltageRatio $harmonicRatio $synchPhaseDeg $harmonicPhaseDeg $U1"
+    set dataList [exec sddssequence -pipe=out -define=dphi -sequence=begin=[expr -2*$pi],end=[expr 2*$pi],n=1000000 \
+		      | sddsprocess -pipe -clip=1,0 \
+		      "-define=param,V1,$voltage" "-define=param,Vh,$voltage $voltageRatio *" \
+		      "-define=param,h,$harmonicRatio" \
+		      "-define=param,phi1,$synchPhaseDeg pi * 180 /" "-define=param,phih,$harmonicPhaseDeg pi * 180 /" \
+		      "-define=param,U0,$U1" \
+		      "-define=column,error,U0 V1 phi1 dphi + sin * - Vh phih dphi h * + sin * -" \
+		      "-define=column,deriv,V1 phi1 dphi + cos * Vh phih dphi h * + cos * h * + chs" \
+		      | sddszerofind -pipe -zeroesOf=error -columns=dphi,deriv \
+		      | sddsprocess -pipe "-test=column,deriv 0 <" \
+		      | sdds2stream -pipe -column=dphi]
+    global fixedPoint
+    if [llength $dataList]>1 {
+	set fixedPoint(1) [lindex $dataList 0]
+	set fixedPoint(2) [lindex $dataList 1]
+	set fixedPoint(valid) 1
+    } else {
+	set fixedPoint(valid) 0
+    }
+}
+
+proc computeBucketHH {args} {
+    global dataItemList gui
+    eval global $dataItemList bunchLength harmonic voltage synchPhaseDeg twiss eta gamma
+    global overVoltage rfAcceptance rfFrequency synchFreq coupling extradE synchTune energy
+    global bunchDuration superPeriods revFreq1 sMax1 sMax
+    global harmonicRatio voltageRatio harmonicMode lastHarmonicMode harmonicPhaseDeg
+    global pi cMKS U1 sMax1 revFreq1 energy omegaRF rfFrequency
+    global fixedPoint rfAcceptance
+
+    if $fixedPoint(valid)==0 return
+    set fp $fixedPoint(1)
+    set phi1 [expr $synchPhaseDeg*$pi/180]
+    set phih [expr $harmonicPhaseDeg*$pi/180]
+    set Vh [expr $voltageRatio*$voltage]
+    set W1 [expr $voltage*(cos($phi1) - cos($phi1+$fp))]
+    set W2 [expr $Vh*(cos($phih) - cos($phih+$fp*$harmonicRatio))/$harmonicRatio]
+    set W3 [expr $U1*$fp]
+    set W [expr $W1+$W2-$W3]
+    if [expr $W>=0] {
+        set rfAcceptance 0
+    } else {
+	set rfAcceptance [expr sqrt(-$W/($pi*$harmonic*$eta*$energy))*100]
+    }
+    
+}
+
+proc computeBunchShape {args} {
+    set plot 0
+    APSStrictParseArguments {plot}
+    global dataItemList
+    eval global $dataItemList bunchLength harmonic voltage synchPhaseDeg twiss eta gamma
+    global overVoltage rfAcceptance rfFrequency synchFreq coupling extradE synchTune energy
+    global bunchDuration superPeriods revFreq1 sMax1 sMax
+    global harmonicRatio voltageRatio harmonicMode lastHarmonicMode harmonicPhaseDeg
+    global pi cMKS U1 sMax1 revFreq1 energy omegaRF rfFrequency fractionalSpan
+
+    set outFile  $twiss.longit
+    if [catch {exec touch $outFile} result] {
+        set outFile /tmp/[file tail $twiss].longit
+    }
+    exec sddssequence -pipe=out -define=t,type=double,units=s -sequence=begin=[expr -$fractionalSpan*1e-6/$rfFrequency],end=[expr $fractionalSpan*1e-6/$rfFrequency],n=10000 \
+        | sddsprocess -pipe=in $outFile \
+        "-define=param,C1,[expr $eta*$cMKS*$voltage/($energy*$sMax1*$omegaRF)]" \
+        "-define=param,alphac,$alphac" \
+        "-define=param,eta,$eta" \
+        "-define=param,Sdelta0,$Sdelta0" \
+        "-define=param,phis,$synchPhaseDeg dtor" \
+        "-define=param,k,$voltageRatio" \
+        "-define=param,n,$harmonicRatio,type=short" \
+        "-define=param,phih,$harmonicPhaseDeg dtor" \
+        "-define=param,omega,$omegaRF" \
+        "-define=col,phi,omega t *" \
+        "-define=col,Phi1,phis cos  phi     phis + cos -" \
+        "-define=col,Phi2,phih cos  phi n * phih + cos - k * n /" \
+        "-define=col,Phi3,phis sin  phih sin k * + phi *" \
+        "-define=col,Phi,Phi1 Phi2 + Phi3 - C1 *" \
+        "-define=col,rhoArg,Phi eta sqr / Sdelta0 sqr / chs" \
+        -process=rhoArg,min,%sMin \
+        "-define=col,rho,rhoArg chs exp" \
+        -process=rho,integ,rhoInteg,functionOf=t \
+        "-redefine=col,rho,rho rhoInteg /" \
+        -process=t,rms,tRms,weight=rho \
+        "-define=col,rhoSqr,rho sqr" \
+        -process=rhoSqr,integ,rhoSqrInteg,functionOf=t 
+
+    set bunchDuration [exec sdds2stream -parameter=tRms $outFile]
+    set bunchLength [expr $bunchDuration*$cMKS]
+
+    if $plot {
+        exec sddsplot -column=t,rho $outFile "-title=@tRms,edit=i/Rms duration (s): /" \
+            "-topline=@rhoSqrInteg,edit=i/Integral sqr(rho): /" &
+    }
+}
+
+proc outputForElegantDialog {} {
+    global gui
+    global code outputFile rfMainName rfHarmonicName harmonicMode eta gamma
+    global voltage rfFrequency synchPhaseDeg voltageRatio harmonicRatio harmonicPhaseDeg
+    if $gui {
+        APSDialogBox .output -modal 0 -okCommand "set code 1" -cancelCommand "set code 0" \
+            -name "Elegant output"
+        APSLabeledEntry .le1 -parent .output.userFrame -label "Filename: " \
+            -textVariable outputFile -width 80 
+        APSLabeledEntry .le2 -parent .output.userFrame -label "Main rf element name: " \
+            -textVariable rfMainName -width 80
+        if {[string compare $harmonicMode None] && $harmonicRatio>1} {
+            APSLabeledEntry .le3 -parent .output.userFrame -label "Harmonic rf element name: " \
+                -textVariable rfHarmonicName -width 80 
+            set doHarmonic 1
+        } else {
+            set doHarmonic 0
+            set rfHarmonicName ""
+        }
+        update
+        tkwait variable code
+        if {$code && [string length $outputFile] && [string length $rfMainName] && (!$doHarmonic || [string length $rfHarmonicName])} {
+            compute -plot 0
+            lappend ElementNameList $rfMainName $rfMainName $rfMainName 
+            lappend ElementParameterList VOLT FREQ PHASE
+            lappend ParameterValueList [expr $voltage*1e6] [expr $rfFrequency*1e6] $synchPhaseDeg
+            if $doHarmonic {
+                lappend ElementNameList $rfHarmonicName $rfHarmonicName $rfHarmonicName
+                lappend ElementParameterList VOLT FREQ PHASE
+                lappend ParameterValueList [expr $voltage*1e6*$voltageRatio] [expr $rfFrequency*1e6*$harmonicRatio] $harmonicPhaseDeg
+            }
+            exec sddsmakedataset $outputFile \
+                -column=ElementName,type=string -data=[join $ElementNameList ,] \
+                -column=ElementParameter,type=string -data=[join $ElementParameterList ,] \
+                -column=ParameterValue,type=double -data=[join $ParameterValueList ,]
+        }
+    }
+}
+
+compute
+if $gui {
+    APSButton .compute -parent .userFrame -text Compute -command "compute -plot 0"
+    APSButton .plot -parent .userFrame -text Plot -command "compute -plot 1"
+    APSButton .output  -parent .userFrame -text ">Elegant" -command outputForElegantDialog
+} else {
+    exit 0
+}

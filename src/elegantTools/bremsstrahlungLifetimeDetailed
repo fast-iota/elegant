@@ -1,0 +1,198 @@
+#!/bin/sh  
+# \
+exec oagtclsh "$0" "$@"
+
+# Computation of bremsstrahlung gas scattering lifetime using LMA from elegant, along with
+# s-dependent pressure profiles for various gases.
+# The known gases are H2, H2O, CH4, CO, CO2, and N2. If columns with these names are in the 
+# pressure input file, they are used in the computations. Units must be nT or nTorr.
+# M. Borland, 2014.
+
+if {![info exists env(OAG_TOP_DIR)]} { set env(OAG_TOP_DIR) /usr/local }
+set auto_path [linsert $auto_path 0  $env(OAG_TOP_DIR)/oag/apps/lib/$env(HOST_ARCH)]
+
+APSStandardSetup
+
+set usage {usage: elasticScatteringLifetimeDetailed -aperture <mmapFile> [-name <string>] -pressure <filename> -output <filename> [-sPeriodic meters(27.6)]}
+set aperture ""
+set name ""
+set pressure ""
+set output ""
+set sPeriodic 27.6
+set args $argv
+if {[APSStrictParseArguments {aperture name pressure output sPeriodic}] || ![string length $aperture] || ![string length $pressure] || \
+        ![string length $output] || [expr $sPeriodic<=0]} {
+    return -code error "$usage"
+}
+foreach input {aperture pressure} {
+    if ![file exists [set $input]] {
+        return -code error "not found: [set $input]"
+    }
+}
+if [file exists $output] {
+    return -code error "in use: $output"
+}
+
+# Set up arrays for gases
+set C(H2) 1
+set Z(H2,1) 1
+set S(H2,1) 2
+
+set C(H2O) 2
+set Z(H2O,1) 1
+set S(H2O,1) 2
+set Z(H2O,2) 8
+set S(H2O,2) 1
+
+set C(CH4) 2
+set Z(CH4,1) 6
+set S(CH4,1) 1
+set Z(CH4,2) 1
+set S(CH4,2) 4
+
+set C(CO) 2
+set Z(CO,1) 6
+set S(CO,1) 1
+set Z(CO,2) 8
+set S(CO,2) 1
+
+set C(CO2) 2
+set Z(CO2,1) 6
+set S(CO2,1) 1
+set Z(CO2,2) 8
+set S(CO2,2) 2
+
+set C(N2) 1
+set Z(N2,1) 7
+set S(N2,1) 2
+
+set knownSpeciesList [array names C]
+
+# Determine what species are in the pressure file
+set columnList [exec sddsquery -column $pressure]
+set speciesList ""
+foreach column $columnList {
+    if [lsearch -exact $knownSpeciesList $column]!=-1 {
+        lappend speciesList $column
+    }
+}
+if [llength $speciesList]==0 {
+    return -code error "no known gas species ([join $knownSpeciesList ,]) identified in list of columns: [join $columnList ,]"
+}
+
+# Check units of pressure values
+array set units [exec sddsquery -column $pressure -appendunits=bare]
+foreach species $speciesList {
+    if [lsearch -exact [list nT nTorr] $units($species)]==-1 {
+        return -code error "units for $species are not valid: $units($species); use nT or nTorr"
+    }
+}
+
+
+proc Tsai_f {Z} {
+    set a [expr $Z/137.0]
+    set a2 [expr pow($a,2)]
+    return [expr $a2*(1./(1+$a2) + 0.20206 + $a2*(-0.0369+$a2*(0.0083-$a2*0.002)))]
+}
+
+proc Tsai_Lrad {Z} {
+    switch $Z {
+        1 {
+            return 5.31
+        }
+        2 {
+            return 4.79
+        }
+        3 {
+            return 4.74
+        }
+        4 {
+            return 4.71
+        }
+        default {
+            return [expr log(184.15/pow($Z, 1./3.))]
+        }
+    }
+}
+
+proc Tsai_Lradp {Z} {
+    switch $Z {
+        1 {
+            return 6.144
+        }
+        2 {
+            return 5.621
+        }
+        3 {
+            return 5.805
+        }
+        4 {
+            return 5.924
+        }
+        default {
+            return [expr log(1194./pow($Z, 2./3.))]
+        }
+    }
+}
+
+# Factor to convert nT to number density
+set PConvert [expr 133.3224*1e-9/(1.380658000000000e-23*293)]
+set rateSumOpt "-define=parameter,rate,0 "
+foreach g $speciesList {
+    # Compute sum over gas molecules
+    set F1 0.0
+    set F2 0.0
+    for {set a 1} { $a <= $C($g) } {incr a} {
+        set Z0 $Z($g,$a)
+        set fZ [Tsai_f $Z0]
+        set Lrad [Tsai_Lrad $Z0]
+        set Lradp [Tsai_Lradp $Z0]
+        set F1 [expr $F1+$S($g,$a)*($Z0*$Z0*($Lrad-$fZ)+$Z0*$Lradp)]
+        set F2 [expr $F2+$S($g,$a)*$Z0*($Z0+1)]
+    }
+    lappend PIntegList "-define=column,localRate-$g,I1 $F1 * I2 $F2 * + $g $PConvert * * K0 * c_mks * sMax /,units=1/s/m"
+    lappend PIntegList "-process=localRate-$g,integ,rate-$g,functionOf=s"
+    append rateSumOpt "rate-$g + "
+}
+
+set tmpRoot [APSTmpDir]/[APSTmpString]
+APSAddToTempFileList $tmpRoot.pres
+
+set sLMA [exec sddsprocess $aperture "-test=param,i_page 1 ==" -pipe=out -process=s,max,sMax | sdds2stream -pipe -parameter=sMax]
+set sPres [exec sddsprocess $pressure "-test=param,i_page 1 ==" -pipe=out -process=s,max,sMax | sdds2stream -pipe -parameter=sMax]
+if [expr $sPres<$sLMA] {
+    set np [expr int($sPres/$sPeriodic+0.5)]
+    set na [expr int($sLMA/$sPeriodic+0.5)]
+    set nr [expr int($sLMA/$sPres+0.5)]
+    eval exec sddscombine [APSReplicateItem -item $pressure -number $nr] -pipe=out \
+        | sddsprocess -pipe "{-redefine=column,s,s $np $sPeriodic + i_page 1 - * +,units=m}" \
+        | sddscombine -pipe -merge \
+        | sddsprocess -pipe=in $tmpRoot.pres -filter=col,s,0,[expr $na*$sPeriodic]
+    set pressure $tmpRoot.pres
+} elseif [expr $sPres>$sLMA] {
+    exec sddsprocess $pressure $tmpRoot.pres -filter=col,s,0,$sLMA 
+    set pressure $tmpRoot.pres
+}
+
+
+eval exec sddsinterp $aperture -pipe=out -column=s,deltaNegative$name -fileValues=$pressure,column=s \
+    -aboveRange=extrapolate -belowRange=extrapolate \
+    | sddsconvert -pipe -retain=col,s,deltaNegative$name \
+    | sddsxref -pipe $pressure -take=* -reuse=page \
+    | sddsprocess -pipe \
+    -process=s,max,sMax \
+    "{-redefine=col,k,deltaNegative$name chs}" \
+    "{-define=col,I1,-5 8 k * + k sqr 3 * - k ln 8 * - 6 /}" \
+    "{-define=col,I2,-1 k + k ln - 9 /}" \
+    "{-define=param,K0,4 re_mks sqr * 137.036 /,units=1/m^2}" \
+    $PIntegList \
+    "{$rateSumOpt}" \
+    "{-define=param,bremsstrahlungLifetime,rate rec 3600 /,units=h}" \
+    | tee $output.detail \
+    | sddscollapse -pipe \
+    | sddsprocess -pipe=in $output \
+    -process=bremsstrahlungLifetime,ave,%sAve \
+    -process=bremsstrahlungLifetime,stand,%sStDev
+
+
+

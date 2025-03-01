@@ -1,0 +1,54 @@
+#!/bin/sh  
+# \
+exec oagtclsh "$0" "$@"
+
+if [info exists $env(OAG_TOP_DIR)] {
+    set auto_path [linsert $auto_path 0  $env(OAG_TOP_DIR)/oag/apps/lib/$env(HOST_ARCH)]
+} else {
+    set auto_path [linsert $auto_path 0  /usr/local/oag/apps/lib/$env(HOST_ARCH)]
+}
+
+APSStandardSetup
+
+# Compute the incoherent tune spread using equation 10.41 from H. Wiedemann, Vol II
+
+set usage {usage: computeSCTuneSpread -twiss <filename> -kappa <emittanceRatio> -charge <nCPerBunch> {-rmsDuration <ps> | -rmsLength <mm>}}
+set twiss ""
+set kappa -1
+set charge -1
+set rmsDuration -1
+set rmsLength -1
+set args $argv
+if {[APSStrictParseArguments {twiss kappa charge rmsDuration rmsLength}] || ![string length $twiss] || [expr $kappa<=0] || [expr $kappa>1] || [expr $charge<0] || \
+        ([expr $rmsDuration<=0] && [expr $rmsLength<=0]) || ([expr $rmsDuration>0] && [expr $rmsLength>0])} {
+    return -code error "$usage"
+}
+
+if ![file exists $twiss] {
+    return -code error "not found: $twiss"
+}
+if [expr $rmsDuration>0] {
+    set rmsLength [expr $rmsDuration*1e-12*2.99792458e8]
+} else {
+    set rmsLength [expr $rmsLength/1e3]
+}
+
+exec sddssort $twiss -pipe=out -column=s,incr -unique \
+    | sddsprocess -pipe \
+    "-define=parameter,bunchCharge,$charge 1e9 /,units=C" \
+    "-define=parameter,rmsLength,$rmsLength,units=m" \
+    "-define=parameter,peakDensity,bunchCharge e_mks / 2 pi * sqrt / rmsLength /,units=1/m" \
+    "-define=parameter,kappa,$kappa" \
+    "-define=parameter,ex,ex0 1 taux tauy / kappa * + /,units=m" \
+    "-define=parameter,ey,ex kappa *,units=m" \
+    "-define=column,Sx,betax ex * Sdelta0 etax * sqr + sqrt,units=m" \
+    "-define=column,Sy,betay ey * Sdelta0 etay * sqr + sqrt,units=m" \
+    "-define=column,Kx,betax Sx / Sx Sy + /,units=1/m" \
+    "-define=column,Ky,betay Sy / Sx Sy + /,units=1/m" \
+    "-process=Kx,integ,KxInteg,functionOf=s" \
+    "-process=Ky,integ,KyInteg,functionOf=s" \
+    "-define=parameter,deltaNuxIncoherent,re_mks peakDensity * 2 / pi / pCentral 3 pow / KxInteg * chs" \
+    "-define=parameter,deltaNuyIncoherent,re_mks peakDensity * 2 / pi / pCentral 3 pow / KyInteg * chs" \
+    | sddscollapse -pipe=in $twiss.icts
+
+

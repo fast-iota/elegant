@@ -1,0 +1,52 @@
+#!/bin/sh  
+# \
+exec oagtclsh "$0" "$@"
+
+if {![info exists env(OAG_TOP_DIR)]} { set env(OAG_TOP_DIR) /usr/local }
+set auto_path [linsert $auto_path 0  $env(OAG_TOP_DIR)/oag/apps/lib/$env(HOST_ARCH)]
+
+APSStandardSetup
+
+set usage "usage: spiffe2elegant -input <filename> -output <filename> -particlesPerRing <number>(1) \[-drift <meters>(0)\]\n."
+
+set input ""
+set output ""
+set particlesPerRing 1
+set drift 0.0
+set args $argv
+if {[APSStrictParseArguments {input output particlesPerRing drift}] || ![string length $input] || ![string length $output]} {
+    return -code error "$usage"
+}
+
+if ![file exists $input] {
+    return -code error "not found: $input"
+}
+if [file exists $output] {
+    return -code error "exists: $output"
+}
+
+set seed [clock seconds]
+set list1 ""
+for {set ir 0} {$ir<$particlesPerRing} {incr ir} {
+    set seed [expr $seed+2]
+    exec sddscombine $input -merge -pipe=out \
+        | sddsprocess -pipe=in $output.$ir "-rpnexpression=$seed srnd" \
+        "-define=parameter,driftDistance,$drift,units=m" \
+        "-define=parameter,twoPi,2 pi *" \
+        "-define=col,theta,twoPi rnd *" \
+        "-define=col,cosine,theta cos" \
+        "-define=col,sine,theta sin" \
+        "-define=col,x,r cosine *,units=m" \
+        "-define=col,y,r sine *,units=m" \
+        "-define=col,xp,pr cosine * pz /" \
+        "-define=col,yp,pr sine * pz /" \
+        "-define=col,p,pz sqr pr sqr + sqrt" 
+   lappend list1 $output.$ir
+}
+
+if [llength $list1]!=1 {
+    eval exec sddscombine $list1 $output
+    eval file delete $list1
+} else {
+    eval file rename $output.0 $output
+}

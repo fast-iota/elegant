@@ -1,0 +1,67 @@
+#!/bin/sh  
+# \
+exec oagtclsh "$0" "$@"
+
+if {![info exists env(OAG_TOP_DIR)]} { set env(OAG_TOP_DIR) /usr/local }
+set auto_path [linsert $auto_path 0  $env(OAG_TOP_DIR)/oag/apps/lib/$env(HOST_ARCH)]
+
+APSStandardSetup
+
+set usage {usage: computeCoherentFraction [-twiss <filename> -coupling <value> | -input <filename>] -energy <min(eV)>,<max(eV)>,<points> -length <m>}
+set input ""
+set twiss ""
+set energy ""
+set coupling -1
+set length 4.8
+set args $argv
+if {[APSStrictParseArguments {input twiss energy length coupling}] || \
+    (![string length $input] && ![string length $twiss]) \
+    || ([string length $input] && [string length $twiss]) \
+    || ([string length $twiss] && ([expr $coupling<0] || [expr $coupling>1])) \
+    || ![string length $energy]} {
+    return -code error "$usage"
+}
+
+set eMin [lindex [split $energy ,] 0]
+set eMax [lindex [split $energy ,] 1]
+set ne   [lindex [split $energy ,] 2]
+    
+if [string length $input] {
+    if ![file exists $input] {
+	return -code error "not found: $input"
+    }
+    if [llength [split $energy ,]]!=3 {
+	return -code error "energy list invalid: $usage"
+    }
+    exec sddsexpand $input $input.exp 
+    set file1 $input.exp
+} else {
+    exec sddsprocess $twiss -pipe=out \
+    "-define=param,ex,ex0 1 $coupling Jx / + /" "-define=param,ey,ex $coupling *" \
+    "-define=col,Sx,betax ex * etax Sdelta0 * sqr + sqrt,symbol=\$gs\$r\$bx\$n,units=m" \
+    "-define=col,Sy,betay ey * etay Sdelta0 * sqr + sqrt,symbol=\$gs\$r\$by\$n,units=m" \
+    "-define=col,Sxp,1 alphax sqr + betax / ex * etaxp Sdelta0 * sqr + sqrt,symbol=\$gs\$r\047\$bx\$n" \
+    "-define=col,Syp,1 alphay sqr + betay / ey * etayp Sdelta0 * sqr + sqrt,symbol=\$gs\$r\047\$by\$n" \
+    -clip=1,0,invert \
+    | sddsexpand -pipe=in $twiss.exp
+    set file1 $twiss.exp
+    set input $twiss
+}
+
+exec sddssequence -pipe=out -define=photonEnergy,units=eV,type=double \
+  -sequence=begin=$eMin,end=$eMax,number=$ne \
+  | sddsxref -pipe -leave=* -transfer=param,* $file1 \
+  | sddsprocess -pipe=in $input.cf \
+  "-define=param,Length,$length,units=m" \
+  "-define=column,wavelength,1.23956e-6 photonEnergy /,units=m" \
+  "-define=col,Sgammap,wavelength 2 / Length / sqrt" \
+  "-define=col,Sgamma,wavelength Length * 2 / sqrt pi / 2 /,units=m" \
+  "-define=col,SxT,Sx  sqr Sgamma sqr + sqrt,units=m" \
+  "-define=col,SxpT,Sxp  sqr Sgammap sqr + sqrt" \
+  "-define=col,SyT,Sy  sqr Sgamma sqr + sqrt,units=m" \
+  "-define=col,SypT,Syp  sqr Sgammap sqr + sqrt" \
+  "-define=col,eGamma,wavelength 4 / pi /,units=m" \
+  "-define=col,FractionCoherentIdeal,1 ex eGamma / + 1 ey eGamma / + * rec" \
+  "-define=col,FractionCoherent,wavelength 4 / pi / sqr SxT / SxpT / SyT / SypT /"
+
+file delete $file1

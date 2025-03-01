@@ -1,0 +1,226 @@
+#!/bin/sh  
+# \
+exec oagtclsh "$0" "$@"
+
+if {![info exists env(OAG_TOP_DIR)]} { set env(OAG_TOP_DIR) /usr/local }
+set auto_path [linsert $auto_path 0  $env(OAG_TOP_DIR)/oag/apps/lib/$env(HOST_ARCH)]
+
+# Compute bucket height and other parameters for dual-frequency rf system
+
+set usage "usage: bucketParameters -twiss <filename> \[-Vm <MV>\] \[-hm <integer>(1269)\] \[-Vh <MV>\] \[-hh <harmRatio>(4)\] \[-hdeg <harmPhase>(180)\] -output <filename> \[-debug 1\]"
+set twiss ""
+set Vm -1.0
+set hm 1296
+set Vh 0.0
+set hh 4
+set hdeg 180
+set output ""
+set debug 0
+set args $argv
+if {[APSStrictParseArguments {twiss Vm hm Vh hh hdeg debug output}] || ![string length $twiss] || ![string length $output]} {
+    puts stderr $usage
+    exit 1
+}
+if ![file exists $twiss] {
+    puts stderr "Not found: $twiss"
+    exit 1
+}
+if [file exists $output] {
+    puts stderr "In use: $output"
+}
+
+set dataItemList [list U0 Sdelta0 ex0 alphac pCentral revFreq sMax]
+if [catch {exec sddsconvert $twiss -pipe=out -topage=1 \
+             | sddsprocess -pipe -process=s,max,sMax \
+             "-define=parameter,revFreq,sMax pCentral beta.p c_mks * / rec" \
+             | sdds2stream -pipe \
+             -parameter=[join $dataItemList ,]} dataList] {
+    puts stderr "$dataList"
+    exit 1
+}
+set index 0
+foreach item $dataItemList {
+    set ${item} [lindex $dataList $index]
+    incr index
+}
+set revFreq1 [expr $revFreq]
+set sMax1 [expr $sMax]
+
+set voltage $Vm
+set harmonic $hm
+set extradE 0
+set harmonic2 $hh
+set voltage2 $Vh
+set superPeriods 1
+if [expr $voltage<0] {
+    # initial start with overvoltage of 1.5 to avoid problem with arcsin function
+    set voltage [expr $superPeriods*($U0+$extradE) * 1.5]
+}
+
+set voltageRatio [expr (1.0*$voltage2)/$voltage]
+set harmonicPhaseDeg $hdeg
+set harmonicRatio $hh
+set synchTune 0
+set bunchLength 0
+set bunchDuration 0
+set synchPhase 0
+set synchPhaseDeg 0
+set overVoltage 0
+set rfAcceptance 0
+set rfFrequency 0
+set synchFreq 0
+set coupling 0
+
+set fractionalSpan 0.25
+
+proc compute {args} {
+    set plot 0
+    APSStrictParseArguments {plot}
+    global dataItemList
+    eval global $dataItemList bunchLength harmonic voltage synchPhaseDeg
+    global overVoltage rfAcceptance rfFrequency synchFreq coupling extradE synchTune
+    global bunchDuration superPeriods revFreq1 sMax1 sMax
+    global harmonicRatio voltageRatio harmonicMode lastHarmonicMode harmonicPhaseDeg
+    global pi cMKS U1 sMax1 revFreq1 energy omegaRF rfFrequency
+
+    set pi 3.141592653589793
+    set cMKS 2.997924580000000e+08
+    set U1 [expr $superPeriods*($U0+$extradE)]
+    set sMax1 [expr $superPeriods*$sMax]
+    set revFreq1 [expr $revFreq/$superPeriods]
+    set energy [expr sqrt($pCentral*$pCentral+1)*0.51099906]
+    set omegaRF [expr $harmonic*2*$pi*$revFreq1]
+    set rfFrequency [expr $omegaRF/(2*$pi*1.0e6)]
+
+    set overVoltage [expr $voltage/$U1]
+    if [expr $voltageRatio<0] {
+	set voltageRatio 0
+    }
+    set harmonicPhase [expr $harmonicPhaseDeg*$pi/180.]
+    set U2 [expr $U1-$voltageRatio*$voltage*sin($harmonicPhase)]
+    set synchPhase [expr asin($U2/$voltage)]
+    set synchPhaseDeg [expr $synchPhase*180/$pi]
+    set synchTune0 [expr sqrt($alphac*$harmonic*cos($synchPhase)*$voltage/(2*$pi*$energy))]
+    set bunchLength [expr $Sdelta0*$cMKS*sqrt($alphac*$energy/($revFreq1*$omegaRF*cos($synchPhase)*$voltage))/sqrt(1 + $harmonicRatio*$voltageRatio/cos($synchPhase))]
+
+    set synchPhaseDeg [expr 180-180.0*$synchPhase/$pi]
+
+    computeBunchShape -plot $plot
+    findFixedPoints
+    computeBucketHH
+    
+}
+
+proc findFixedPoints {} {
+    global dataItemList debug
+    eval global $dataItemList bunchLength harmonic voltage synchPhaseDeg twiss
+    global overVoltage rfAcceptance rfFrequency synchFreq coupling extradE synchTune energy
+    global bunchDuration superPeriods revFreq1 sMax1 sMax
+    global harmonicRatio voltageRatio harmonicMode lastHarmonicMode harmonicPhaseDeg
+    global pi cMKS U1 sMax1 revFreq1 energy omegaRF rfFrequency output
+
+    if $debug {
+	puts stderr "findFixedPoints: $voltage $voltageRatio $harmonicRatio $synchPhaseDeg $harmonicPhaseDeg $U1"
+    }
+    set dataList [exec sddssequence -pipe=out -define=dphi -sequence=begin=[expr -2*$pi],end=[expr 2*$pi],n=100000 \
+		      | sddsprocess -pipe \
+		      "-define=param,V1,$voltage" "-define=param,Vh,$voltage $voltageRatio *" \
+		      "-define=param,h,$harmonicRatio" \
+		      "-define=param,phi1,$synchPhaseDeg pi * 180 /" "-define=param,phih,$harmonicPhaseDeg pi * 180 /" \
+		      "-define=param,U0,$U1" \
+		      "-define=column,error,U0 V1 phi1 dphi + sin * - Vh phih dphi h * + sin * -" \
+		      "-define=column,deriv,V1 phi1 dphi + cos * Vh phih dphi h * + sin * h * + chs" \
+		      | sddszerofind -pipe -zeroesOf=error -columns=dphi,deriv \
+		      | sddsprocess -pipe "-test=column,deriv 0 <" \
+		      | sdds2stream -pipe -column=dphi]
+    global fixedPoint fixedPointValid
+    if $debug {
+	puts stderr "[llength $dataList] zero crossings: [join $dataList ,]"
+    }
+    catch {unset fixedPoint}
+    if [llength $dataList]>1 {
+	set fixedPoint(0) [lindex $dataList 0]
+	set fixedPoint(1) [lindex $dataList 1]
+	set fixedPointValid 1
+    } else {
+	set fixedPointValid 0
+    }
+}
+
+proc computeBucketHH {args} {
+    global dataItemList
+    eval global $dataItemList bunchLength harmonic voltage synchPhaseDeg twiss
+    global overVoltage rfAcceptance rfFrequency synchFreq coupling extradE synchTune energy
+    global bunchDuration superPeriods revFreq1 sMax1 sMax
+    global harmonicRatio voltageRatio harmonicMode lastHarmonicMode harmonicPhaseDeg
+    global pi cMKS U1 sMax1 revFreq1 energy omegaRF rfFrequency
+    global fixedPoint fixedPointValid rfAcceptance
+
+    set rfAcceptance 0
+    if $fixedPointValid==0 return
+    set fp $fixedPoint(0)
+    set phi1 [expr $synchPhaseDeg*$pi/180]
+    set phih [expr $harmonicPhaseDeg*$pi/180]
+    set Vh [expr $voltageRatio*$voltage]
+    set W1 [expr $voltage*(cos($phi1) - cos($phi1+$fp))]
+    set W2 [expr $Vh*(cos($phih) - cos($phih+$fp*$harmonicRatio))/$harmonicRatio]
+    set W3 [expr $U1*$fp]
+    set W [expr $W1+$W2-$W3]
+    if [expr $W>=0] {
+	set rfAcceptance 0
+    } else {
+	set rfAcceptance [expr sqrt(-$W/($pi*$harmonic*$alphac*$energy))*100]
+    }
+}
+
+proc computeBunchShape {args} {
+    set plot 0
+    APSStrictParseArguments {plot}
+    global dataItemList
+    eval global $dataItemList bunchLength harmonic voltage synchPhaseDeg twiss
+    global overVoltage rfAcceptance rfFrequency synchFreq coupling extradE synchTune energy
+    global bunchDuration superPeriods revFreq1 sMax1 sMax
+    global harmonicRatio voltageRatio harmonicMode lastHarmonicMode harmonicPhaseDeg
+    global pi cMKS U1 sMax1 revFreq1 energy omegaRF rfFrequency fractionalSpan output
+
+    set outFile  $output.longit 
+
+    exec sddssequence -pipe=out -define=t,type=double,units=s -sequence=begin=[expr -$fractionalSpan*1e-6/$rfFrequency],end=[expr $fractionalSpan*1e-6/$rfFrequency],n=10000 \
+        | sddsprocess -pipe=in $outFile \
+        "-define=param,C1,[expr $alphac*$cMKS*$voltage/($energy*$sMax1*$omegaRF)]" \
+        "-define=param,alphac,$alphac" \
+        "-define=param,Sdelta0,$Sdelta0" \
+        "-define=param,phis,$synchPhaseDeg dtor" \
+        "-define=param,k,$voltageRatio" \
+        "-define=param,n,$harmonicRatio,type=short" \
+        "-define=param,phih,$harmonicPhaseDeg dtor" \
+        "-define=param,omega,$omegaRF" \
+        "-define=col,phi,omega t *" \
+        "-define=col,Phi1,phis cos  phi     phis + cos -" \
+        "-define=col,Phi2,phih cos  phi n * phih + cos - k * n /" \
+        "-define=col,Phi3,phis sin  phih sin k * + phi *" \
+        "-define=col,Phi,Phi1 Phi2 + Phi3 - C1 *" \
+        "-define=col,rhoArg,Phi alphac sqr / Sdelta0 sqr / chs" \
+        -process=rhoArg,min,%sMin \
+        "-define=col,rho,rhoArg chs exp" \
+        -process=rho,integ,rhoInteg,functionOf=t \
+        "-redefine=col,rho,rho rhoInteg /" \
+        -process=t,rms,tRms,weight=rho
+
+    set bunchDuration [exec sdds2stream -parameter=tRms $outFile]
+    set bunchLength [expr $bunchDuration*$cMKS]
+
+    if $plot {
+        exec sddsplot -column=t,rho $outFile -title=@tRms &
+    }
+}
+
+compute
+exec sddsmakedataset $output \
+    -column=BHH,type=double,units=% -data=$rfAcceptance \
+    -column=Sz,type=double,units=m -data=$bunchLength \
+    -column=St,type=double,units=s -data=$bunchDuration \
+    -column=Vm,type=double,units=V -data=$voltage \
+    -column=Vh,type=double,units=V -data=[expr $voltageRatio*$voltage] \
+    -column=phim,type=double,units=deg -data=$synchPhaseDeg \
+    -column=phih,type=double,units=deg -data=$harmonicPhaseDeg 

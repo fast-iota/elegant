@@ -1,0 +1,47 @@
+#!/bin/sh  
+# \
+exec oagtclsh "$0" "$@"
+
+if {![info exists env(OAG_TOP_DIR)]} { set env(OAG_TOP_DIR) /usr/local }
+set auto_path [linsert $auto_path 0  $env(OAG_TOP_DIR)/oag/apps/lib/$env(HOST_ARCH)]
+
+APSStandardSetup
+
+set usage {usage: prepareForTAPAs -input <twissFilename> [-output <filename>] -nCells <number> -nCellsScaling {0|1} -name <string>\nThe twiss file should be from twiss_output for the full ring with matched=1 and radiation_integrals=1. For best results, subdivide elements using the run_setup controls to get smooth lattice functions.}
+
+set input ""
+set output ""
+set nCells -1
+set nCellsScaling 1
+set name ""
+set args $argv
+if {[APSStrictParseArguments {input output nCells nCellsScaling name}] || ![string length $input] || ![string length $name] || $nCells<0} {
+    return -code error "$usage"
+}
+
+if ![file exists $input] {
+   return -code error "not found: $input"
+}
+
+if ![string length $output] {
+   set output [file rootname $input].tapas
+}
+if [file exists $output] {
+   return -code error "in use: $output"
+}
+
+exec sddsprocess $input -pipe=out \
+  -process=s,max,Circumference \
+  -print=parameter,Name,$name \
+  -define=parameter,nCells,$nCells,type=long \
+  "-define=parameter,nCellsScaling,$nCellsScaling,type=short" \
+  "-define=parameter,cellLength,Circumference nCells /,units=m" \
+  "-test=column,s cellLength 1e-6 + > ! " \
+  | sddsconvert -pipe=in $output \
+  -retain=column,s,betax,betay,etax,etaxp,etay,etayp,alphax,alphay \
+  -delete=parameter,dnu*,*Upper,*Lower,coupling*,emittanceRatio,waists*,deltaHalfRange,dbeta*dp,dalpha*dp,etax?,etay?,Step,enx0,alphac2,Stage
+
+
+
+
+

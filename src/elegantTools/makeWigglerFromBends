@@ -1,0 +1,103 @@
+#!/bin/sh  
+# \
+exec oagtclsh "$0" "$@"
+
+#
+# Script to build a wiggler magnet out of many CSBEND elements.
+# Better alternative is to use the WIGGLER or CWIGGLER elements, with elegant 26.0.2 or later.
+#
+# M. Borland, ANL, 2014
+
+if {![info exists env(OAG_TOP_DIR)]} { set env(OAG_TOP_DIR) /usr/local }
+set auto_path [linsert $auto_path 0  $env(OAG_TOP_DIR)/oag/apps/lib/$env(HOST_ARCH)]
+
+APSStandardSetup
+set tclPrecision 17
+
+set usage {usage: makeWigglerFromBends -rootname <rootname> {-K <value> | -B <Tesla>} -energy <MeV> [-b1 <1/m>] -parts <nPerPole> -period <cm> -length <m> -name <string>}
+set name ""
+set period 3.30
+set rootname ""
+set K 2.8
+set B 0
+set b1 0
+set parts 6
+set length 4.8
+set energy 0.0
+set args $argv
+if {[APSStrictParseArguments {period rootname energy K B b1 parts length name}] || ![string length $rootname] || ![string length $name]} {
+    return -code error "$usage"
+}
+if [expr int($parts/2)*2-$parts]!=0 {
+    return -code error "parts per pole must be even"
+}
+if [expr $energy==0] {
+    return -code error "give beam energy in MeV\n$usage"
+}
+
+foreach ext {lte} {
+    if [file exists $rootname.$ext] {
+        return -code error "in use: $rootname.$ext"
+    }
+}
+set fdl [open $rootname.lte w]
+
+set pi [expr 4*atan(1)]
+set sum 0.0
+for {set part 0} {$part<$parts} {incr part} {
+    set phase [expr ($part+0.5)/($parts)*$pi]
+    lappend phaseList $phase
+    set strength [expr sin($phase)]
+    lappend strength0List $strength
+    set sum [expr $sum+$strength]
+}
+
+if [expr $B!=0] {
+    set K [expr 93.4*$B*($period/100.0)]
+}
+set theta [expr $K/($energy/0.51099906)]
+set totalBend [expr $theta*2]
+set dl [expr $period/100.0/2/$parts]
+
+foreach strength $strength0List phase $phaseList {
+    set strength [expr $totalBend*$strength/$sum]
+    lappend strengthList $strength
+}
+
+foreach sign {-1 1} type {P N} {
+    set phi [expr $sign*$theta]
+    set index 0
+    set elementList ""
+    set element1List ""
+    set element2List ""
+    foreach strength $strengthList phase $phaseList {
+        set angle [expr ($sign<0?1:-1)*$strength]
+        set e1 [expr -$phi]
+        set e2 [expr $angle-$e1]
+        set elementName ${name}${type}[format %03d $index]
+        lappend elementList $elementName
+        puts $fdl "$elementName: CSBEN,N_KICKS=4,INTEGRATION_ORDER=2,ISR=1,SYNCH_RAD=1,L=$dl,ANGLE=$angle,E1=$e1,E2=$e2,EDGE_ORDER=1,B1=$b1"
+        if [expr $index<$parts/2] {
+            lappend element2List $elementName
+        } else {
+            lappend element1List $elementName
+        }
+        set phi   [expr $phi+$angle]
+        incr index
+    }
+    if [string compare $type P]==0 {
+        puts $fdl "${name}P1: line=([join $element1List ,])"
+        puts $fdl "${name}P2: line=([join $element2List ,])"
+    }
+    puts $fdl "${name}${type}: line=([join $elementList ,])"
+}
+
+set poles [expr int($length/($period/200.0)/2)*2]
+set uLength [expr $poles*$period/200.0]
+set eLength [expr ($length-$uLength)/2.0]
+set fullPeriods [expr ($poles-2)/2]
+puts $fdl "${name}L: DRIFT,L=$eLength"
+puts $fdl "${name}: line=(${name}L,${name}P1,$fullPeriods*(${name}N,${name}P),${name}N,${name}P2,${name}L)"
+puts $fdl "${name}ND: DRIFT,L=[expr $length/(-2)]"
+puts $fdl "${name}I: line=(${name}ND,${name},${name}ND)"
+

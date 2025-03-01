@@ -1,0 +1,42 @@
+#!/bin/sh  
+# \
+exec oagtclsh "$0" "$@"
+
+if {![info exists env(OAG_TOP_DIR)]} { set env(OAG_TOP_DIR) /usr/local }
+set auto_path [linsert $auto_path 0  $env(OAG_TOP_DIR)/oag/apps/lib/$env(HOST_ARCH)]
+
+APSStandardSetup
+
+#
+# Remove negative or backward drifts
+#
+
+set usage {usage: removeBackDrifts -input <filename> -output <filename> [-removeZeroLength 1(0)]}
+set args $argv
+set input ""
+set output ""
+set removeZeroLength 0
+if {[APSStrictParseArguments {input output removeZeroLength}] || ![string length $input] || ![string length $output]} {
+    return -code error "$usage"
+}
+
+if ![file exists $input] {
+    return -code error "$input: not found"
+}
+if [file exists $output] {
+    return -code error "$output: already exists"
+}
+
+if $removeZeroLength {
+    set cmd "sddssort -column=s -pipe -unique"
+} else {
+    set cmd "cat"
+}
+
+eval exec sddsprocess $input -pipe=out \
+    -process=s,min,%sMinBackDrift \
+    "{-rpnexpression=sMinBackDrift -1 + sto sHighWaterMark,repeat}" \
+    "{-define=column,keepFlagBackDrift,s sHighWaterMark < ? 0 : s sto sHighWaterMark 1 $}" \
+    -filter=column,keepFlagBackDrift,1,1 \
+    | $cmd \
+    | sddsconvert -pipe=in $output -delete=parameter,sMinBackDrift -delete=column,keepFlagBackDrift

@@ -1,0 +1,81 @@
+#!/bin/sh  
+# \
+exec oagtclsh "$0" "$@"
+
+if {![info exists env(OAG_TOP_DIR)] || [string length $env(OAG_TOP_DIR)]==0} {
+    set env(OAG_TOP_DIR) /usr/local
+}
+set auto_path [linsert $auto_path 0  $env(OAG_TOP_DIR)/oag/apps/lib/$env(HOST_ARCH)]
+
+APSStandardSetup
+
+set usage {usage: ionTrapping -twiss <filename> -superPeriods <number> -kappa <ratio> -output <filename> -current <mA> -bunches <number> -emittanceFactor <value>(1) -SdeltaFactor <value>(1)}
+set twiss ""
+set superPeriods 0
+set kappa -1
+set bunches 0
+set current 0
+set emittanceFactor 1
+set SdeltaFactor 1
+set output ""
+set args $argv
+if {[APSStrictParseArguments {twiss superPeriods output bunches current kappa emittanceFactor SdeltaFactor}] || ![string length $twiss] || ![string length $output] || \
+   [expr $bunches<=0] || [expr $current<=0] || [expr $kappa<=0] || [expr $superPeriods<=0]} {
+    return -code error "$usage"
+}
+
+if ![file exists $twiss] {
+   return -code error "not found: $twiss"
+}
+if [file exists $output] {
+   return -code error "in use: $output"
+}
+
+exec sddssort $twiss -pipe=out -column=s -unique \
+    | sddsprocess -pipe \
+    "-define=parameter,emittanceFactor,$emittanceFactor" \
+    "-define=parameter,SdeltaFactor,$SdeltaFactor" \
+    "-define=parameter,kappa,$kappa" \
+    "-define=parameter,ex,ex0 1 kappa Jy * Jx / + / emittanceFactor *,units=m" \
+    "-define=parameter,ey,ex kappa * emittanceFactor *,units=m" \
+    "-define=column,Sx,ex betax * Sdelta0 SdeltaFactor * etax * sqr + sqrt,units=m" \
+    "-define=column,Sy,ey betay * Sdelta0 SdeltaFactor * etay * sqr + sqrt,units=m" \
+     "-define=parameter,current,$current,type=double,units=mA" \
+     "-define=parameter,bunches,$bunches,type=long" \
+     -process=s,max,sMax \
+    -define=parameter,superPeriods,$superPeriods,type=short \
+    "-define=parameter,C,sMax superPeriods *,units=m" \
+     "-define=parameter,T0,C c_mks /,units=s" \
+     "-define=parameter,Ne,current 1e3 / T0 * e_mks / bunches /" \
+     "-define=parameter,Sb,C bunches /" \
+     "-define=parameter,rp,re_mks me_mks * mp_mks /" \
+     "-define=column,AxIon,Ne rp * Sb * 2 / Sx / Sx Sy + /" \
+     "-define=column,AyIon,Ne rp * Sb * 2 / Sy / Sx Sy + /" \
+     "-define=column,Acrit,AxIon AyIon 2 maxn" \
+    -process=Acrit,min,%sMin \
+    "-define=column,sizeRatio,Sy abs Sx abs 1e-16 + /" \
+    "-define=parameter,AH2,2 1.00794 *" \
+    "-define=parameter,ACH4,12.0107 1.00794 4 * +" \
+    "-define=parameter,AH2O,1.00794 2 * 15.9994 +" \
+    "-define=parameter,ACO,12.0107 15.9994 +" \
+    "-define=parameter,ACO2,12.0107 15.9994 2 * +" \
+    "-define=column,H2Trapped,Acrit AH2 > ? 0 : 1 $ " \
+    "-define=column,CH4Trapped,Acrit ACH4 > ? 0 : 1 $ " \
+    "-define=column,H2OTrapped,Acrit AH2O > ? 0 : 1 $ " \
+    "-define=column,COTrapped,Acrit ACO > ? 0 : 1 $ " \
+    "-define=column,CO2Trapped,Acrit ACO2 > ? 0 : 1 $ " \
+    "-define=column,H2FrequencyX,2 Ne * rp * AH2 / Sb / Sx / Sx Sy + / sqrt c_mks * pi / 2 / H2Trapped *,units=Hz" \
+    "-define=column,H2FrequencyY,2 Ne * rp * AH2 / Sb / Sy / Sx Sy + / sqrt c_mks * pi / 2 / H2Trapped *,units=Hz" \
+    "-define=column,CH4FrequencyX,2 Ne * rp * ACH4 / Sb / Sx / Sx Sy + / sqrt c_mks * pi / 2 / CH4Trapped *,units=Hz" \
+    "-define=column,CH4FrequencyY,2 Ne * rp * ACH4 / Sb / Sy / Sx Sy + / sqrt c_mks * pi / 2 / CH4Trapped *,units=Hz" \
+    "-define=column,H2OFrequencyX,2 Ne * rp * AH2O / Sb / Sx / Sx Sy + / sqrt c_mks * pi / 2 / H2OTrapped *,units=Hz" \
+    "-define=column,H2OFrequencyY,2 Ne * rp * AH2O / Sb / Sy / Sx Sy + / sqrt c_mks * pi / 2 / H2OTrapped *,units=Hz" \
+    "-define=column,COFrequencyX,2 Ne * rp * ACO / Sb / Sx / Sx Sy + / sqrt c_mks * pi / 2 / COTrapped *,units=Hz" \
+    "-define=column,COFrequencyY,2 Ne * rp * ACO / Sb / Sy / Sx Sy + / sqrt c_mks * pi / 2 / COTrapped *,units=Hz" \
+    "-define=column,CO2FrequencyX,2 Ne * rp * ACO2 / Sb / Sx / Sx Sy + / sqrt c_mks * pi / 2 / CO2Trapped *,units=Hz" \
+    "-define=column,CO2FrequencyY,2 Ne * rp * ACO2 / Sb / Sy / Sx Sy + / sqrt c_mks * pi / 2 / CO2Trapped *,units=Hz" \
+    | sddsprocess -pipe -process=*Trapped,integ,%sInteg,functionOf=s -process=sizeRatio,integ,%sInteg,functionOf=s \
+    | sddsprocess -pipe "-define=parameter,%sFraction,%sInteg sMax /,select=*TrappedInteg,edit=%/Integ//" \
+    "-define=parameter,sizeRatioAve,sizeRatioInteg sMax /" \
+    | sddsconvert -pipe=in $output -delete=parameter,*TrappedInteg 
+

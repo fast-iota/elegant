@@ -23,6 +23,7 @@ DIRS += physics
 DIRS += xraylib
 DIRS += src
 DIRS += src/elegantTools
+DIRS += src/sddsbrightness
 
 .PHONY: all $(DIRS) clean distclean
 
@@ -74,12 +75,15 @@ src: xraylib
 endif
 src/elegantTools: src
 	$(MAKE) -C $@
+src/sddsbrightness: src/elegantTools
+	$(MAKE) -C $@
 
 clean:
 	$(MAKE) -C physics clean
 	$(MAKE) -C xraylib clean
 	$(MAKE) -C src clean
 	$(MAKE) -C src/elegantTools clean
+	$(MAKE) -C src/sddsbrightness clean
 
 distclean: clean
 	rm -rf bin/$(OS)-$(ARCH)

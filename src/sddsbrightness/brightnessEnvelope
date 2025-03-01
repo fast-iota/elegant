@@ -1,0 +1,199 @@
+#!/bin/sh  
+# \
+exec oagtclsh "$0" "$@"
+
+if {![info exists env(OAG_TOP_DIR)]} { set env(OAG_TOP_DIR) /usr/local }
+set auto_path [linsert $auto_path 0  $env(OAG_TOP_DIR)/oag/apps/lib/$env(HOST_ARCH)]
+
+APSStandardSetup
+
+set usage {usage: brightnessEnvelope -input <filename> -output <filename> -mode {brightness|flux|fluxdensity|centralconeflux|pinholeflux|fwhm} [-hmax <integer>(9)] [-spacing <keV>(0.1)] [-range <min>,<max>] [-breakPages {0|1}(1)] [-fast 1]}
+set input ""
+set output ""
+set mode brightness
+set hmax 9
+set spacing 0.1
+set range 0,0
+set breakPages 1
+set fast 0
+# These are kept for backward compatibility
+set flux 0
+set fluxdensity 0
+set args $argv
+if {[APSStrictParseArguments {breakPages spacing input output mode flux fluxdensity hmax range fast}] || ![string length $input] || ![string length $output]} {
+    return -code error "$usage"
+}
+if ![file exists $input] {
+    return -code error "not found: $input"
+}
+if [file exists $output] {
+    return -code error "in use: $output"
+}
+if $flux {
+    set mode flux
+}
+if $fluxdensity {
+    set mode fluxdensity
+}
+
+set PEMin [lindex [split $range ,] 0]
+set PEMax [lindex [split $range ,] 1]
+if [expr $PEMin==$PEMax] {
+    catch {exec sddsprocess $input -pipe=out \
+             "-process=photonEnergy*,min,%sMin" \
+             "-process=photonEnergy*,max,%sMax" \
+             | sddscollapse -pipe \
+             | sddscollect -pipe -collect=prefix=photonEnergy \
+             | sddsprocess -pipe -process=photonEnergy,min,PEMin \
+             -process=photonEnergy,max,PEMax \
+             | sdds2stream -pipe -parameter=PEMin,PEMax} result
+    # puts $result
+    set PEMin [lindex $result 0]
+    set PEMax [lindex $result 1]
+}
+
+set fileList ""
+
+set BList ""
+set count 0
+switch $mode {
+    flux {
+        set name TotalFlux
+        set sortName $name
+        set units "photons/s/0.1%BW"
+    }
+    fluxdensity {
+        set name FluxDensity
+        set sortName $name
+        set units "photons/s/mrad\$a2\$n/0.1%BW"
+    }
+    centralconeflux {
+        set name CentralConeFlux
+        set sortName $name
+        set units "photons/s/0.1%BW"
+    }
+    pinholeflux {
+        set name PinholeFlux
+        set sortName $name
+        set units "photons/s/0.1%BW"
+    }
+    fwhm {
+        set name FWHM
+        set sortName Brightness
+        set units eV
+    }
+    default -
+    brightness {
+        set name Brightness
+        set sortName Brightness
+        set units "photons/s/mrad\$a2\$n/mm\$a2\$n/0.1%BW"
+    }
+}
+
+if !$fast {
+    set extraInterpList "K"
+    set columnList [APSGetSDDSNames -class column -fileName $input]
+    foreach extraItem {OnAxisPowerDensity TotalPower} {
+	if [lsearch -exact $columnList $extraItem]!=-1 {
+	    lappend extraInterpList $extraItem
+	} 
+    }
+
+    for {set h 1} {$h<=$hmax} {incr h 2} {
+	set interpList $extraInterpList
+	lappend interpList $name$h Brightness$h
+	set renameList [list photonEnergy$h=photonEnergy $name$h=$name Brightness$h=Brightness]
+	if [catch {exec sddssort $input -pipe=out -column=photonEnergy$h,incr \
+		       | sddsprocess -pipe "-test=column,photonEnergy$h 0 >" \
+		       | sddsinterp -pipe \
+		       -equispaced=$spacing,$PEMin,$PEMax -below=value=0 -above=value=0 \
+		       -column=photonEnergy$h,[join $interpList ,] \
+		       | sddsconvert -pipe=in $input.$h -rename=column,[join $renameList ,]} result] {
+	    break
+	} else {
+	    lappend fileList $input.$h
+	    incr count
+	}
+    }
+
+    eval exec sddscombine $fileList -pipe=out \
+	| sddsprocess -pipe "{-define=column,harmonic,i_page 2 * 1 -,type=long}" \
+	| sddscombine -pipe -merge \
+	| sddssort -pipe -column=photonEnergy,incr -column=$sortName,incr \
+	| sddsbreak -pipe -change=photonEnergy \
+	| sddsprocess -pipe -clip=0,1,invert \
+	| sddscombine -merge -pipe=in -retain=column,photonEnergy,harmonic,$name $output.tmp
+    
+    if $breakPages {
+	exec sddsbreak $output.tmp $output -change=harmonic
+    } else {
+	file rename $output.tmp $output
+    }
+
+    eval file delete $fileList $output.tmp
+
+} else {
+    # Older, faster method that doesn't do such a good job of separating pages for harmonics
+    set extraInterpList "K"
+    set columnList [APSGetSDDSNames -class column -fileName $input]
+    if [lsearch -exact $columnList OnAxisPowerDensity]!=-1 {
+	lappend extraInterpList OnAxisPowerDensity
+    } 
+    if [lsearch -exact $columnList TotalPower]!=-1 {
+	lappend extraInterpList TotalPower
+    } 
+
+    for {set h 1} {$h<=$hmax} {incr h 2} {
+	set interpList $extraInterpList
+	lappend interpList $name$h
+	set renameList [list photonEnergy$h=photonEnergy]
+	foreach item $extraInterpList {
+	    lappend renameList $item=${item}$h
+	}
+	if [catch {exec sddssort $input -pipe=out -column=photonEnergy$h,incr \
+		       | sddsprocess -pipe "-test=column,photonEnergy$h 0 >" \
+		       | sddsinterp -pipe \
+		       -equispaced=$spacing,$PEMin,$PEMax -below=value=0 -above=value=0 \
+		       -column=photonEnergy$h,[join $interpList ,] \
+		       | sddsconvert -pipe=in $input.$h -rename=column,[join $renameList ,]} result] {
+	    break
+	} else {
+	    lappend fileList $input.$h
+	    lappend BList $name$h
+	    lappend PDList OnAxisPowerDensity$h
+	    lappend TPList TotalPower$h
+	    lappend KList K$h
+	    incr count
+	}
+    }
+
+    if {[lsearch -exact $columnList OnAxisPowerDensity]!=-1 && [lsearch -exact $columnList TotalPower]!=-1} {
+	eval exec sddsxref $fileList -pipe=out -take=* \
+	    | sddsprocess -pipe \
+	    "{-define=column,$name,$BList $count maxn,units=$units}" \
+	    "{-redefine=column,OnAxisPowerDensity,$PDList $count maxn,units=W/mrad\$a2\$n}" \
+	    "{-redefine=column,TotalPower,$TPList $count maxn,units=W}" \
+	    "{-redefine=column,K,$KList $count maxn}" \
+	    | sddsconvert -pipe=in $output.tmp  \
+	    -delete=column,OnAxisPowerDensity?,OnAxisPowerDensity??,TotalPower?,TotalPower??,K?,K??,Brightness?,Brightness??,CentralConeFlux?,CentralConeFlux??,PinholeFlux?,PinholeFlux??,FWHM?,FWHM??
+    } else {
+	eval exec sddsxref $fileList -pipe=out -take=* \
+	    | sddsprocess -pipe \
+	    "{-define=column,$name,$BList $count maxn,units=$units}" \
+	    | sddsconvert -pipe=in $output.tmp  \
+	    -delete=column,OnAxisPowerDensity?,OnAxisPowerDensity??,TotalPower?,TotalPower??,K?,K??,Brightness?,Brightness??,CentralConeFlux?,CentralConeFlux??,PinholeFlux?,PinholeFlux??
+    }
+    
+    if $breakPages {
+	exec sddsprocess $output.tmp -pipe=out \
+	    "-define=column,Break1,$name 1e6 < ? 1 : 0  \$ "  \
+	    "-define=column,Break2,i_row 0 == ? 0 : $name i_row 1 - &$name \[ 1e-16 + / 1.1 / int \$ " \
+	    "-define=column,Break,Break1 Break2 +" \
+	    | sddsbreak -pipe -change=Break \
+	    | sddsprocess -pipe=in -nowarning -filter=col,Break,0,0 "-test=parameter,n_rows 1 > " $output
+    } else {
+	file rename $output.tmp $output
+    }
+
+    eval file delete $fileList $output.tmp
+}

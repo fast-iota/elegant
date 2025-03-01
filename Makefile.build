@@ -96,7 +96,7 @@ ifeq ($(OS), Windows)
 else
 
  %$(EXEEXT): %.$(OBJEXT) $(PROD_DEPS)
-	$(CCC) -o $@ $@.o $(LDFLAGS) $(LIB_LINK_DIRS) $(PROD_LIBS) $(PROD_SYS_LIBS)
+	$(CCC) $(RPATH) -o $@ $@.o $(LDFLAGS) $(LIB_LINK_DIRS) $(PROD_LIBS) $(PROD_SYS_LIBS)
 	cp -f $@ $(BIN_DIR)/
  $(LIBRARY): $(LIBRARY_OBJS)
 	$(AR) $(LIBRARY) $(LIBRARY_OBJS)

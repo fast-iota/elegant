@@ -1,0 +1,41 @@
+This element imposes kicks on the beam according
+to a Hamiltonian that is a polynomial function of x and y 
+\begin{equation}
+H_k\Delta s = \sum_{i=0}^{6} \sum_{j=0}^{6} K_{ij} x^i y^j 
+\end{equation}
+where $K_{00}$ is ignored.
+The changes to the momenta are determined via Hamilton's equations, e.g.,
+\begin{equation}
+\Delta q_x = -\frac{\partial H_k\Delta s}{\partial x}
+\end{equation}
+
+It also implements a generalized drift that is described by another Hamiltonian
+\begin{equation}
+H_d\Delta s = (1+\delta) \sum_{i=0}^{6} \sum_{j=0}^{6} D_{ij} \left(\frac{q_x}{1+\delta}\right)^i \left(\frac{q_y}{1+\delta}\right)^j
+\end{equation}
+where $D_{00}$ is ignored.
+Again, the changes to the positions are determined via Hamilton's equations, e.g., 
+\begin{equation}
+\Delta x = \frac{\partial H_d\Delta s}{\partial q_x}
+\end{equation}
+
+In version 2019.1.0, another option was added for the drift Hamiltonian.
+This is activated by setting the paramter \verb|DRIFT_TYPE| to 2 (the default is 1)
+and setting the \verb|E| values instead of the \verb|D| values.
+In this case, the $\delta$ dependence is under user control
+\begin{equation}
+H_d\Delta s = \sum_{i=0}^{6} \sum_{j=0}^{6} \sum_{k=0}^{6} E_{ijk} q_x^i q_y^j \delta^k
+\end{equation}
+where $E_{000}$ is ignored.
+
+In more detail, the drift Hamiltonian is applied on both sides of the kick Hamiltonian, but with
+half strength. 
+
+For example, a quadrupole of length $L$ with integrated strength $K_1 L$  could be specified by setting
+$K_{20} = -K_{02} = K_1 L/2$ and $D_20 = D02 = L/2$.
+A sextupole with integrated strength $K_2 L$ could be specified by setting $K_{30} = K_2 L/6$ and $K_{12} = K_2 L/2$
+and $D_20 = D02 = L/2$.
+The purpose, however, is not to simulate such elements, since they can be more conveniently simulated with 
+\verb|KQUAD| or \verb|KSEXT|.
+It is rather to simulate elements that may not be described by the usual multipoles.
+

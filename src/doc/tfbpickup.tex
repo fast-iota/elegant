@@ -1,0 +1,22 @@
+This element is used together with the {\tt TFBDRIVER} element to
+simulate a digital turn-by-turn feedback system.  Each {\tt TFBPICKUP}
+element must have a unique identification string assigned to it using
+the {\tt ID} parameter.  This is used to identify which drivers get
+signals from the pickup.
+
+A 30-term FIR filter can be defined using the {\tt A0} through {\tt
+A29} parameters.  The input to the filter is the turn-by-turn beam
+centroid at the pickup location.  The output of the filter is simply
+$\sum_{i=0}^{29} a_i C_i$, where $C_i$ is the centroid from $i*U$ turns
+ago, where $U$ is the value specified by the \verb|UPDATE_INTERVAL| parameter.
+Note that $\sum_{i=0}^{29} a_i$ should generally be zero. Otherwise, the
+system will attempt to correct the DC orbit.  The output of the filter
+is the input to the driver element(s).
+
+The \verb|PLANE| parameter can take four values: ``x'', ``y'', ``delta'', and ``phase'', specifying
+what centroid property of the beam is measured by the pickup. The ``delta''-mode pickup
+is nonphysical, but could have applications to simulations where is not convenient to put a 
+pickup in a high-dispersion area.
+
+See Section 7.2.14 of {\em Handbook of Accelerator Physics and Engineering}
+(Chao and Tigner, eds.) for a discussion of feedback systems.

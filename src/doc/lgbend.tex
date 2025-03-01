@@ -1,0 +1,56 @@
+This element provides a symplectic straight-pole, multi-segment bending magnet with the exact
+Hamiltonian in Cartesian coordinates.
+The quadrupole, sextupole, and other multipole terms are defined in Cartesian coordinates.
+The element is restricted to having rectangular ends for each segment.
+It is, in essence, like a series of \verb|CCBEND| \cite{Borland-LS356} elements concatenated into a whole.
+
+The \verb|LGBEND| element has relatively few explicit parameters, giving the illusion of simplicity.
+A custom configuration file is used to specify the many parameters of an \verb|LGBEND|.
+This file is generated using the companion program \verb|straightDipoleFringeCalc| from 
+a generalized gradient expansion (GGE). The  GGE can be
+created using either \verb|computeCBGGE| (for cylindrical-boundary data) or \verb|computeRBGGE|
+for (rectangular-boundary data). There is an example in the {\tt elegant} examples collection.
+
+One issue with \verb|LGBEND|, as with \verb|CCBEND| and to a lesser degree \verb|CSBEND|, is that 
+the final reference trajectory is not guaranteed to be on axis.
+To address this, but default \verb|LGBEND| will automatically adjust the strength of the
+first and last segments to minimize the $x$ and $x^\prime$ coordinates of the reference particle.
+(This can be defeated by setting \verb|OPTIMIZE_FSE=0|.)
+In doing this, the $K_1$ and $K_2$ values of those segments are by default automatically scaled
+to ensure that the integrated quadrupole and sextupole are not chagned. 
+(This can be defeated by setting \verb|COMPENSATE_KN=0|.)
+
+{\bf Radiation effects}
+
+If \verb|SYNCH_RAD| is non-zero, classical synchrotron radiation is included in tracking.
+Incoherent synchrotron radiation, when requested with {\tt ISR=1},
+normally uses gaussian distributions for the excitation of the electrons.
+(To exclude ISR for single-particle tracking, set \verb|ISR1PART=0|.)
+Setting {\tt USE\_RAD\_DIST=1} invokes a more sophisticated algorithm that
+uses correct statistics for the photon energy and number distributions.
+In addition, if {\tt USE\_RAD\_DIST=1} one may also set {\tt ADD\_OPENING\_ANGLE=1},
+which includes the photon angular distribution when computing the effect on 
+the emitting electron.  
+
+If \verb|SYNCH_RAD| and \verb|SR_IN_ORDINARY_MATRIX| are non-zero, classical synchrotron radiation will be included in
+the ordinary matrix (e.g., for \verb|twiss_output| and \verb|matrix_output|).  Symplecticity is not assured, but the results may
+be interesting nonetheless. A more rigorous approach is to use \verb|moments_output|.
+\verb|SR_IN_ORDINARY_MATRIX| does not affect tracking.
+
+{\bf Adding errors}
+
+Misalignments are performed in the body-centered frame using Venturini's method \cite{Venturini2021}
+based on the values provided for \verb|DX|, \verb|DY|, \verb|DZ|, \verb|ETILT|, \verb|EPITCH|, 
+and \verb|EYAW|.
+The \verb|FSE| parameter is used to impart a global fractional strength error, which affects not only
+the dipole field but also any quadrupole or sextupole terms.
+The \verb|TILT| parameter is used to specify the design orientation of the magnet.
+
+{\bf Matrix generation}
+
+{\tt elegant} will use tracking to determine the transport matrix for \verb|LGBEND| elements, which 
+is needed for computation of twiss parameters and other operations.
+This can require some time, so {\tt elegant} will cache the matrices and re-use them for
+identical elements.
+Still, there is a performance benefit to be had from using the parallel version, particularly
+when assignment of errors prevents sharing of results among many elements.

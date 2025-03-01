@@ -1,0 +1,30 @@
+This element provides a simple model of beam-beam kicks from a stiff opposing beam
+defined by the bunch charge, transverse centroids, and transverse sizes.
+
+Three distribution types are supported:
+\begin{itemize}
+\item \verb|gaussian| --- A transversely-gausssian charge distribution is used.
+  The parameters \verb|XSIZE| and \verb|YSIZE| are interpreted as
+  the rms sizes of the distribution. 
+The computations are based on the Bassetti-Erskine formula \cite{BassettiErskine}.
+\item \verb|uniform| --- A uniformly-filled two-dimensional ellipsoidal distribution is used.
+\begin{equation}
+  \rho(x,y, z) = \frac{Q}{\pi a b L}
+\end{equation}
+ when
+$(x/a)^2 + (y/b)^2\leq 1$ and $\left|z\right|\leq L/2$, and zero otherwise.
+The parameters \verb|XSIZE| and \verb|YSIZE| are interpreted as $a$ and $b$, respectively.
+$L$ is the length of the slug of charge, which is assumed to be sufficiently short that
+the impulse approximation is valid.
+The computations are based on Furman's expressions \cite{Furman-LBL-34682}.
+\item \verb|parabolic| --- A parabolic two-dimensional ellipsoidal distribution is used.
+\begin{equation}
+  \rho(x,y,z) = \frac{2 Q}{\pi a b L} (1 - (x/a)^2 - (y/b)^2)
+\end{equation}
+ when
+$(x/a)^2 + (y/b)^2\leq 1$ and $\left|z\right|\leq L/2$, and zero otherwise.
+The parameters \verb|XSIZE| and \verb|YSIZE| are interpreted as $a$ and $b$, respectively.
+$L$ is the length of the slug of charge, which is assumed to be sufficiently short that
+the impulse approximation is valid.
+The computations are based on Furman's expressions \cite{Furman-LBL-34682}.
+\end{itemize}

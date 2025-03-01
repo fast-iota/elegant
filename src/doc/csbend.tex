@@ -1,0 +1,156 @@
+This element provides a symplectic bending magnet with the exact
+Hamiltonian.  For example, it retains all orders in the momentum offset
+and curvature.  The field expansion is available to eighth order.
+
+One pitfall of symplectic integration is the possibility of orbit and
+path-length errors for the reference orbit if too few kicks are used.
+This may be an issue for rings.  Hence, one must verify that a
+sufficient number of kicks are being used by looking at the trajectory
+closure and length of an on-axis particle by tracking.  Using 
+{\tt INTEGRATION\_ORDER=4} is recommended to reduce the number of
+required kicks.
+
+As of version 28.0 and later, the \verb|REFERENCE_CORRECTION| feature is available
+to compensate for errors inherent in the numerical integration of the trajectories.
+In particular, depending on the number of kicks used, as well as the bending radius and angle,
+an on-axis particle may emerge from the element with a non-zero trajectory and a path-length error.
+With \verb|REFERENCE_CORRECTION| set to a non-zero value, these errors are subtracted from the
+coordinates of all particles.
+There are some pitfalls to using this feature: first, one may not realize that the number of kicks is too small to
+provide good results, since the output trajectory of the central particle will always be
+(nearly) identically zero. Second, in a magnet with a gradient or other field nonuniformities, 
+a particle may emerge centered on the ideal trajectory yet still see the impact of the gradient, sextupole, etc.
+For these reasons, this feature should be used with caution and only when the residual trajectory is 
+large enough to cause problems.
+
+{\bf Higher-order field components}
+
+Normally, one specifies the higher-order components of the field with
+the {\tt K{\em n}}, with $n=1$ through $8$. The field
+expansion in the midplane is $B_y(x) = B_o * (1 +
+\sum_{n=1}^8\frac{K_n\rho_o}{n!}x^n)$.  By setting the {\tt USE\_bN}
+flag to a nonzero value, one may instead specify the {\tt b{\em n}}
+parameters, which are defined by the expansion $B_y(x) = B_o
+* (1 + \sum_{n=1}^8\frac{b_n}{n!}x^n)$.  This is convenient if one is
+varying the dipole radius but wants to work in terms of constant field
+quality.  
+
+Setting {\tt NONLINEAR=0} turns off all the terms above {\tt K\_1} (or {\tt b\_1}) and
+also turns off effects due to curvature that would
+normally result in a gradient producing terms of higher order.
+
+The \verb|EXPANSION_ORDER| parameter controls the order of the expansion of the nonlinear
+fields, so that terms are limited to $x^i y^j$ with $i+j\leq$\verb|EXPANSION_ORDER|.
+By default, when \verb|EXPANSION\_ORDER=0|, the expansion order is set automatically, as follows:
+If the highest non-zero multipole order (specified by \verb|Kn|, \verb|Bn|, \verb|Fn|, or \verb|Gn|)
+is $n$ (with $n=1$ being quadruople), then the expansion order is set to $n+3$.
+However, the expansion order is never automatically set to less than 4, unless all the 
+multipole terms are zero, in which case the expansion always yields a constant.
+Since the number of polynomial terms increases like the square of the expansion order, using many
+multipole terms can significantly increase run time.
+The maximum value for the expansion order is 10.
+
+{\bf Edge angles and edge effects} 
+
+Some confusion may exist about the edge angles, particularly the signs.
+For a sector magnet, we have of course \verb|E1=E2=0|.  For a symmetric rectangular
+magnet, \verb|E1=E2=ANGLE/2|.  If \verb|ANGLE| is negative, then so are
+\verb|E1| and \verb|E2|.  To understand this, imagine a rectangular magnet with positive \verb|ANGLE|.
+If the magnet is flipped over, then \verb|ANGLE| becomes negative, as does the bending
+radius $\rho$.    Hence, to keep the focal length
+of the edge $1/f = -\tan E_i /\rho$ constant, we must also change the sign of
+$E_i$.
+
+Several models are available for edge (or fringe) effects. Which is used depends on the
+settings of the \verb|EDGE_ORDER|, \verb|EDGE1_EFFECTS|, and \verb|EDGE2_EFFECTS| parameters
+\verb|EDGE1_EFFECTS| controls entrance edge effects while \verb|EDGE2_EFFECTS| controls exit edge effects,
+as follows:
+\begin{itemize}
+  \item 1: --- Edge effects using non-symplectic method \cite{KLBrown}. 
+    \begin{itemize}
+      \item \verb|EDGE_ORDER<2| --- linear edge focusing with $\delta$-dependence to all orders. Generally not recommended
+        if symplecticity is important, though when the edge effects are weak it appears acceptable.
+      \item \verb|EDGE_ORDER>=2| --- second-order matrix edge focusing with $\delta$-dependence to all orders. Use of this
+        model is strongly discouraged when symplecticity matters.
+    \end{itemize}              
+  \item 2: --- Edge effects using K. Hwang's method \cite{KHwang}. Note that there will be a
+  trajectory offset when using this method that is particularly evident for small bending radii, due to extension of the
+  fringe field outside the body of the magnet. To suppress this, adjustment of the FSE parameter can be performed automatically 
+  if \verb|FSE_CORRECTION| is set to a non-zero value. If \verb|FSE_CORRECTION=1|, the path-length is adjusted to match the nominal
+  length, which is not physical; this behavior can be suppressed by setting \verb|FSE_CORRECTION=2|.
+    \begin{itemize}
+      \item \verb|EDGE_ORDER<2| --- include only terms linear in transverse coordinates, but $\delta$-dependence to all orders.
+        Recommended for applications where symplecticity matters. This method is symplectic. 
+      \item \verb|EDGE_ORDER>=2| --- include all terms. This settings has been observed to produce emittance damping in some cases
+        (particularly with large emittance and small bending radii), so users are advised to be cautious. 
+        This method is non-symplectic.
+    \end{itemize}              
+  \item 3: --- Edge effects using symplectic method similar to \cite{KLBrown}. The value of \verb|EDGE_ORDER| is ignored.
+        Recommended for applications where symplecticity matters.
+  \item 4: ---- Edge effects using symplectic method developed by R. Lindberg based on K. Hwang's method \cite{KHwang}.
+  Note that there will be a trajectory offset when using this method that is particularly evident for small bending radii, due to
+  extension of the fringe field outside the body of the magnet. To suppress this, adjustment of the FSE parameter can be performed automatically 
+  if \verb|FSE_CORRECTION| is set to a non-zero value. If \verb|FSE_CORRECTION=1|, the path-length is adjusted to match the nominal
+  length, which is not physical; this behavior can be suppressed by setting \verb|FSE_CORRECTION=2|.
+  The \verb|EDGE_ORDER| parameter is ignored.
+  \item 5: Edge effects using symplectic method developed by R. Lindberg, similar to method 4, but with a more detailed treatment
+        of the curved geometry and the presence of a transverse gradients.  The \verb|EDGE_ORDER| parameter
+        may be used to include linear terms only (value of \verb|1|) or linear and higher-order terms (value of \verb|2|).
+        The program \verb|curvedDipoleFringeCalc| may be used to prepare the data needed for this method, which involves
+        seven fringe integrals for each edge. These are input using the {\tt FRINGE}{\em n}{\tt K}{\em m} parameters,
+        where {\em n} is \verb|1| or \verb|2| for the entrance or exit and {\em m} is \verb|0| through \verb|6|.
+  \item Other: --- No edge effects.
+\end{itemize}
+
+{\bf Radiation effects}
+
+If \verb|SYNCH_RAD| is non-zero, classical synchrotron radiation is included in tracking.
+Incoherent synchrotron radiation, when requested with {\tt ISR=1},
+normally uses gaussian distributions for the excitation of the electrons.
+(To exclude ISR for single-particle tracking, set \verb|ISR1PART=0|.)
+Setting {\tt USE\_RAD\_DIST=1} invokes a more sophisticated algorithm that
+uses correct statistics for the photon energy and number distributions.
+In addition, if {\tt USE\_RAD\_DIST=1} one may also set {\tt ADD\_OPENING\_ANGLE=1},
+which includes the photon angular distribution when computing the effect on 
+the emitting electron.  
+
+If \verb|TRACKING_MATRIX| and \verb|SYNCH_RAD| are non-zero, classical synchrotron radiation can be included in the
+ordinary matrix (e.g., for \verb|twiss_output| and \verb|matrix_output|) by setting \verb|SR_IN_ORDINARY_MATRIX| to a
+non-zero value. Symplecticity is not assured, but the results may be interesting nonetheless. A more rigorous approach
+is to use \verb|moments_output|.  \verb|SR_IN_ORDINARY_MATRIX| does not affect tracking.
+
+{\bf Adding errors}
+
+When adding errors, care should be taken to choose the right
+parameters.  The \verb|FSE| and \verb|ETILT| parameters are used for
+assigning errors to the strength and alignment relative to the ideal
+values given by \verb|ANGLE| and \verb|TILT|.  One can also assign 
+errors to \verb|ANGLE| and \verb|TILT|, but this has a different meaning:
+in this case, one is assigning errors to the survey itself.  The reference
+beam path changes, so there is no orbit/trajectory error. The most common
+thing is to assign errors to \verb|FSE| and \verb|ETILT|.  Note that when
+adding errors to \verb|FSE|, the error is assumed to come from the power
+supply, which means that multipole strengths also change.
+
+\input{malign_method_bends}
+
+{\bf Splitting dipoles}
+
+When dipoles are long, it is
+common to want to split them into several pieces, to get a better look
+at the interior optics.  When doing this, care must be exercised not
+to change the optics.  {\tt elegant} has some special features that
+are designed to reduce or manage potential problems. At issue is the
+need to turn off edge effects between the portions of the same dipole.
+
+First, one can simply use the \verb|divide_elements| command to set up
+the splitting.  Using this command, {\tt elegant} takes care of everything.
+
+Second, one can use a series of dipoles {\em with the same name}.  In this case,
+elegant automatically turns off interior edge effects.  This is true when the
+dipole elements directly follow one another or are separated by a MARK element.
+
+Third, one can use a series of dipoles with different names.  In this case, one
+must also use the \verb|EDGE1_EFFECTS| and \verb|EDGE2_EFFECTS| parameters to
+turn off interior edge effects.  
+

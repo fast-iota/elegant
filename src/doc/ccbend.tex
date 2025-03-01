@@ -1,0 +1,117 @@
+This element provides a symplectic straight-pole, bending magnet with the exact
+Hamiltonian in Cartesian coordinates \cite{Borland-LS356}.
+The quadrupole, sextupole, and other multipole terms are defined in Cartesian coordinates.
+The magnet at present is restricted to having rectangular ends.
+This is quite different from \verb|CSBEND|, where the edge angles are user-defined and
+where the field expansion is in curvilinear coordinates.
+Strictly speaking, \verb|CSBEND| is only valid when the dipole is built with curved,
+beam-following poles.
+
+Integration of particles in \verb|CCBEND| is very similar to what's done for
+\verb|KQUAD|, \verb|KSEXT|, and \verb|KOCT|. 
+The only real difference is that coordinate transformations are performed at the
+entrance and exit to orient the incoming central trajectory to the straight magnet axis.
+In addition, the fractional strength error is adjusted to ensure that the 
+outgoing central trajectory is correct.
+
+By default, two adjustments are made at start-up and whenever the length, angle, 
+gradient, or sextupole term change:
+\begin{enumerate}
+\item The fractional strength error is altered to ensure the correct deflecting angle. 
+      This is required because the bending field varies along the trajectory.
+      By default, this affects all field 
+      components together, per the usual convention in {\tt elegant}. To restrict
+      the strength change to the dipole term, set \verb|COMPENSATE_KN=1|.
+      To turn off this optimization, set \verb|OPTIMIZE_FSE=0|.
+\item The transverse position is adjusted to center the trajectory in the magnet.
+      If the sagitta is $\sigma$ and \verb|ANGLE| is positive, the initial and final $x$ 
+      coordinates are $x=-\sigma/2$, while the center coordinate is $x=\sigma/2$.
+      To turn off this optimization, set \verb|OPTIMIZE_DX=0|.
+\end{enumerate}
+One can block the re-optimization of these parameters by setting 
+\verb|OPTIMIZE_FSE_ONCE| and \verb|OPTIMIZE_DX_ONCE| to 1.
+Note also that the optimization is performed with all error-defining parameters
+(\verb|DX|, \verb|DY|, \verb|DZ|, \verb|FSE|, \verb|ETILT|, etc.) set to zero.
+However, errors that are assigned to, say, the \verb|K1| value directly would
+not be recognized as such.
+For this reason, assigning errors to \verb|K1| is not recommended; instead, use
+the \verb|FSE_QUADRUPOLE| parameter.
+
+Having computed the ideal trajectory through a \verb|CCBEND| element, {\tt elegant}
+can suppress any errors in the trajectory. Such errors may occur due to
+limited accuracy in numerical integration. It is recommended to
+set \verb|REFERENCE_CORRECTION=1| to ensure that the path length is corrected.
+Optionally, setting \verb|REFERENCE_CORRECTION=2| would instead correct
+residual transverse trajectory errors. Using \verb|REFERENCE_CORRECTION=3| corrects
+both types of error.
+
+{\bf Edge angles and edge effects} 
+
+The user may specify edge multipoles using the \verb|EDGE_MULTIPOLE| parameter. In addition, 
+the \verb|CCBEND| element supports two fringe models, selected via the \verb|FRINGEMODEL| parameter, 
+which may have a value of 0 (default) or 1.
+\begin{itemize}
+\item[0] --- The default edge angle treatment in \verb|CCBEND| is relatively simple, consisting of a 
+vertical focusing effect with momentum dependence to all orders.
+Also included are edge pseudo-sextupoles (due to the body $K_1$ term) and
+pseudo-octupoles (due to the body $K_2$ term).
+\item[1] --- This model is based on theoretical work and code by R. Lindberg, and includes soft-fringe
+  effects via a series of fringe integrals. The integrals can be computed with the companion program
+  \verb|straightDipoleFringeCalc| from a generalized gradient expansion (GGE). The  GGE can be
+  created using either \verb|computeCBGGE| (for cylindrical-boundary data) or \verb|computeRBGGE|
+  for (rectangular-boundary data). There is an example in the {\tt elegant} examples collection.
+\end{itemize}
+
+{\bf Multipole errors}
+
+Multipole errors are specified for the body and edge in the same fashion as for the
+\verb|KQUAD| element.
+The reference is the dipole field by default, but this may be changed using the
+\verb|REFERENCE_ORDER| parameter.
+
+{\bf Radiation effects}
+
+If \verb|SYNCH_RAD| is non-zero, classical synchrotron radiation is included in tracking.
+Incoherent synchrotron radiation, when requested with {\tt ISR=1},
+normally uses gaussian distributions for the excitation of the electrons.
+(To exclude ISR for single-particle tracking, set \verb|ISR1PART=0|.)
+Setting {\tt USE\_RAD\_DIST=1} invokes a more sophisticated algorithm that
+uses correct statistics for the photon energy and number distributions.
+In addition, if {\tt USE\_RAD\_DIST=1} one may also set {\tt ADD\_OPENING\_ANGLE=1},
+which includes the photon angular distribution when computing the effect on 
+the emitting electron.  
+
+If \verb|SYNCH_RAD| and \verb|SR_IN_ORDINARY_MATRIX| are non-zero, classical synchrotron radiation will be included in
+the ordinary matrix (e.g., for \verb|twiss_output| and \verb|matrix_output|).  Symplecticity is not assured, but the results may
+be interesting nonetheless. A more rigorous approach is to use \verb|moments_output|.
+\verb|SR_IN_ORDINARY_MATRIX| does not affect tracking.
+
+{\bf Adding errors}
+
+When adding errors, care should be taken to choose the right
+parameters.  The \verb|FSE|, \verb|FSE_DIPOLE|, \verb|FSE_QUADRUPOLE|, \verb|ETILT|, \verb|EPITCH|, and
+\verb|YAW|, \verb|DX|, \verb|DY|, and \verb|DZ| parameters are used for
+assigning errors to the strength and alignment relative to the ideal
+values given by \verb|ANGLE| and \verb|TILT|.  One can also assign 
+errors to \verb|ANGLE| and \verb|TILT|, but this has a different meaning:
+in this case, one is assigning errors to the survey itself.  The reference
+beam path changes, so there is no orbit/trajectory error.  Note that when
+adding errors to \verb|FSE|, the error is assumed to come from the power
+supply, which means that multipole strengths also change.
+
+Assigning errors to \verb|K1| is also possible, but is not the best approach, since
+it changes the internal reference trajectory calculation for the element.
+
+{\bf Splitting dipoles}
+
+The \verb|CCBEND| element does not support splitting.
+{\bf Important}: Users {\em should not} attempt to split \verb|CCBEND| elements by hand, since this
+will not result in the correct geometry entering and exiting the various parts.
+
+{\bf Matrix generation}
+
+{\tt elegant} will use tracking to determine the transport matrix for \verb|CCBEND| elements, which 
+is needed for computation of twiss parameters and other operations.
+This can require some time, so {\tt elegant} will cache the matrices and re-use them for
+identical elements.
+

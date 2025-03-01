@@ -1,0 +1,20 @@
+The three options and their mode of operation are as follows:
+\begin{itemize}
+
+\item \verb|ABSDEV| : compute the mean of the coordinate values, then compute absolute value of difference
+between the mean and the coordinate value for each particle. If this absolute deviation exceeds
+the user-specified limit, then the particle is removed. This could be used, for
+example, to remove particles outside of 100ps of the mean arrival time.
+
+\item \verb|STDEVIATION|: compute the mean and standard deviation of the
+coordinate values, then compute the absolute value of difference between the
+mean and the coordinate value for each particle, normalized by the standard
+deviation. If this value exceeds the user-specified limit, then the
+particle is removed. This could be used, for example, to remove
+particles outside of five sigma of the horizontal beam size from the centroid.
+
+\item \verb|ABSVALUE|: compare the absolute value of the particle coordinate value to the
+user-specified limit. If it exceeds this limit, then the particle is removed.
+This could be used, for example, to remove particles with slopes that exceed 100 mrad.
+
+\end{itemize}

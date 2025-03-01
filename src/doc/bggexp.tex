@@ -1,0 +1,116 @@
+This element simulates transport through a 3D magnetic field
+specified in terms of a generalized gradient expansion \cite{Venturini-NIMA427-387}.
+After reconstructing the field, it simply integrates the equations of motion
+based on the Lorentz force equation in cartesian coordinates.  
+
+The generalized gradients are provided in SDDS files.
+In addition to several columns describing the gradients, the file must contain a parameter:
+\begin{itemize}
+\item \verb|m| --- The multipole index, using the convention where $m=0$ is solenoid, $m=1$ is dipole, $m=2$ is quadrupole,
+  etc. N.B.: this convention conforms with \cite{Venturini-NIMA427-387} but is not the usual one used by
+  {\tt elegant}. This should be stored as a short integer.
+\end{itemize}
+The files may also include optional parameters \verb|xCenter| and \verb|yCenter| giving the center of the expansion
+in meters.
+
+In the original implementation, which is still supported, only normal field components were included
+In that case, the user should use the \verb|FILENAME| field to provide a file 
+with the following floating-point columns:
+\begin{itemize}
+\item \verb|z| --- Longitudinal coordinate. Units should be ``m''.
+\item \verb|Cnm|{\em n} --- The $n^{th}$ generalized gradient of the $m^{th}$ harmonic, where $n=0,2,4,...$.
+  There is no preset limit to the number of generalized gradients. Units are ignored,
+  but should be SI.
+\item \verb|dCnm|{\em n}\verb|/dz| --- The longitudial derivative of the $n^{th}$ generalized gradient, 
+  for the $m^{th}$ harmonic, where $n=0,2,4,...$.
+  The number of derivatives must match the number of generalized gradients {\bf Cnm{\em n}}.
+\end{itemize}
+The field expansion in this case is
+\begin{equation}
+\begin{array}{lcl}
+B_r & = & \sum\limits_{m=1}^\infty \sum\limits_{n=0}^\infty \frac{(-1)^n m! (2n + m)}{4^n n! (n+m)!} r^{2 n + m-1}
+\left\{C_m^{\left[2n\right]}(z) \sin m\phi\right\}  \\
+B_\phi & = & \sum\limits_{m=1}^\infty \sum\limits_{n=0}^\infty \frac{(-1)^n m! (2 n + m)}{4^n n! (n+m)!} r^{2 n + m-1}
+\left\{C_m^{\left[2n\right]}(z) \cos m\phi\right\} \\
+B_z & = & \sum\limits_{m=0}^\infty \sum\limits_{n=0}^\infty \frac{(-1)^n m!}{4^n n! (n+m)!} r^{2 n + m}
+\left\{C_m^{\left[2n+1\right]}(z) \sin m\phi\right\}
+\end{array}
+\end{equation}
+where it is understood that the expansion is about the {\tt xCenter} and {\tt yCenter} values, if given.
+
+Note that there is potential confusion between the {\tt xCenter} parameter in the input files
+and the \verb|DXEXPANSION| parameter in the element definition. 
+These provide similar functionality and only one is needed.
+Both give the position of the horizontal center of the expansion relative to the magnetic field coordinate system.
+
+In version 2020.5 and later, both normal and skew expansions are supported.
+In this case, the user may provide filenames via the \verb|NORMAL_FILENAME| and \verb|SKEW_FILENAME|
+fields.
+In this, case, the files must contain the following floating-point columns:
+\begin{itemize}
+\item {\tt z} --- Longitudinal coordinate. Units should be ``m''.
+\item {\tt CnmS}{\em n} (normal) or {\tt CnmC}{\em n} (skew) --- The $n^{th}$ generalized gradient of the $m^{th}$
+  harmonic, where $n=0,2,4,...$.  There is no preset limit to the number of generalized gradients. Units are ignored,
+  but should be SI.  Note that the ``S'' in the name for the normal components make be confusing. It refers to the fact
+  that these terms appear in the potential with a factor of $\sin m\phi$, whereas the skew terms have $\cos m\phi$
+  factors (hence the ``C'').
+\item {\tt dCnmS}{\em n}{\tt /dz} (normal) or {\tt dCnmC}{\em n}{\tt /dz} (skew) --- The longitudial derivative of the
+  $n^{th}$ generalized gradient, for the $m^{th}$ harmonic, where $n=0,2,4,...$.  The number of derivatives must match
+  the number of generalized gradients {\bf Cnm{\em n}}.
+\end{itemize}
+The field expansion in this case is
+\begin{equation}
+\begin{array}{lcl}
+B_r & = & \sum\limits_{m=1}^\infty \sum\limits_{n=0}^\infty \frac{(-1)^n m! (2n + m)}{4^n n! (n+m)!} r^{2 n + m-1}
+\left\{C_{m,s}^{\left[2n\right]}(z) \sin m\phi + C_{m,c}^{\left[2n\right]}(z) \cos m\phi\right\} +
+\sum\limits_{n=1}^\infty \frac{(-1)^n 2 n}{4^n n! n!} r^{2n-1} C_{0,c}^{\left[2n\right]}(z) \\
+B_\phi & = & \sum\limits_{m=1}^\infty \sum\limits_{n=0}^\infty \frac{(-1)^n m! (2 n + m)}{4^n n! (n+m)!} r^{2 n + m-1}
+\left\{C_{m,s}^{\left[2n\right]}(z) \cos m\phi - C_{m,c}^{\left[2n\right]}(z) \sin m\phi\right\} \\
+B_z & = & \sum\limits_{m=0}^\infty \sum\limits_{n=0}^\infty \frac{(-1)^n m!}{4^n n! (n+m)!} r^{2 n + m}
+\left\{C_{m,s}^{\left[2n+1\right]}(z) \sin m\phi + C_{m,c}^{\left[2n+1\right]}(z) \cos m\phi\right\}
+\end{array}
+\end{equation}
+where it is understood that the expansion is about the {\tt xCenter} and {\tt yCenter} values, if given.
+Users should note that the skew field sign convention used by \cite{Venturini-NIMA427-387} and \verb|BGGEXP| differs
+from that used in {\tt elegant}.  In particular, to convert a normal field to a skew field while conforming to {\tt elegant}'s
+conventions, one must use $C_{m,s}^{p} \rightarrow -C_{m,c}^{p}$ and  $dC_{m,s}^{p}/dz \rightarrow -dC_{m,c}^{p}/dz$.
+
+Data for use with \verb|BGGEXP| can be prepared with the programs \verb|computeCBGGE| (section \ref{computeCBGGE})
+and \verb|computeRBGGE| (section \ref{computeRBGGE}),
+which are distributed with \verb|elegant|.
+
+Synchrotron radiation can be included by setting \verb|SYNCH_RAD=1| for classical radiation only and
+also \verb|ISR=1| for incoherent (quantum) effects. 
+This will impact the results of \verb|moments_output| calculation as well as tracking.
+
+Important notes and limitations:
+\begin{enumerate}
+\item The calculations of \verb|twiss_output|, including radiation integrals, are at this point not affected,
+nor is the setup of rf cavities for storage rings via the \verb|rf_setup| command.
+\item The symplectic integrator, in addition to being symplectic, is typically more accurate than the non-symplectic integrator.
+  It is also considerably slower.
+  However, at minimum, users should use the symplectic integrator to verify that the accuracy of the non-symplectic integrator
+  is adequate.
+\item The \verb|BX| and \verb|BY| parameters allow imposing uniform horizontal and vertical magnetic fields 
+  on the device.
+  This can be helpful if the terminal trajectory deviates from the expected value, e.g., an on-axis particle  
+  ends up off-axis. This may happen if the device has
+  a dipolar field that is truncated at the ends before it has decayed sufficiently.
+  Note that these values are multiplied by the \verb|STRENGTH| factor before being applied to the beam.
+\end{enumerate}
+
+In addition to the \verb|STRENGTH| factor, there are five parameters that can be used to scale multipoles
+of different orders: \verb|FACTOR0|, \verb|FACTOR1|, \verb|FACTOR2|, \verb|FACTOR3|, and \verb|FACTOR4| scale the
+solenoidal, dipolar, quadrupolar, sextupolar, and octupolar fields, respectively.
+The \verb|BXFACTOR|, \verb|BYFACTOR|, and \verb|BZFACTOR| allow multiplying the indicated field components by the given factors.
+The the exception of the \verb|STRENGTH| factor, these scaling parameters may result in unphysical fields.
+
+If \verb|IS_BEND| is non-zero, the magnet is assumed to be a bending magnet, in which case additional
+parameters are required.
+\begin{itemize}
+\item \verb|ZVERTEX|, \verb|XVERTEX| --- Coordinates of the vertex point in coordinate frame of the field data.
+  For a symmetric dipole, \verb|ZVERTEX| is typically zero, while \verb|XVERTEX| would be the displacement of
+  the vertex point from the cylinder axis.
+\item \verb|ZENTRY|, \verb|XENTRY| --- Coordinates of the nominal entry plane.
+\item \verb|ZEXIT|, \verb|XEXIT| --- Coordinates of the nominal exit plane.
+\end{itemize}

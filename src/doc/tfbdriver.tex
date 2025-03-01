@@ -1,0 +1,81 @@
+This element is used together with the {\tt TFBPICKUP} element to
+simulate a digital turn-by-turn feedback system.  Each {\tt TFBDRIVER}
+element must have a unique identification string assigned to it using
+the {\tt ID} parameter.  The same identifier must be used on a {\tt
+TFBPICKUP} element.  This is the pickup from which the driver gets its
+signal.  Each pickup may feed more than one driver, but a driver can
+use only one pickup.
+
+A 30-term FIR filter can be defined using the {\tt A0} through {\tt
+A29} parameters.  The output of the filter is simply $\sum_{i=0}^{29}
+a_i P_i$, where $P_i$ is the pickup filter output from $i*U$ turns ago,
+where $U$ is the \verb|UPDATE_INTERVAL| value specified for the pickup.
+The output of the filter is optionally delayed by the number of update intervals
+given by the {\tt DELAY} parameter.
+
+To some extent, the {\tt DELAY} is redundant.  For example, the filter
+$a_0=0, a_1=1$ with a delay of 0 is equivalent to $a_0=1, a_1=0$ with
+a delay of 1.  However, for long delays or delays combined with
+many-term filters, the {\tt DELAY} feature must be used.
+
+The output of the filter is multiplied by the {\tt STRENGTH} parameter
+to get the kick to apply to the beam.  The {\tt KICK\_LIMIT} parameter
+provides a very basic way to simulate saturation of the kicker output.
+
+The plane that the \verb|TFBDRIVER| kicks is determined by the 
+\verb|PLANE| parameter on the corresponding \verb|TFBPICKUP| element, and
+additionally by the \verb|LONGITUDINAL| parameter, as described in 
+Table \ref{tab:tfbdriver}
+
+\begin{table}[htb]
+\begin{tabular}{llll}
+\hline
+\verb|TFBPICKUP| & \verb|TFBDRIVER| & coordinate & note \\
+\verb|PLANE| & \verb|LONGITUDINAL| & kicked & \\
+\hline
+x & 0 & $x^\prime$ & \\
+x & 1 & $\delta$ & pickup should have $\eta_x\neq 0$ \\
+y & 0 & $y\prime$ & \\
+y & 1 & $\delta$ & pickup should have $\eta_y\neq 0$ \\
+delta & 0 & - & invalid \\
+delta & 1 & $\delta$ & \\
+\hline
+\end{tabular}
+\caption{Correspondence between {\tt PLANE} parameter of {\tt TFBPICKUP}, {\tt LONGITUDINAL} parameter of {\tt TFBDRIVER}, and action of feedback loop.}
+\label{tab:tfbdriver}
+\end{table}
+
+Note: The \verb|OUTPUT_FILE| will produce a file with missing data at the end of
+the buffer if the \verb|OUTPUT_INTERVAL| parameter is not a divisor of the number of passes.
+
+The \verb|FREQUENCY| and \verb|PHASE| parameters may be used to specify the resonant frequency of 
+the driving cavity and its phase relative to the center of the bunch.
+If the frequency is not specified, the kicker is assumed to kick all particles in a bunch by the
+same amount.
+
+For longitudinal feedback only, a more sophicated approach is available using a
+circuit model developed by T. Berenc (APS) may be employed to simulate driving the cavity resonance.
+To invoke this, the user must provide the loaded Q of the cavity using the \verb|QLOADED| parameter,
+the $(R_a/Q)$ using \verb|RAOVERQ|, and the resonant frequency of the unloaded 
+cavity using \verb|FREQUENCY|. Optionally, the drive frequency may be specified using
+\verb|DRIVE_FREQUENCY|; it defaults to the unloaded resonant frequency.
+
+Typically one should choose the resonant frequency to be $(n\pm \frac{1}{4})f_b$, where
+$f_b$ is the bunch frequency and $n$ is an integer.
+This will ensure that the kick to one bunch from the residual voltage from the previous
+bunch (both beam-loading and generator terms), is approximately minimized.
+Checking the \verb|ResidualVoltage| column in the output file to confirm this is advised.
+
+In addition to the resonant and drive frequencies, one must specify a clock frequency with
+\verb|CLOCK_FREQUENCY| and a clock offset with \verb|CLOCK_OFFSET|. The clock used used to
+determine when the drive current changes, which happens at regular intervals. The clock offset is used to 
+ensure that the change does not occur during passage of the bunch. If the clock offset is too small and
+the bunch length too long, this will happen and results in an error.
+The phase shift that results from the clock offset is automatically compensated.
+
+Beam loading is not included in the model, but can be superimposed by inserting an \verb|RFMODE| element
+with matching parameters.
+
+
+See Section 7.2.14 of {\em Handbook of Accelerator Physics and Engineering}
+(Chao and Tigner, eds.) for a discussion of feedback systems.

@@ -1,0 +1,59 @@
+This element provides serial and parallel modeling of long range, multi-bunch, multi-pass, non-resonant wakes.
+Resonant wakes can be modeled using the \verb|*RFMODE| elements, while short-range wakes are modeled with
+\verb|WAKE|, \verb|TRWAKE|, \verb|ZLONGIT|, \verb|ZTRANSVERSE|, and \verb|RFCW|.
+
+For the \verb|LRWAKE| element, the beam is assumed to be bunched and wakes are computed bunch-to-bunch.
+The long-range wake is assumed to be constant within any single bunch.
+
+To use this element, the beam has to be prepared in a special way so that {\tt elegant} can recognize which
+particles belong to which bunches.
+See Section \ref{sect:bunchedBeams} for details.
+Given a properly prepared beam, the algorithm works as follows.
+\begin{itemize}
+\item Each processor uses arrays to record
+\begin{itemize}
+  \item How many particles are in each of $B$ bunches,
+  \item The sum of the arrival times $t$ at the LRWAKE element for the particles in each bunch, and
+  \item The sum of x and y at the LRWAKE element for the particles in each bunch.
+  \end{itemize}
+\item These arrays are summed across all the processors and used to compute the moments
+  $\langle t \rangle$, $\langle x \rangle$, and $\langle y \rangle$ for each bunch, as
+  well as the charge in each bunch.
+\item Arrays of length $B$ from $N$ prior turns are kept in a buffer
+  \begin{itemize}
+  \item Buffer for turns $N-1$ to $1$ is copied to slots $N$ through $2$, thus overwriting the data for
+    the oldest turn.
+  \item The data for latest turn is copied into slot 1.
+  \end{itemize}
+\item  For each bunch, sums are performed over all prior bunches/turns to compute the voltage. For the 
+  longitudinal wake, we have
+  \begin{equation}
+    V_z(b) = \sum\limits_{i=b}^{N*B} q_i W_z(\langle t_b \rangle - \langle t_i \rangle).
+  \end{equation}
+A positive value {\em decelerates} the particle.
+For the horizontal dipole wake we have
+  \begin{equation}
+    V_x(b) = \sum\limits_{i=b}^{N*B} q_i \langle x_i \rangle W_x(\langle t_b \rangle - \langle t_i \rangle),
+  \end{equation}
+with the vertical wake being similar.
+In both cases, a positive value deflects the particle toward positive $x$ or $y$ for a positive offset of the
+driving particle.
+\item The quadrupole wakes may also be included. In this case, the contribution to the horizontal wake is 
+  \begin{equation}
+    V_x(b) = \sum\limits_{i=b}^{N*B} q_i x_p W_x(\langle t_b \rangle - \langle t_i \rangle),
+  \end{equation}
+where $x_p$ is the coordinate of the probe particle. The vertical wake is similar.
+\end{itemize}
+
+To use LRWAKE, the user provides the wakes (functions of t) in an SDDS file.
+These wakes may extend over an arbitrary number of turns, with the user declaring how many turns
+to actually use as part of the element definition.
+However, they should be zero within the region occupied by a single bunch, to avoid
+double-counting with the true short-range wake.
+(Note that the above sums include the self-wake.)
+Similarly, the short-range should be zero for times comparable to the bunch spacing.
+
+Note that the quadrupole wakes are in some cases related to the dipole wakes by constant numerical factors \cite{Chao-PRSTAB-111001}. 
+In such a case, one may name the same column for \verb|QXCOLUMN| (\verb|QYCOLUMN|) and \verb|WXCOLUMN| (\verb|WYCOLUMN|)
+and then specify \verb|QXFACTOR| (\verb|QYFACTOR|) appropriately.
+

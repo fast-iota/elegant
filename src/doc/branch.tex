@@ -1,0 +1,46 @@
+This element is experimental and should be used with care.
+It may not work well with other features, e.g., orbit correction or twiss parameter output.
+It should work well with tracking.
+
+Use of the \verb|BRANCH| element to change the starting point in the lattice is not ideal.
+It is better to use the \verb|change_start| command.
+
+The element permits switching tracking between two segments of a beamline. This can be done once per run
+or periodically. For the former, the \verb|COUNTER| parameter should be used to specify the pass number (which
+is zero on the first pass) on which to branch.
+For the latter, the \verb|INTERVAL| $i$ and (optionally) \verb|OFFSET| $o$ parameters should be used; the branch will occur
+when $(p-o) \% i == 0$.
+
+The application that inspired creation of this element is to switch from tracking using lumped elements to tracking
+using element-by-element methods.
+More specifically, imagine we want to track for 10,000 turns to reach an equilibrium, then perform a beam abort.
+The equilibrium state can be accurately and rapidly modeled using lumped elements, such as \verb|ILMATRIX| and \verb|SREFFECTS|,
+but the beam abort needs to be modeled using comparatively slow element-by-element tracking.
+\begin{verbatim}
+RING1: ILMATRIX,...
+SR1: SREFFECTS,...
+...
+RINGFULL: line=(SECTOR1, SECTOR2, ..., SECTOR40)
+M1: MARK
+M2: MARK
+RF: RFCA,...
+BR1: BRANCH,COUNTER=10000,BRANCH_TO="M1"
+BR2: BRANCH,COUNTER=-1,BRANCH_TO="M2"
+BL: line=(BR1,RING1,SR1,M1,RINGFULL,M2,RF)
+\end{verbatim}
+
+Another application is to model a periodic bypass, e.g.,
+\begin{verbatim}
+RINGA: line=(...)
+RINGB: line=(...)
+RINGC: line=(...)
+BYPASS: line=(...)
+M1: MARK
+M2: MARK
+BR1: BRANCH,INTERVAL=100,BRANCH_TO="M1",ELSE_TO="M2"
+BR2: BRANCH,COUNTER=-1,BRANCH_TO="M3"
+BL: line=(RINGA,BR1,M1,BYPASS,BR2,M2,RINGB,M3,RINGC)
+\end{verbatim}
+In this example, the full ring is composed of three sections, \verb|RINGA|, \verb|RINGB|, and \verb|RINGC|.
+Every 100 passes, the \verb|RINGB| portion is bypassed in favor of \verb|BYPASS|.
+

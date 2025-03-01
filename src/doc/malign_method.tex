@@ -1,0 +1,22 @@
+There are three modes for implementing alignment errors. Which is used
+is controlled by the value of the \verb|MALIGN_METHOD| parameter:
+\begin{itemize}
+\item \verb|MALIGN_METHOD=0| --- This selects the original method, which was
+  the only one available before version 2021.1. The misalignment is
+  referenced to the entrance face. The \verb|YAW| and \verb|PITCH| parameters
+  are ignored.
+\item \verb|MALIGN_METHOD=1| --- This selects a linearized method based on M. Venturini's
+  work \cite{Venturini2021}, with misalignment referenced to the entrance face.
+  The \verb|YAW| and \verb|PITCH| parameters are implemented.
+\item \verb|MALIGN_METHOD=2| --- This selects a linearized method based on M. Venturini's
+  work \cite{Venturini2021}, with misalignment referenced to the magnet center.
+  The \verb|YAW| and \verb|PITCH| parameters are implemented.
+\item \verb|MALIGN_METHOD=3| --- This selects an  exact method based on M. Venturini's
+  work \cite{Venturini2021}, with misalignment referenced to the entrance face.
+  The \verb|YAW| and \verb|PITCH| parameters are implemented.
+\item \verb|MALIGN_METHOD=4| --- This selects an exact method based on M. Venturini's
+  work \cite{Venturini2021}, with misalignment referenced to the magnet center.
+  The \verb|YAW| and \verb|PITCH| parameters are implemented.
+\end{itemize}
+
+For elements with non-zero \verb|TILT|, error displacements and rotations are performed in the lab frame.

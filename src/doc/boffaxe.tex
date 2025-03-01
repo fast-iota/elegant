@@ -1,0 +1,62 @@
+This experimental element simulates transport through a 3D magnetic field constructed from
+an off-axis expansion.
+At present, it is restricted to non-bending elements and in fact to quadrupoles and sextupoles.
+
+This method of expanding the fields is prone to corruption by noise, to a much greater degree than
+the generalized gradient expansion used by \verb|BGGEXP|.
+However, it uses data that can very readily be obtained from magnetic measurements with a Hall probe.
+Users are cautioned to take care in deciding how far to trust the expansion.
+
+For quadrupoles, we use the on-axis gradient $g(z)$ and its z derivatives $g^{(n)}(z)$
+The scalar potential can be written 
+\begin{equation}
+\Phi = \frac{x^5 y^5 g^{(8)}(z)}{86400}-\frac{g^{(6)}(z) \left(x^5 y^3+x^3 y^5\right)}{4320}+\frac{1}{720}
+    g^{(4)}(z) \left(x^5 y+x y^5\right)+\frac{1}{108} x^3 y^3 g^{(4)}(z)-\frac{1}{12} \left(x^3 y+x y^3\right)
+    g''(z)+x y g(z)
+\end{equation}
+From which we find
+\begin{equation}
+B_x = \frac{x^4 y^5 g^{(8)}(z)}{17280}-\frac{g^{(6)}(z) \left(5 x^4 y^3+3 x^2
+    y^5\right)}{4320}+\frac{1}{720} g^{(4)}(z) \left(5 x^4 y+y^5\right)+\frac{1}{36} x^2 y^3 g^{(4)}(z)-\frac{1}{12}
+    \left(3 x^2 y+y^3\right) g''(z)+y g(z)
+\end{equation}
+\begin{equation}
+B_y = \frac{x^5 y^4 g^{(8)}(z)}{17280}-\frac{g^{(6)}(z) \left(3 x^5 y^2+5 x^3
+    y^4\right)}{4320}+\frac{1}{720} g^{(4)}(z) \left(x^5+5 x y^4\right)+\frac{1}{36} x^3 y^2 g^{(4)}(z)-\frac{1}{12}
+    \left(x^3+3 x y^2\right) g''(z)+x g(z)
+\end{equation}
+and
+\begin{equation}
+B_z = \frac{x^5 y^5 g^{(9)}(z)}{86400}-\frac{g^{(7)}(z) \left(x^5 y^3+x^3 y^5\right)}{4320}+\frac{1}{720}
+    g^{(5)}(z) \left(x^5 y+x y^5\right)+\frac{1}{108} x^3 y^3 g^{(5)}(z)-\frac{1}{12} g^{(3)}(z) \left(x^3 y+x
+    y^3\right)+x y g'(z)
+\end{equation}
+These equations satisfy Maxwell's curl equation exactly while satisfying the divergence equation to 
+10$^{th}$ order.
+A similar expansion is available in the code for sextupoles.
+
+For quadrupoles, at minimum the z-dependent gradient $B_1(z)$ must be given, while for
+sextupoles $B_2(z)$ is required.
+$B_n(z)$ is specified in the column named by the \verb|FIELD_COLUMN| parameter.
+The names for the columns containing z derivatives of $B_n(z)$ are constructed from the name of the primary
+column.
+Assume for concreteness that \verb|FIELD_COLUMN="Gradient"|. 
+{\tt elegant} looks for $B_n^{(1)}(z)$ in column \verb|GradientDeriv| and 
+$B_n^{(m)}(z)$ for $m>1$ in columns \verb|GradientDeriv2|, \verb|GradientDeriv3|,  etc.
+Even if the expansion is limited by the \verb|ORDER| parameter, all gradients will be used
+for interpolation with respect to $z$ if the \verb|Z_SUBDIVISIONS| parameter is larger than 1.
+The expansion is truncated if the needed columns do not exist in the input file.
+
+The needed derivatives can be obtained using the program \verb|sddsderiv|, e.g.,
+\begin{verbatim}
+sddsderiv gradient.sdds gradient1.sdds -differ=Gradient -versus=z -savitzky=7,7,7,1
+sddsderiv gradient.sdds gradient2.sdds -differ=Gradient -versus=z -savitzky=7,7,7,2
+sddsderiv gradient.sdds gradient3.sdds -differ=Gradient -versus=z -savitzky=7,7,7,3
+sddsxref gradient.sdds gradient[123].sdds gradients.sdds -take=*Deriv* 
+\end{verbatim}
+(In this example, we use a Savitzky-Golay filter to compute the first three z derivatives of $g(z)$
+using a 7$^{th}$ order fit with 7 points ahead of and behind the evaluation location.)
+The file \verb|gradients.sdds| would then be given as the value of \verb|FILENAME|.
+
+High-order numerical derivative are of course prone to corruption by measurement noise. 
+Examining the derivatives is strongly recommended to ensure this is not an issue.

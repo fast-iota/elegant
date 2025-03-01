@@ -1,0 +1,18 @@
+This element allows transforming the beam using an arbitrary polynomial in the six phase space coordinates,
+$x$, $q_x$, $y$, $q_y$, $s$, and $\delta$.
+Please note that the canonical momenta are used here, not the slopes.
+
+The input file is required to have six pages, each of which gives the polynomial for a different output coordinate.
+The file has the following elements:
+\begin{itemize}
+\item String parameter \verb|Coordinate| names the output coordinate. The file must contain a page
+      for each coordinate, using the names \verb|x|, \verb|qx|, \verb|y|, \verb|qy|, \verb|s|,
+      and \verb|delta|.
+\item Integer columns \verb|Ix|, \verb|Iqx|, \verb|Iy|, \verb|Iqy|, \verb|Is|, and \verb|Idelta|, which
+      give the exponent to be used for the indicated coordinates.
+\item Floating-point column \verb|Coefficient| giving the coefficient by which to multiply the 
+      product of powers of the coordinates.
+             I.e., the term is $C x^{\rm Ix} q_x^{\rm Iqx} y^{\rm Iy} q_y^{\rm Iqy}  s^{\rm Is} \delta^{\rm Idelta}$
+\end{itemize}
+
+Note that in the present version, dependence on $s$ is actually ignored.

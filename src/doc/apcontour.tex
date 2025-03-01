@@ -1,0 +1,36 @@
+The \verb|STICKY| parameter results in the aperture contour being applied inside subsequent \verb|CCBEND|,
+\verb|CSBEND|, \verb|CSRCSBEND|, \verb|KQUAD|, \verb|KSEXT|, \verb|KOCT|, and \verb|KQUSE| elements, as well as at the
+end of other downstream elements. This continues until another \verb|APCONTOUR| element asserts a new contour, or uses
+\verb|CANCEL=1| to cancel the feature.
+
+For versions 2022.1 and later, the input file may have multiple pages, each with $(x, y)$ points specifying a
+closed contour. The combination of the effect of these contours is specified using the \verb|Logic| parameter in
+the input file, utilizing the logical stack and logical operators of the \verb|rpn| module.
+For each particle, the program loops over each contour.
+If the particle is inside (outside) the contour, a \verb|true| (\verb|false|) value is pushed onto the stack,
+followed by execution of the indicated logic.
+If the final value is \verb|true|, the particle survives,  otherwise it is lost.
+(The \verb|invert| parameter on the element definition can be used to invert this.)
+
+For example, if the aperture file is
+\begin{verbatim}
+SDDS1
+&column name=x type=float units=m &end
+&column name=y type=float units=m &end
+&parameter name=Logic type=string &end
+&data mode=ascii no_row_counts=1 &end
+""
+-0.01   -0.015
+-0.01   -0.0075
+-0.015   -0.0075
+-0.015   -0.015
+-0.01   -0.015
+
+"||"
+0.01   -0.015
+0.01   -0.0075
+0.015   -0.0075
+0.015   -0.015
+0.01   -0.015
+\end{verbatim}
+then particles survive only if inside one of the two rectangles.

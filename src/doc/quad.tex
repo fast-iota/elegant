@@ -1,0 +1,73 @@
+This element simulates a quadrupole using a matrix of first, second,
+or third order.
+
+\paragraph{Length specification}
+As of version 29.2, this element incorporates the ability to have different values for the insertion
+and effective lengths. This is invoked when \verb|LEFFECTIVE| is positive. In this case, the
+\verb|L| parameter is understood to be the physical insertion length. Using \verb|LEFFECTIVE| is
+a convenient way to incorporate the fact that the effective length may differ from the physical
+length and even vary with excitation, without having to modify the drift spaces on either side of
+the quadrupole element.
+
+\paragraph{Fringe effects}
+By default, the element has hard edges and constant field within the
+defined length, {\tt L}.  However, this element supports two different methods of implementing fringe fields.
+Which method is used is determined by the \verb|FRINGE_TYPE| parameter.
+
+\paragraph{Edge integral method} The most recent and preferred implementation of fringe field effects is based on edge
+integrals and is invoked by setting \verb|FRINGE_TYPE| to ``integrals''.  This method is compatible with the use of
+\verb|LEFFECTIVE|. However, it provides a first-order matrix only.
+
+The model is based on publications of D.  Zhuo {\em et al.} \cite{Zhou-IPAC10} and  J. Irwin {\em et
+  al.} \cite{Irwin-PAC95}, as well as unpublished work of C. X. Wang (ANL).  The fringe field is characterized by 
+10 integrals given in equations 19, 20, and 21 of \cite{Zhou-IPAC10}.  However, the values input into {\tt elegant}
+should be normalized by $K_1$ or $K_1^2$, as appropriate.
+
+For the exit-side fringe field, let $s_1$ be the center of the magnet, $s_0$ be the location of the nominal end of the magnet
+(for a hard-edge model), and let $s_2$ be a point well outside the magnet.  
+Using $K_{1,he}(s)$ to represent the hard edge model and $K_1(s)$ the actual field profile, we 
+define the normalized difference as $\tilde{k}(s) = (K_1(s) - K_{1,he}(s))/K_1(s_1)$.  (Thus, $\tilde{k}(s) = \tilde{K}(s)/K_0$, using
+the notation of Zhou {\em et al.})
+
+The integrals to be input to {\tt elegant} are defined as 
+\begin{eqnarray}
+i_0^- = \int_{s_1}^{s_0} \tilde{k}(s) ds & & i_0^+ = \int_{s_0}^{s_2} \tilde{k}(s) ds \\
+i_1^- = \int_{s_1}^{s_0} \tilde{k}(s) (s-s_0) ds & & i_1^+ = \int_{s_0}^{s_2} \tilde{k}(s) (s-s_0) ds \\
+i_2^- = \int_{s_1}^{s_0} \tilde{k}(s) (s-s_0)^2 ds & & i_2^+ = \int_{s_0}^{s_2} \tilde{k}(s) (s-s_0)^2 ds \\
+i_3^- = \int_{s_1}^{s_0} \tilde{k}(s) (s-s_0)^3 ds & & i_3^+ = \int_{s_0}^{s_2} \tilde{k}(s) (s-s_0)^3 ds \\
+\lambda_2^- = \int_{s_1}^{s_0} ds \int_s^{s_0} ds\prime \tilde{k}(s) \tilde{k}(s\prime) (s\prime-s) & & 
+\lambda_2^+ = \int_{s_0}^{s_2} ds \int_s^{s_2} ds\prime \tilde{k}(s) \tilde{k}(s\prime) (s\prime-s) 
+\end{eqnarray}
+
+Normally, the effects are dominated by $i_1^-$ and $i_1^+$.
+
+\paragraph{Trapazoidal models}
+This method is based on a third-order matrix formalism and the assumption that the 
+fringe fields depend linearly on $z$.  Although the third-order matrix is computed, it is important
+to note that the assumed fields do not satisfy Maxwell's equations.
+
+To invoke this method, one specifies ``inset'' or
+``fixed-strength'' for the \verb|FRINGE_TYPE| parameter and then provides
+a non-zero value for {\tt FFRINGE}. If  {\tt FFRINGE} is zero (the default), then the magnet
+is hard-edged regardless of the setting of \verb|FRINGE_TYPE|.  If {\tt FFRINGE} is positive, then the magnet has
+linear fringe fields of length {\tt FFRINGE*L/2} at each end.  That
+is, the total length of fringe field from both ends combined is {\tt
+FFRINGE*L}.
+
+Depending on the value of {\tt FRINGE\_TYPE}, the fringe fields are
+modeled as contained within the length {\tt L} (``inset'' type) or
+extending symmetrically outside the length {\tt L} (``fixed-strength''
+type).
+
+For ``inset'' type fringe fields, the length of the ``hard core'' part of
+the quadrupole is {\tt L*(1-FFRINGE)}.  For ``fixed-strength'' type fringe fields,
+the length of the hard core is {\tt L*(1-FFRINGE/2)}.  In the latter case,
+the fringe gradient reaches 50\% of the hard core value at the nominal boundaries
+of the magnet. This means that the integrated strength of the magnet does not
+change as the {\tt FFRINGE} parameter is varied. This is not the case with
+``inset'' type fringe fields.
+
+
+{\bf Misalignments}
+
+\input{malign_method}

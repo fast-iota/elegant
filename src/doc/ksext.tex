@@ -1,0 +1,72 @@
+This element simulates a sextupole using a kick method based on
+symplectic integration.  The user specifies the number of kicks and
+the order of the integration.  For computation of twiss parameters,
+chromaticities, and response matrices, this element is treated like a
+standard thick-lens sextuupole; i.e., the number of kicks and the
+integration order become irrelevant.
+
+{\bf Multipole errors}
+
+\begin{raggedright}
+Specification of systematic and random multipole errors is supported
+through the \verb|SYSTEMATIC_MULTIPOLES|, \verb|EDGE_MULTIPOLES|, and 
+\verb|RANDOM_MULTIPOLES|
+fields.  These specify, respectively, fixed multipole strengths for the
+body of the element, fixed multipole strengths for the edges of the element,
+and random multipole strengths for the body of the element.
+These fields give the names of SDDS files that supply the
+multipole data.  The files are expected to contain a single page of
+data with the following elements:
+\end{raggedright}
+\begin{enumerate}
+\item Floating point parameter {\tt referenceRadius} giving the reference
+ radius for the multipole data.
+\item An integer column named {\tt order} giving the order of the multipole.
+The order is defined as $(N_{poles}-2)/2$, so a quadrupole has order 1, a
+sextupole has order 2, and so on.
+\item Floating point columns {\tt normal} and {\tt skew} giving the values for the
+normal and skew multipole strengths, respectively.  
+(N.B.: previous versions used the names {\tt an} and {\tt bn}, respectively. This is still accepted but deprecated)
+These are defined as a fraction 
+of the main field strength measured at the reference radius, R: 
+$f_n  = \frac{K_n R^n / n!}{K_m R^m / m!}$, where 
+$m=2$ is the order of the main field and $n$ is the order of the error multipole.
+A similar relationship holds for the skew multipole fractional strengths.
+For random multipoles, the values are interpreted as rms values for the distribution.
+\end{enumerate}
+
+Specification of systematic higher multipoles due to steering fields is
+supported through the \verb|STEERING_MULTIPOLES| field.  This field gives the
+name of an SDDS file that supplies the multipole data.  The file is
+expected to contain a single page of data with the following elements:
+\begin{enumerate}
+\item Floating point parameter {\tt referenceRadius} giving the reference
+ radius for the multipole data.
+\item An integer column named {\tt order} giving the order of the multipole.
+The order is defined as $(N_{poles}-2)/2$.  The order must be an even number
+because of the quadrupole symmetry.
+\item Floating point column {\tt normal} giving the values for the normal
+multipole strengths, which are driven by the horizontal steering field.
+(N.B.: previous versions used the name {\tt an} for this data. This is still accepted but deprecated)
+{\tt normal} is specifies the multipole strength as a fraction $f_n$ of the steering field strength measured at the reference radius, R: 
+$f_n = \frac{K_n R^n / n!}{K_m R^m / m!}$, where 
+$m=0$ is the order of the steering field and $n$ is the order of the error multipole.
+The skew values (for vertical steering) are deduced from the {\tt normal} values, specifically,
+$g_n = f_n*(-1)^{n/2}$.
+\end{enumerate}
+
+Another way of introducing errors is via the \verb|K1| and \verb|J1| parameters, which allow
+introducing a normal and skew quadrupole {\bf error} term.
+For tracking, the strength of these values can be arbitrarily high without introducing errors.
+However, the matrix analysis (e.g., for determination of tunes and beta functions) assumes that
+these are weak effects and high accuracy should not be expected if this is not true.
+If \verb|K1| is significant, then use of the \verb|KQUSE| element is preferred.
+
+{\bf Apertures}
+
+Apertures specified via an upstream \verb|MAXAMP| element or an \verb|aperture_input|
+command will be imposed inside this element.
+
+{\bf Misalignments}
+
+\input{malign_method}

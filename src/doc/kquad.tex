@@ -1,0 +1,123 @@
+This element simulates a quadrupole using a kick method based on
+symplectic integration.  The user specifies the number of kicks and
+the order of the integration.  For computation of twiss parameters and
+response matrices, this element is treated like a standard thick-lens
+quadrupole; i.e., the number of kicks and the integration order become
+irrelevant.
+
+{\bf Multipole errors}
+
+\begin{raggedright}
+Specification of systematic and random multipole errors is supported
+through the \verb|SYSTEMATIC_MULTIPOLES|, \verb|EDGE_MULTIPOLES|, and 
+\verb|RANDOM_MULTIPOLES|
+fields.  These specify, respectively, fixed multipole strengths for the
+body of the element, fixed multipole strengths for the edges of the element,
+and random multipole strengths for the body of the element.
+These fields give the names of SDDS files that supply the
+multipole data.  The files are expected to contain a single page of
+data with the following elements:
+\end{raggedright}
+\begin{enumerate}
+\item Floating point parameter {\tt referenceRadius} giving the reference
+ radius for the multipole data.
+\item An integer column named {\tt order} giving the order of the multipole.
+The order is defined as $(N_{poles}-2)/2$, so a quadrupole has order 1, a
+sextupole has order 2, and so on.
+\item Floating point columns {\tt normal} and {\tt skew} giving the values for the
+normal and skew multipole strengths, respectively.  
+(N.B.: previous versions used the names {\tt an} and {\tt bn}, respectively. This is still accepted but deprecated)
+These are defined as a fraction 
+of the main field strength measured at the reference radius, R: 
+$f_n  = \frac{K_n R^n / n!}{K_m R^m / m!}$, where 
+$m=1$ is the order of the main field and $n$ is the order of the error multipole.
+A similar relationship holds for the skew multipole fractional strengths.
+For random multipoles, the values are interpreted as rms values for the distribution.
+\end{enumerate}
+
+Specification of systematic higher multipoles due to steering fields is
+supported through the \verb|STEERING_MULTIPOLES| field.  This field gives the
+name of an SDDS file that supplies the multipole data.  The file is
+expected to contain a single page of data with the following elements:
+\begin{enumerate}
+\item Floating point parameter {\tt referenceRadius} giving the reference
+ radius for the multipole data.
+\item An integer column named {\tt order} giving the order of the multipole.
+The order is defined as $(N_{poles}-2)/2$.  The order must be an even number
+because of the quadrupole symmetry.
+\item Floating point column {\tt normal} giving the values for the normal
+multipole strengths, which are driven by the horizontal steering field.
+(N.B.: previous versions used the name {\tt an} for this data. This is still accepted but deprecated)
+{\tt normal} is specifies the multipole strength as a fraction $f_n$ of the steering field strength measured at the reference radius, R: 
+$f_n = \frac{K_n R^n / n!}{K_m R^m / m!}$, where 
+$m=0$ is the order of the steering field and $n$ is the order of the error multipole.
+The skew values (for vertical steering) are deduced from the {\tt normal} values, specifically,
+$g_n = f_n*(-1)^{n/2}$.
+\end{enumerate}
+
+The dominant systematic multipole term in the steering field is a
+sextupole.  Note that {\tt elegant} presently {\em does not} include
+such sextupole contributions in the computation of the chromaticity
+via the {\tt twiss\_output} command.  However, these chromatic effects
+will be seen in tracking.
+
+{\bf Apertures}
+
+Apertures specified via an upstream \verb|MAXAMP| element or an \verb|aperture_input|
+command will be imposed inside this element.
+
+{\bf Length specificiation}
+
+As of version 29.2, this element incorporates the ability to have different values for the insertion
+and effective lengths. This is invoked when \verb|LEFFECTIVE| is positive. In this case, the
+\verb|L| parameter is understood to be the physical insertion length. Using \verb|LEFFECTIVE| is
+a convenient way to incorporate the fact that the effective length may differ from the physical
+length and even vary with excitation, without having to modify the drift spaces on either side of
+the quadrupole element.
+
+{\bf Fringe effects}
+
+Fringe field effects  are based on publications of D.  Zhuo {\em et al.} \cite{Zhou-IPAC10} and  J. Irwin {\em et
+  al.} \cite{Irwin-PAC95}, as well as unpublished work of C. X. Wang (ANL).  The fringe field is characterized by 
+10 integrals given in equations 19, 20, and 21 of \cite{Zhou-IPAC10}.  However, the values input into {\tt elegant}
+should be normalized by $K_1$ or $K_1^2$, as appropriate.
+
+For the exit-side fringe field, let $s_1$ be the center of the magnet, $s_0$ be the location of the nominal end of the magnet
+(for a hard-edge model), and let $s_2$ be a point well outside the magnet.  
+Using $K_{1,he}(s)$ to represent the hard edge model and $K_1(s)$ the actual field profile, we 
+define the normalized difference as $\tilde{k}(s) = (K_1(s) - K_{1,he}(s))/K_1(s_1)$.  (Thus, $\tilde{k}(s) = \tilde{K}(s)/K_0$, using
+the notation of Zhou {\em et al.})
+
+The integrals to be input to {\tt elegant} are defined as 
+\begin{eqnarray}
+i_0^- = \int_{s_1}^{s_0} \tilde{k}(s) ds & & i_0^+ = \int_{s_0}^{s_2} \tilde{k}(s) ds \\
+i_1^- = \int_{s_1}^{s_0} \tilde{k}(s) (s-s_0) ds & & i_1^+ = \int_{s_0}^{s_2} \tilde{k}(s) (s-s_0) ds \\
+i_2^- = \int_{s_1}^{s_0} \tilde{k}(s) (s-s_0)^2 ds & & i_2^+ = \int_{s_0}^{s_2} \tilde{k}(s) (s-s_0)^2 ds \\
+i_3^- = \int_{s_1}^{s_0} \tilde{k}(s) (s-s_0)^3 ds & & i_3^+ = \int_{s_0}^{s_2} \tilde{k}(s) (s-s_0)^3 ds \\
+\lambda_2^- = \int_{s_1}^{s_0} ds \int_s^{s_0} ds^\prime \tilde{k}(s) \tilde{k}(s^\prime) (s^\prime-s) & & 
+\lambda_2^+ = \int_{s_0}^{s_2} ds \int_s^{s_2} ds^\prime \tilde{k}(s) \tilde{k}(s^\prime) (s^\prime-s) 
+\end{eqnarray}
+
+Normally, the effects are dominated by $i_1^-$ and $i_1^+$.  The script \verb|computeQuadFringeIntegrals|,
+packaged with \verb|elegant|, allows computing these integrals and the effective length if provided with 
+data giving the gradient vs s.
+
+The \verb|EDGE1_EFFECTS| and \verb|EDGE2_EFFECTS| parameters can be used to turn fringe field effects on and off, but also
+to control the order of the implementation.  If the value is 1, linear fringe effects are included.  If the value is 2, 
+leading-order (cubic) nonlinear effects are included.  If the value is 3 or higher, higher order effects are included.
+
+{\bf Misalignments}
+
+\input{malign_method}
+
+{\bf Radiation effects}
+
+If \verb|SYNCH_RAD| is non-zero, classical synchrotron radiation is included in tracking.
+If, in addition, \verb|ISR| is non-zero, incoherent synchrotron radiation (i.e., quantum-mechanical variation
+in radiation emitted by different particles) is also included.
+(To exclude ISR for single-particle tracking, set \verb|ISR1PART=0|.)
+
+If \verb|TRACKING_MATRIX| and \verb|SYNCH_RAD| are non-zero, classical synchrotron radiation can be included in the
+ordinary matrix (e.g., for \verb|twiss_output| and \verb|matrix_output|) by setting \verb|SR_IN_ORDINARY_MATRIX| to a
+non-zero value. Symplecticity is not assured, but the results may be interesting nonetheless. A more rigorous approach
+is to use \verb|moments_output|.  \verb|SR_IN_ORDINARY_MATRIX| does not affect tracking.

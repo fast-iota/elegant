@@ -1,0 +1,5 @@
+This element simulates a beam-driven dipole mode cavity using the fundamental theorem of beam loading and phasor rotation.
+
+Normally, the field dumped in the cavity by one particle affects trailing particles in the same turn.
+However, if one is also using a \verb|TRWAKE| or \verb|ZTRANSVSE| element to simulate the short-range wake of the cavity, this would be double-counting.
+In that case, one can use \verb|LONG_RANGE_ONLY=1| to suppress the same-turn effects of the \verb|RFMODE| element.

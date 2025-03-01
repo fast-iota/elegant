@@ -1,0 +1,32 @@
+This element simulates an rf deflector with specified space harmonic parameters (voltage, phase).
+The thin kicks from the fundamental deflecting mode are the same as for the element RFDF. The thin kicks from the space
+harmonics ($n\ge 1$) are \cite{Sun-NAPAC19}
+
+\begin{equation}
+\renewcommand{\arraystretch}{1.5}
+\begin{array}{lcl}
+\Delta P_x & = & -\frac{\partial ({\bf H} - H_0)}{\partial x} \\
+  &  = & \sum\limits_{n=1}^{\infty} -q \bar{ V_n} \cdot \sin (k_n z + \phi_n) \cdot (\frac{1}{2}\alpha_n + \frac{1}{16}\alpha_n^3 \cdot (3x^2 + y^2)) \\
+\end{array}
+\end{equation}
+
+\begin{equation}
+\renewcommand{\arraystretch}{1.5}
+\begin{array}{lcl}
+\Delta P_z & = & -\frac{\partial ({\bf H} - H_0)}{\partial z} \\
+           & = & \sum\limits_{n=1}^{\infty} -q \bar{ V_n} \cdot k_n \cdot \cos (k_n z + \phi_n) 
+           \cdot (\frac{1}{2}\alpha_n \cdot x + \frac{1}{16}\alpha_n^3 \cdot (x^2 + y^2)\cdot x)\\
+\end{array}
+\end{equation} 
+
+The wave numbers $k_n$ and $\alpha_n$ are listed below.
+\begin{equation}\label{Equa1}
+k_n = \frac{\varphi_0 + 2\pi n}{d}
+\end{equation} 
+\begin{equation}\label{Equa1}
+\alpha_n^2 + k_n^2 = k_0^2
+\end{equation} 
+where $k_n$ is wave number of $n^{th}$ space harmonic, $n$ an integer number, $\varphi_0$ the phase advance per cavity
+period, $d$ the cavity period length, $\alpha_n$ the wave number in the radial direction, $m$ wave number (per $2\pi$)
+in the angular direction.
+

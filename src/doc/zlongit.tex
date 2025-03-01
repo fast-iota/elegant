@@ -1,0 +1,41 @@
+This element allows simulation of a longitudinal impedance using a
+``broad-band'' resonator or an impedance function specified in a file.
+The impedance is defined as the Fourier transform of the wake function
+\begin{equation}
+Z(\omega) = \int_{-\infty}^{+\infty} e^{-i \omega t} W(t) dt
+\end{equation}
+where $i = \sqrt{-1}$, $W(t)=0$ for $t<0$, and $W(t)$ has units of $V/C$.
+
+For a resonator impedance, the functional form is
+\begin{equation}
+Z(\omega) = \frac{R_s}{1 + iQ(\frac{\omega}{\omega_r} - \frac{\omega_r}{\omega})},
+\end{equation}
+where $R_s$ is the shunt impedance in $Ohms$, $Q$ is the quality
+factor, and $\omega_r$ is the resonant frequency.
+
+When providing an impedance in a file, the user must be careful to conform to these
+conventions. In addition, the units of the frequency column must be Hz, while the units
+of the impedance components must be Ohms.
+At present, {\tt elegant} does not check the units for correctness.
+
+Other notes:
+\begin{enumerate}
+\item The frequency data required from the input file is {\em not} $\omega$, but rather
+  $f = \omega/(2 \pi)$.
+\item The default smoothing setting ({\tt SG\_HALFWIDTH=4}), may apply too much smoothing.
+  It is recommended that the user vary this parameter if smoothing is employed.
+\item Impedance data can be created from a wake function using the script \verb|wake2impedance|,
+  which is supplied with \verb|elegant|. This script also illustrates how to scale the data 
+  with the frequency spacing. The script uses \verb|sddsfft|, which produces a
+  folded FFT ($f\ge 0$) from a real function. The folded FFT representation involves multiplying the
+  non-DC terms by 2. \verb|elegant| expects this and internally multiplies the DC term by 2 as well.
+\item Using the broad-brand resonator model can often result in a very large number of bins
+ being used, as {\tt elegant} will try to resolve the resonance peak and achieve the desired
+ bin spacing. This can result in poor performance, particularly for the parallel version.
+\item Wake output is available only in the serial version.
+\end{enumerate}
+
+Bunched-mode application of the impedance is possible using specially-prepared input
+beams. 
+See Section \ref{sect:bunchedBeams} for details.
+The use of bunched mode for any particular \verb|ZLONGIT| element is controlled using the \verb|BUNCHED_BEAM_MODE| parameter.

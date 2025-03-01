@@ -1,0 +1,11 @@
+The method used for material modeling is the same as that used for the \verb|MATTER| element.
+
+The \verb|DIRECTION| parameter is deprecated and the more versatile \verb|INSERT_FROM| parameter
+should be used instead.
+The values for the latter determine from which side the scraper is inserted.
+E.g., \verb|INSERT_FROM="-x",POSITION=0.005| means the scraper is inserted from the negative x side
+and extends from $x=-\infty$ to $x=0.005$m.
+
+\verb|INSERT_FROM="x"| or \verb|INSERT_FROM="y"| means the scraper is inserted from both sides, in which case the interpretation
+of the position is different. 
+E.g., \verb|INSERT_FROM="x",POSITION=0.005| means that only the region $x:[-0.005, 0.005]$m is clear.

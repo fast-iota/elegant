@@ -1,0 +1,62 @@
+Bending magnet RAy Tracing using (Bx, By, Bz) vs (x, y, z).
+This element is a companion to the commandline program {\tt abrat}.
+It integrates through a 3-D field map for a bending magnet, including
+coordinate transformations.
+No synchrotron radiation calculations are included at this time.
+
+{\bf Coordinates}
+
+The coordinates of the field map are right-handed system (x, y, z), where z is along the length of the magnet, x is 
+to the right as viewed along the direction of beam propagation, and y is up.
+The user must specify the (x, z) coordinates of three points:
+\begin{itemize}
+\item Nominal entrance point: \verb|XENTRY| and \verb|ZENTRY|. These give the coordinates of reference trajectory at
+  the exit of the previous element. In the limit of a hard-edge model, this would be at the entrance to the magnetic field 
+  region.
+\item Vertex point: \verb|XVERTEX| and \verb|ZVERTEX|. These give the coordinates of vertex point, which is the intersection
+  of the reference lines from the entrance and exit.
+\item Nominal exit point: \verb|XEXIT| and \verb|ZEXIT|. These give the coordinates of reference trajectory at
+  the exit of the previous element. In the limit of a hard-edge model, this would be at the exit from the magnetic field 
+  region.
+\end{itemize}
+The bending angle is equal to the angle between two lines: the line from \verb|ENTRY| to \verb|VERTEX| and the
+line from \verb|VERTEX| to \verb|EXIT|.
+The \verb|L| and \verb|ANGLE| parameters supplied by the user are used for geometry calculations (e.g., floor coordinates) only.
+
+The \verb|DXMAP|, \verb|DZMAP|, \verb|YAWMAP|, and \verb|FSE| values can be used to optimize the field map to ensure that
+the horizontal reference trajectory is not displaced at the exit of the element.
+The optimization feature of the \verb|abrat| program can be used to determine these values.
+
+{\bf Matrix generation}
+
+{\tt elegant} will use tracking to determine the transport matrix for \verb|BRAT| elements, which 
+is needed for computation of twiss parameters and other operations.
+This can require some time, so {\tt elegant} will cache the matrices and re-use them for
+identical elements.
+
+If matrices are not of particular interest, significant time savings can be realized by setting
+\verb|USE_SBEND_MATRIX=1|. Of course, any matrix-based results (e.g., twiss parameters) are then
+dubious at best.
+
+{\bf Symmetry}
+
+By default, the \verb|BRAT| element should be supplied with the full 3D field map of the magnet.
+To allow saving memory and reducing the time to load data, partial magnetic field maps can be 
+loaded as well, but the user must specify the symmetry of the magnet to ensure that the fields are
+modeled correctly in the full volume.
+This is done using the \verb|ySymmetry| and \verb|zSymmetry| parameters in the input file, which may have one of three
+values: \verb|none| (default), \verb|even|, and \verb|odd|.  
+A normal (upright) multipole magnet would have
+\verb|ySymmetry=odd|, while a skew multipole would have \verb|ySymmetry=even|.
+
+Note that when using these symmetries, the user is not required to limit the field map to $y\geq 0$, 
+though doing so saves the most memory.
+If possible, it is recommended to provide the fields over $y\geq -2\Delta y$,
+so that the transverse interpolation as a few points on both sides of $y=0$.
+This will ensure better results near the origin.
+
+{\bf Integration methods}
+
+The original (and default) integration method is Bulirsch-Stoer integration of the Lorentz force equation.
+As an alternative, one can use the faster, rotation-based method of the \verb|FTABLE| element.
+For repeated use, the two methods should be compared and a choice made based on the user's needs.

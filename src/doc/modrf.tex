@@ -1,0 +1,38 @@
+This element is very similar to the \verb|RFCA| element, except that the
+amplitude and phase of the cavity can be modulated.
+
+The phase convention is as follows, assuming a positive rf voltage:
+\verb|PHASE=90| is the crest for acceleration.  \verb|PHASE=180| is the stable
+phase for a storage ring above transition without energy losses.
+
+The element works by first computing the fidicial arrival time $\bar{t}$.
+Using this, the effective voltage is computed using the amplitude modulation parameters, according to
+\begin{equation}
+V_e = V_0 ( 1 + A_{am} \sin (\omega_{am} \bar{t} + \phi_{am}) \exp (-\alpha_{am} \bar{t}))
+\end{equation}
+where $V_0$ is the nominal cavity voltage \verb|VOLT|, $A_{am}$ is \verb|AMMAG|, $\omega_{am}$ is the
+angular frequency corresponding to \verb|AMFREQ|, $\phi_{am}$ is the amplitude modulation phase
+corresponding to \verb|AMPHASE| (converted from degrees to radians), and $\alpha_{am}$ is \verb|AMDECAY|.
+
+The phase of the phase modulation is computed  using
+\begin{equation}
+\phi_{pm} = \omega_{pm} \bar{t} + \Delta\phi_{pm},
+\end{equation}
+where $\omega_{pm}$ is the angular frequency corresponding to \verb|PMFREQ| and 
+$\Delta\phi_{pm}$ is the phase offset corresponding to \verb|PMPHASE| (converted from degrees to radians).
+The rf phase for the centroid is then computed using
+\begin{equation}
+\phi = \omega_0\bar{t} + \phi_0 + \Phi_m \sin(\phi_{pm}) \exp (-\alpha_{pm}\bar{t}),
+\end{equation}
+where $\omega_0$ is the nominal rf angular frequency (corresponding to \verb|FREQ|), $\phi_0$ corresponds to
+\verb|PHASE| (converted to radians), $\Phi_m$ corresponds to \verb|PMMAG| (converted to radians), and 
+$\alpha_{pm}$ corresponds to \verb|PMDECAY|.
+
+The effective instantaneous rf angular frequency is 
+\begin{equation}
+\omega = \omega_0 + \omega_{pm}\Phi_m \cos \phi_{pm}.
+\end{equation}
+Using all of the above, the voltage seen by a particle arriving at time $t$ is then
+\begin{equation}
+V = V_e \sin (\omega (t - \bar{t}) + \phi).
+\end{equation}

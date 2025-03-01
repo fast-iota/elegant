@@ -1,0 +1,71 @@
+This element simulates transport through a 3D magnetic field
+specified as a field map.  It does this by simply integrating the
+Lorentz force equation in cartesian coordinates.  It does not
+incorporate changes in the design trajectory resulting from the
+fields.  I.e., if you input a dipole field, it is interpreted as a
+steering element.
+
+The field map file is an SDDS file with the following columns:
+\begin{itemize}
+\item {\bf x}, {\bf y}, {\bf x} --- Transverse coordinates in meters (units should be ``m'').
+\item {\bf Fx}, {\bf Fy}, {\bf Fx} --- Normalized field values (no units).  The
+        field is multiplied by the value of the STRENGTH parameter to convert it to a 
+        local bending radius.  For example, an ideal quadrupole could be simulated
+        by setting (Fx=y, Fy=x, Fz=0), in which case STRENGTH is the
+        K1 quadrupole parameter.
+\item {\bf Bx}, {\bf By}, {\bf Bz} --- Field values in Tesla (units should be ``T'').
+        The field is still multiplied by the value of the STRENGTH parameter, which
+        is dimensionless.
+\end{itemize}
+
+The field map file must contain a rectangular grid of points,
+equispaced (separately) in x, y, and z.  There should be no missing values
+in the grid (this is not checked by {\tt elegant}).  In addition, the
+x values must vary fastest as the values are accessed in row order, then the y values.
+To ensure that this is the case, use the following command on the field
+file:
+\begin{flushleft}
+sddssort {\em fieldFile} -column=z,incr -column=y,incr -column=x,incr
+\end{flushleft}
+
+This element is an alternative to \verb|FTABLE| using a more conventional integration method.
+
+The \verb|BXFACTOR|, \verb|BYFACTOR|, and \verb|BZFACTOR| allow multiplying the indicated field components by the given factors.
+These scaling parameters may result in unphysical fields.
+
+By default, the \verb|BMXYZ| element should be supplied with the full 3D field map of the magnet.
+To allow saving memory and reducing the file to load data, partial magnetic field maps can be 
+loaded as well, but the user must specify the symmetry of the magnet to ensure that the fields are
+modeled correctly in the full volume.
+This is done using three optional parameters in the input file, \verb|xSymmetry|, \verb|ySymmetry|, and \verb|zSymmetry|.
+If present, these must have one of three \verb|none| (default), \verb|even|, and \verb|odd|.  
+
+For example, a normal quadrupole magnet would have
+\verb|xSymmetry=odd|, \verb|ySymmetry=odd|, and \verb|zSymmetry=even|.  A left/right symmetric dipole or sextupole
+would have \verb|xSymmetry=even|, \verb|ySymmetry=odd|,
+\verb|zSymmetry=even|.  A normal octupole would have the same symmetry codes as a normal quadrupole.
+Note that when using these symmetries, the user is not required to limit the field map to, say, 
+$x\geq 0$, $y\geq 0$, and $z\geq 0$, though doing so saves the most memory.
+If possible, it is recommended to provide the fields over $x\geq -2\Delta x$, $y\geq -2\Delta y$, 
+and $z\geq 0$, so that the transverse interpolation as a few points on both sides of the origin.
+This will ensure better results near the origin.
+
+Internally, {\tt elegant} stores only the partial field map. When field values are required outside this region, the
+declared symmetries are used to map the coordinates to the covered region and change signs of the various field
+components if required.
+
+Internal apertures may be specified using four methods, as used in elements like \verb|KQUAD| and
+\verb|CSBEND|. The methods include upstrea \verb|MAXAMP| elements, upstream \verb|APCONTOUR| elements
+with \verb|STICKY=1|, $s$-dependent apertures defined via the \verb|aperture_data| command,
+and global-coordinate system apertures defined via the \verb|obstruction_data| command.
+
+For \verb|APCONTOUR|-defined apertures, this can be invoked using the \verb|STICKY=1| parameter,
+which is used to impose the aperture contour on downstream elements.
+One fine point is that the field map is typically significantly longer than the magnet itself.
+We don't want to apply the apertures except in some region in the interior of the field map
+This can be specified using the \verb|ZMIN_APCONTOUR| and \verb|ZMAX_APCONTOUR| parameters,
+which give the range of application in the coordinate system of the field map.
+In this case, to prevent application of the \verb|APCONTOUR| apertures at the point of 
+definition, the \verb|APCONTOUR| element should have \verb|HOLDOFF=1| and be inserted
+in the lattice just before the \verb|BMXYZ| element.
+

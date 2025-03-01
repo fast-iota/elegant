@@ -1,0 +1,18 @@
+The input file must be an SDDS file and must have one page for each value of the radius.
+Each page must be sorted in increasing order by the z coordinate.
+The \verb|z| and \verb|r| data must be in meters, while the \verb|Bz| and \verb|Br| data must
+be in Tesla.
+
+Starting with a single-page file containing $(z, r, Bz, Br)$, one can easily produce the
+required file using this command sequence
+\begin{verbatim}
+sddssort solenoid.sdds -pipe=out -column=r -column=z \
+ | sddsbreak -pipe=in mapSolenoid.sdds -change=r
+\end{verbatim}
+
+The preferred integrator is non-adaptive Runge-Kutta, since the adaptive integrators tend
+to have convergence problems.
+
+N.B.: for historical reasons, the default value of the \verb|FACTOR| parameter is set to \verb|0.0001|, which is
+apt to introduce confusion.
+

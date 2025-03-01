@@ -1,0 +1,61 @@
+This element provides simulation of undulators using kick maps \cite{Elleaume1992}.
+For general-purpose kickmaps, use the \verb|KICKMAP| element.
+
+A script (\verb|km2sdds|) is provided with the {\tt elegant}
+distribution to translate RADIA \cite{radia} output into SDDS for use by
+\verb|elegant|.
+
+The input file has the following columns:
+\begin{itemize}
+\item \verb|x| --- Horizontal position in meters.
+\item \verb|y| --- Vertical position in meters.
+\item \verb|xpFactor| --- Horizontal kick factor $C_x$ in $T^2 m^2$.  This factor is defined by
+equation (5a) in \cite{Elleaume1992}.  In particular, $\Delta x^\prime = C_x/H^2$, where
+$H$ is the beam rigidity in  $T^2 m^2$.
+\item \verb|ypFactor| --- Vertical kick factor $C_y$ in $T^2 m^2$. This factor is defined by
+equation (5b) in \cite{Elleaume1992}.  In particular, $\Delta y^\prime = C_y/H^2$, where
+$H$ is the beam rigidity in  $T^2 m^2$.
+\end{itemize}
+The values of \verb|x| and \verb|y| must be laid out on a grid of equispaced points.
+It is assumed that the data is ordered such that \verb|x| varies fastest.  This can be
+accomplished with the command
+\begin{verbatim}
+% sddssort -column=y,increasing -column=x,increasing input1.sdds input2.sdds
+\end{verbatim}
+where \verb|input1.sdds| is the original (unordered) file and \verb|input2.sdds| is the
+new file, which would be used with \verb|UKICKMAP|.
+
+The data file is assumed to result from integration through a full device. 
+If instead it results from integration through just a single period of a full device, one
+should set the \verb|SINGLE_PERIOD_MAP| parameter to 1 and \verb|N_KICKS| equal to the
+number of periods.  (One can also use the \verb|FIELD_FACTOR| parameter to get the same
+result, but this is confusing and is discouraged.)
+
+{\tt elegant} performs radiation integral computations
+for \verb|UKICKMAP| and can also include radiation effects in
+tracking.  This feature has limitations, namely, that the radiation
+integral computations assume the device is horizontally deflecting.
+However, in tracking, no such assumption is made.  
+To obtain synchrotron radiation integral effects (e.g., in output from \verb|twiss_output|), 
+the \verb|KREF| and \verb|PERIODS| parameters must be given.
+Care must be taken when using the \verb|FIELD_FACTOR| parameter in this case, particularly if
+it is adjusted to account for using a single-period kickmap multiple times.
+To obtain synchrotron radiation effects in tracking, the \verb|SYNCH_RAD| and/or \verb|ISR| flags
+must additionally be used.
+
+N.B.: at present this element is {\em not} included in beam moments
+computations via the \verb|moments_output| command (the \verb|CWIGGLER| element
+is an option for that).
+
+The \verb|YAW| and \verb|YAW_END| parameters can be used in the simulation of canted IDs.
+Normally, steering magnets are used to create an angle between the devices.
+The devices are thus oriented in the reference coordinate system, meaning the beam tranverses
+the IDs at an angle.
+If it is desirable to align the IDs to the beam, the IDs can be yawed. A positive yaw will
+tilt the ID so that it is colinear with a beam that has been kicked by a positive horizontal
+steering angle.
+The \verb|YAW_END| parameter defines which end of the ID is held fixed when the yaw is applied.
+
+This element was requested by W. Guo (BNL), who also assisted with the
+implementation and debugging.
+

@@ -15,7 +15,6 @@
 #include "mdb.h"
 #if defined(_WIN32)
 #include <float.h>
-#define isnan(x) _isnan(x)
 #else
 #if defined(SOLARIS) && !defined(__GNUC__)
 #include <sunmath.h>

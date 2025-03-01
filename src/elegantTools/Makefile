@@ -59,7 +59,6 @@ SCRIPTS = analyzeMagnets \
 	weightedBunch
 
 PROD = astra2elegant \
-	computeCBGGE \
 	computeRBGGE \
 	curvedDipoleFringeCalc \
 	elasticScatteringAnalysis \
@@ -91,7 +90,7 @@ CFLAGS +=  -I$(SDDS_REPO)/include -I$(SDDS_REPO)/meschach -I../../physics -I$(OB
 CCFLAGS +=  -I$(SDDS_REPO)/include -I$(SDDS_REPO)/meschach -I../../physics -I$(OBJ_DIR) -DSVN_VERSION=\"$(SVN_VERSION)\"
 
 ifeq ($(OS), Linux)
-  PROD += csrImpedance
+  PROD += computeCBGGE csrImpedance
   CFLAGS += -fopenmp -DUSE_GSL
   CCFLAGS += -fopenmp -DUSE_GSL
   LDFLAGS := -L$(SDDS_REPO)/lib/$(OS)-$(ARCH) -L../../lib/$(OS)-$(ARCH) -fopenmp $(LDFLAGS)
@@ -100,7 +99,7 @@ ifeq ($(OS), Linux)
 endif
 
 ifeq ($(OS), Darwin)
-  PROD += csrImpedance
+  PROD += computeCBGGE csrImpedance
   CFLAGS += -DUSE_GSL
   CCFLAGS += -DUSE_GSL
   LDFLAGS := -L$(SDDS_REPO)/lib/$(OS)-$(ARCH) -L../../lib/$(OS)-$(ARCH) $(LDFLAGS)
@@ -109,11 +108,10 @@ ifeq ($(OS), Darwin)
 endif
 
 ifeq ($(OS), Windows)
-  #CFLAGS += -I$(SDDS_REPO)/lzma $(MKL_CFLAG) $(MKL_INCLUDE) $(MKL_INCLUDE)/fftw -wd4018 -wd4244 -wd4267 -wd4311
-  #CCFLAGS += -I$(SDDS_REPO)/lzma $(MKL_CFLAG) $(MKL_INCLUDE) $(MKL_INCLUDE)/fftw -wd4018 -wd4244 -wd4267 -wd4311
-  #PROD_SYS_LIBS := $(MKL_LIB) $(PROD_SYS_LIBS)
-  #PROD_LIBS = mdbcommon.lib matlib.lib fftpack.lib SDDS1.lib namelist.lib rpnlib.lib mdbmth.lib mdblib.lib lzma.lib z.lib
-  #LIB_LINK_DIRS = -LIBPATH:$(SDDS_REPO)/lib/$(OS)-$(ARCH)
+  CFLAGS += -I$(SDDS_REPO)/lzma -wd4244
+  CCFLAGS += -I$(SDDS_REPO)/lzma -wd4244
+  PROD_LIBS = oagphy.lib mdbcommon.lib matlib.lib fftpack.lib SDDS1.lib namelist.lib rpnlib.lib mdbmth.lib mdblib.lib lzma.lib z.lib meschach.lib
+  LIB_LINK_DIRS = -LIBPATH:$(SDDS_REPO)/lib/$(OS)-$(ARCH) -LIBPATH:../../lib/$(OS)-$(ARCH)
 endif
 
 include ../../Makefile.build

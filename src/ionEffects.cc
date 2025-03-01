@@ -1,8 +1,8 @@
 /************************************************************************* \
-* Copyright (c) 2017 The University of Chicago, as Operator of Argonne
-* National Laboratory.
-* This file is distributed subject to a Software License Agreement found
-* in the file LICENSE that is included with this distribution. 
+ * Copyright (c) 2017 The University of Chicago, as Operator of Argonne
+ * National Laboratory.
+ * This file is distributed subject to a Software License Agreement found
+ * in the file LICENSE that is included with this distribution.
 \*************************************************************************/
 
 /* file: ionEffects.c
@@ -10,9 +10,6 @@
  *
  * Joe Calvey, Michael Borland 2017
  */
-#if defined(SOLARIS) && !defined(__GNUC__)
-#  include <sunmath.h>
-#endif
 
 #include <complex>
 #include "mdb.h"
@@ -22,7 +19,6 @@
 #include "pressureData.h"
 
 #include "poissonBuffer.h"
-
 
 #define ION_FIELD_GAUSSIAN 0
 #define ION_FIELD_BIGAUSSIAN 1
@@ -41,8 +37,7 @@ static char *ionFieldMethodOption[N_ION_FIELD_METHODS] = {
   (char *)"trilorentzian",
   (char *)"egaussian",
   (char *)"gaussianfit",
-  (char*)"poisson"
-};
+  (char *)"poisson"};
 static long ionFieldMethod = -1;
 static long isLorentzian = 0;
 
@@ -141,7 +136,7 @@ static long leftIonCounter = 0;
 extern void find_global_min_index(double *min, int *processor_ID, MPI_Comm comm);
 #endif
 
-//for fit (e.g., bi-gaussian)
+// for fit (e.g., bi-gaussian)
 static double *xData = NULL, *yData = NULL, *yFit = NULL, yDataSum, ionChargeData;
 static long nData = 0;
 static long nFunctions = 2; /* should be 2 or 3 */
@@ -152,12 +147,10 @@ short multipleWhateverFit(double bunchSigma[4], double bunchCentroid[4], double 
 double multiGaussianFunction(double *param, long *invalid);
 double multiLorentzianFunction(double *param, long *invalid);
 
+// for poisson solver
+// static double **ionPotential, **xKickPoisson, **yKickPoisson;
 
-//for poisson solver
-//static double **ionPotential, **xKickPoisson, **yKickPoisson;
-
-
-//void report();
+// void report();
 void report(double res, double *a, long pass, long n_eval, long n_dimen);
 
 #if USE_MPI
@@ -351,7 +344,7 @@ void setUpIonEffectsOutputFiles(long nPasses) {
              !SDDS_DefineSimpleParameter(SDDS_ionHistogramOutput, "nEvaluationsMin", NULL, SDDS_LONG) ||
              !SDDS_DefineSimpleParameter(SDDS_ionHistogramOutput, "nEvaluationsMax", NULL, SDDS_LONG) ||
 #else
-           !SDDS_DefineSimpleParameter(SDDS_ionHistogramOutput, "nEvaluations", NULL, SDDS_LONG) ||
+             !SDDS_DefineSimpleParameter(SDDS_ionHistogramOutput, "nEvaluations", NULL, SDDS_LONG) ||
 #endif
              !SDDS_DefineSimpleParameter(SDDS_ionHistogramOutput, isLorentzian ? "a2" : "sigma2", "m", SDDS_DOUBLE) ||
              !SDDS_DefineSimpleParameter(SDDS_ionHistogramOutput, "centroid2", "m", SDDS_DOUBLE) ||
@@ -417,15 +410,15 @@ void setUpIonEffectsOutputFiles(long nPasses) {
 }
 
 #if TURBO_FASTPOISSON
-#include <fftw3.h>
+#  include <fftw3.h>
 // FFTW makes 64byte aligned malloc for x86-64
-static void** allocateFFTWArray(uint64_t size, int n1, int n2) {
+static void **allocateFFTWArray(uint64_t size, int n1, int n2) {
   char **ptr0;
   char *buffer;
 
-  ptr0 = (char **) malloc(sizeof(*ptr0)*n1);
-  //buffer = (char *) aligned_alloc(64, n1*n2*size);
-  buffer = (char *) fftw_malloc(n1*n2*size);
+  ptr0 = (char **)malloc(sizeof(*ptr0) * n1);
+  // buffer = (char *) aligned_alloc(64, n1*n2*size);
+  buffer = (char *)fftw_malloc(n1 * n2 * size);
   for (int i = 0; i < n1; i++)
     ptr0[i] = buffer + i * size * n2;
   return ((void **)ptr0);
@@ -639,18 +632,18 @@ void completeIonEffectsSetup(RUN *run, LINE_LIST *beamline) {
       /* Determine the average pressure for each gas */
       ionEffects->pressure = (double *)tmalloc(sizeof(*(ionEffects->pressure)) * pressureData.nGasses);
       if (use_local_pressure == 0) {
-	computeAverageGasPressures(ionEffects->sStart, ionEffects->sEnd, ionEffects->pressure, &pressureData);
+        computeAverageGasPressures(ionEffects->sStart, ionEffects->sEnd, ionEffects->pressure, &pressureData);
       } else {
-	long iLocation, iGas;
-	for (iLocation = 0; iLocation < pressureData.nLocations; iLocation++) {
-	  if (pressureData.s[iLocation] > ionEffects->sLocation) {
-	    for (iGas = 0; iGas < pressureData.nGasses; iGas++) {
-	      ionEffects->pressure[iGas] = pressureData.pressure[iGas][iLocation];  
-	      //(ionEffects->sEnd - ionEffects->sStart);
-	    }
-	    break;
-	  }
-	}
+        long iLocation, iGas;
+        for (iLocation = 0; iLocation < pressureData.nLocations; iLocation++) {
+          if (pressureData.s[iLocation] > ionEffects->sLocation) {
+            for (iGas = 0; iGas < pressureData.nGasses; iGas++) {
+              ionEffects->pressure[iGas] = pressureData.pressure[iGas][iLocation];
+              //(ionEffects->sEnd - ionEffects->sStart);
+            }
+            break;
+          }
+        }
       }
       if (verbosity > 20) {
         long i;
@@ -674,9 +667,9 @@ void completeIonEffectsSetup(RUN *run, LINE_LIST *beamline) {
           ionEffects->n2dGridIon[iPlane] = ion_poisson_bins[iPlane];
         if (ionEffects->span[iPlane] <= 0)
           ionEffects->span[iPlane] = ion_span[iPlane];
-	if (ion_poisson_span[iPlane] <= 0)
+        if (ion_poisson_span[iPlane] <= 0)
           ionEffects->poisson_span[iPlane] = ion_span[iPlane];
-	else
+        else
           ionEffects->poisson_span[iPlane] = ion_poisson_span[iPlane];
         if (ionEffects->binDivisor[iPlane] <= 0)
           ionEffects->binDivisor[iPlane] = ion_bin_divisor[iPlane];
@@ -689,7 +682,7 @@ void completeIonEffectsSetup(RUN *run, LINE_LIST *beamline) {
       if (ionEffects->n2dGridIon[0] > 0 && ionEffects->n2dGridIon[1] > 0) {
         if (ionEffects->n2dGridIon[0] < 10 || ionEffects->n2dGridIon[1] < 10)
           bombElegant("Poisson grid size must be 10 or greater in x and y", NULL);
-        printWarningForTracking((char*)"Poisson solver for IONEFFECTS is not fully implemented", (char*)"It is presently being tested and debugged");
+        printWarningForTracking((char *)"Poisson solver for IONEFFECTS is not fully implemented", (char *)"It is presently being tested and debugged");
 
         // Ensures 64 byte alignment for vectorization
         // For MKL, "Memory allocation function fftw_malloc returns memory aligned at a 16-byte boundary"
@@ -698,33 +691,33 @@ void completeIonEffectsSetup(RUN *run, LINE_LIST *beamline) {
         // TODO:
 #if TURBO_FASTPOISSON == 1 || TURBO_FASTPOISSON == 2
         ionEffects->ion2dDensity =
-            (double **)allocateFFTWArray(sizeof(double), ionEffects->n2dGridIon[0], ionEffects->n2dGridIon[1]);
+          (double **)allocateFFTWArray(sizeof(double), ionEffects->n2dGridIon[0], ionEffects->n2dGridIon[1]);
         ionEffects->ionPotential =
-            (double**)allocateFFTWArray(sizeof(double), ionEffects->n2dGridIon[0], ionEffects->n2dGridIon[1]);
+          (double **)allocateFFTWArray(sizeof(double), ionEffects->n2dGridIon[0], ionEffects->n2dGridIon[1]);
         ionEffects->xKickPoisson =
-            (double**)allocateFFTWArray(sizeof(double), ionEffects->n2dGridIon[0], ionEffects->n2dGridIon[1]);
+          (double **)allocateFFTWArray(sizeof(double), ionEffects->n2dGridIon[0], ionEffects->n2dGridIon[1]);
         ionEffects->yKickPoisson =
-            (double**)allocateFFTWArray(sizeof(double), ionEffects->n2dGridIon[0], ionEffects->n2dGridIon[1]);
+          (double **)allocateFFTWArray(sizeof(double), ionEffects->n2dGridIon[0], ionEffects->n2dGridIon[1]);
 #elif TURBO_FASTPOISSON == 3
         // Overallocate for in-place FFT
         int N_y = ionEffects->n2dGridIon[1];
         ionEffects->ion2dDensity =
-            (double**)allocateFFTWArray(sizeof(double), ionEffects->n2dGridIon[0], 2*(N_y / 2 + 1));
+          (double **)allocateFFTWArray(sizeof(double), ionEffects->n2dGridIon[0], 2 * (N_y / 2 + 1));
         ionEffects->ionPotential =
-            (double**)allocateFFTWArray(sizeof(double), ionEffects->n2dGridIon[0], ionEffects->n2dGridIon[1]);
+          (double **)allocateFFTWArray(sizeof(double), ionEffects->n2dGridIon[0], ionEffects->n2dGridIon[1]);
         ionEffects->xKickPoisson =
-            (double**)allocateFFTWArray(sizeof(double), ionEffects->n2dGridIon[0], ionEffects->n2dGridIon[1]);
+          (double **)allocateFFTWArray(sizeof(double), ionEffects->n2dGridIon[0], ionEffects->n2dGridIon[1]);
         ionEffects->yKickPoisson =
-            (double**)allocateFFTWArray(sizeof(double), ionEffects->n2dGridIon[0], ionEffects->n2dGridIon[1]);
+          (double **)allocateFFTWArray(sizeof(double), ionEffects->n2dGridIon[0], ionEffects->n2dGridIon[1]);
 #else
         ionEffects->ion2dDensity =
-          (double**)czarray_2d(sizeof(double), ionEffects->n2dGridIon[0], ionEffects->n2dGridIon[1]);
+          (double **)czarray_2d(sizeof(double), ionEffects->n2dGridIon[0], ionEffects->n2dGridIon[1]);
         ionEffects->ionPotential =
-          (double**)czarray_2d(sizeof(double), ionEffects->n2dGridIon[0], ionEffects->n2dGridIon[1]);
+          (double **)czarray_2d(sizeof(double), ionEffects->n2dGridIon[0], ionEffects->n2dGridIon[1]);
         ionEffects->xKickPoisson =
-          (double**)czarray_2d(sizeof(double), ionEffects->n2dGridIon[0], ionEffects->n2dGridIon[1]);
+          (double **)czarray_2d(sizeof(double), ionEffects->n2dGridIon[0], ionEffects->n2dGridIon[1]);
         ionEffects->yKickPoisson =
-          (double**)czarray_2d(sizeof(double), ionEffects->n2dGridIon[0], ionEffects->n2dGridIon[1]);
+          (double **)czarray_2d(sizeof(double), ionEffects->n2dGridIon[0], ionEffects->n2dGridIon[1]);
 
 #endif
       }
@@ -742,14 +735,14 @@ static double **speciesCentroid = NULL, *speciesCharge = NULL, **speciesSigma = 
 static long *speciesCount = NULL;
 
 void trackWithIonEffects(
-  double **part0,         /* part0[i][j] is the jth coordinate (x,x',y,y',t,delta) for the ith particle */
-  long np0,               /* number of particles (on this processor) */
-  IONEFFECTS *ionEffects, /* ion effects element data */
-  double Po,              /* central momentum (beta*gamma) */
-  long iPass,             /* pass number */
-  long nPasses,           /* number of passes */
-  CHARGE *charge          /* beam charge structure */
-) {
+                         double **part0,         /* part0[i][j] is the jth coordinate (x,x',y,y',t,delta) for the ith particle */
+                         long np0,               /* number of particles (on this processor) */
+                         IONEFFECTS *ionEffects, /* ion effects element data */
+                         double Po,              /* central momentum (beta*gamma) */
+                         long iPass,             /* pass number */
+                         long nPasses,           /* number of passes */
+                         CHARGE *charge          /* beam charge structure */
+                         ) {
   long ip;
   long iBunch, nBunches = 0;
   double *time0 = NULL;    /* array to record arrival time of each particle */
@@ -761,7 +754,7 @@ void trackWithIonEffects(
   long np, npTotal, max_np = 0;
   /* properties of the electron beam */
   double bunchCentroid[4], bunchSigma[4], tNow, qBunch;
-  //double sigmatemp[2];
+  // double sigmatemp[2];
   /* properties of the ion cloud */
   double ionCentroid[2], ionSigma[2], qIon;
   long nIonsTotal;
@@ -901,7 +894,7 @@ void trackWithIonEffects(
     if (npTotal) {
       generateIons(ionEffects, iPass, iBunch, nBunches, qBunch, bunchCentroid, bunchSigma);
 
-      applyElectronBunchKicksToIons(ionEffects, iPass, qBunch, bunchCentroid, bunchSigma, dpSum); 
+      applyElectronBunchKicksToIons(ionEffects, iPass, qBunch, bunchCentroid, bunchSigma, dpSum);
     }
 
     computeIonOverallParameters(ionEffects, ionCentroid, ionSigma, &qIon, &nIonsTotal, bunchCentroid, bunchSigma, iBunch);
@@ -924,22 +917,22 @@ void trackWithIonEffects(
 
     // write out coordinates of each ion, not presently used
     /*
-    if ((verbosity > 20) && (ionEffects->sLocation > 688) && (ionEffects->sLocation < 692) && (iPass < 10)) {
-      double xtemp, ytemp, qtemp; 
+      if ((verbosity > 20) && (ionEffects->sLocation > 688) && (ionEffects->sLocation < 692) && (iPass < 10)) {
+      double xtemp, ytemp, qtemp;
       int jMacro = 0;
       FILE * fion;
       fion = fopen("ion_coord_all.dat", "a");
       for (int iSpecies=0; iSpecies<ionProperties.nSpecies; iSpecies++) {
-	for (int jMacro=0; jMacro < ionEffects->nIons[iSpecies]; jMacro++) {
-	  xtemp = ionEffects->coordinate[iSpecies][jMacro][0];
-	  ytemp = ionEffects->coordinate[iSpecies][jMacro][2];
-	  qtemp = ionEffects->coordinate[iSpecies][jMacro][4];
-	  //fprintf(fion, "%f  %f  %f  %e  %d \n",  ionEffects->t, xtemp, ytemp, qtemp, iSpecies);
-	  fprintf(fion, "%d %d  %e  %e  %e  %d \n",  iPass, iBunch, xtemp, ytemp, qtemp, iSpecies);
-	}
+      for (int jMacro=0; jMacro < ionEffects->nIons[iSpecies]; jMacro++) {
+      xtemp = ionEffects->coordinate[iSpecies][jMacro][0];
+      ytemp = ionEffects->coordinate[iSpecies][jMacro][2];
+      qtemp = ionEffects->coordinate[iSpecies][jMacro][4];
+      //fprintf(fion, "%f  %f  %f  %e  %d \n",  ionEffects->t, xtemp, ytemp, qtemp, iSpecies);
+      fprintf(fion, "%d %d  %e  %e  %e  %d \n",  iPass, iBunch, xtemp, ytemp, qtemp, iSpecies);
+      }
       }
       fclose(fion);
-    }
+      }
     */
 
 #if USE_MPI
@@ -1003,7 +996,7 @@ void addIons(IONEFFECTS *ionEffects, long iSpecies, long nToAdd, double qToAdd,
       ionEffects->coordinate[iSpecies][iNew][4] = qToAdd;
     }
 
-    //ionEffects->qIon[iSpecies][iNew] = qToAdd;
+    // ionEffects->qIon[iSpecies][iNew] = qToAdd;
   }
 }
 
@@ -1079,7 +1072,7 @@ void makeIonHistograms(IONEFFECTS *ionEffects, long nSpecies, double *bunchSigma
 
     ionEffects->ionHistogramMissed[iPlane] = 0;
 
-    //double delta, xyStart;
+    // double delta, xyStart;
     delta[iPlane] = ionEffects->ionDelta[iPlane];
     bStart[iPlane] = -ionEffects->ionRange[iPlane] / 2;
   }
@@ -1115,7 +1108,7 @@ void make2dIonHistogram(IONEFFECTS *ionEffects) {
   long iIon, ix, iy;
   double qTotal = 0;
   double delta[2];
-  #if USE_MPI
+#if USE_MPI
   long nIons = 0;
   long nIonsTotal;
 
@@ -1149,11 +1142,11 @@ void make2dIonHistogram(IONEFFECTS *ionEffects) {
   }
   ionEffects->qTotal = qTotal;
 #if TURBO_FASTPOISSON >= 2
-//  int total_len = ionEffects->n2dGridIon[0] * ionEffects->n2dGridIon[1];
+  //  int total_len = ionEffects->n2dGridIon[0] * ionEffects->n2dGridIon[1];
   double f = 1.0 / (delta[0] * delta[1]);
-//  double* temp = ionEffects->ion2dDensity[0];
-//  for (ix = 0; ix < total_len; ix++)
-//      temp[ix] *= f;
+  //  double* temp = ionEffects->ion2dDensity[0];
+  //  for (ix = 0; ix < total_len; ix++)
+  //      temp[ix] *= f;
   for (ix = 0; ix < ionEffects->n2dGridIon[0]; ix++)
     for (iy = 0; iy < ionEffects->n2dGridIon[1]; iy++)
       ionEffects->ion2dDensity[ix][iy] *= f;
@@ -1176,9 +1169,9 @@ double findIonBinningRange(IONEFFECTS *ionEffects, long iPlane, long nSpecies) {
   double *histogram;
   double min, max, hrange, delta;
   long i, quickBins = 0, nIons;
-  #if USE_MPI
+#if USE_MPI
   long nIonsMissed;
-  #endif
+#endif
 
   max = -(min = DBL_MAX);
   nIons = 0;
@@ -1226,9 +1219,9 @@ double findIonBinningRange(IONEFFECTS *ionEffects, long iPlane, long nSpecies) {
   histogram = (double *)calloc(quickBins, sizeof(*histogram));
 
   /* make charge-weighted histogram */
-  #if USE_MPI
+#if USE_MPI
   nIonsMissed = 0;
-  #endif
+#endif
   for (long iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     for (long iIon = 0; iIon < ionEffects->nIons[iSpecies]; iIon++) {
       long iBin;
@@ -1236,9 +1229,9 @@ double findIonBinningRange(IONEFFECTS *ionEffects, long iPlane, long nSpecies) {
       if (iBin >= 0 && iBin < quickBins)
         histogram[iBin] += 1; /* ionEffects->coordinate[iSpecies][iIon][4]; */
       else {
-        #if USE_MPI
+#if USE_MPI
         nIonsMissed += 1;
-        #endif
+#endif
       }
     }
   }
@@ -1258,15 +1251,15 @@ double findIonBinningRange(IONEFFECTS *ionEffects, long iPlane, long nSpecies) {
 
   /* find cumulative distribution */
   /*
-  for (i=0; i<quickBins; i++)
+    for (i=0; i<quickBins; i++)
     printf("histogram[%ld] = %le\n", i, histogram[i]);
   */
   for (i = 1; i < quickBins; i++)
     histogram[i] += histogram[i - 1];
   for (i = 0; i < quickBins; i++)
     histogram[i] /= histogram[quickBins - 1];
-  /* 
-  for (i=0; i<quickBins; i++)
+  /*
+    for (i=0; i<quickBins; i++)
     printf("cdf[%ld] = %le\n", i, histogram[i]);
   */
 
@@ -1418,19 +1411,19 @@ void addIon_point(IONEFFECTS *ionEffects, long iSpecies, double qToAdd, double x
 
 #if TURBO_FADDEEVA
 // From http://ab-initio.mit.edu/wiki/index.php/Faddeeva_Package under MIT license
-#include "Faddeeva.hh"
+#  include "Faddeeva.hh"
 #endif
 
 void gaussianBeamKick(
-  double *coord,   /* x, xp, y, yp, s, delta of kicked particle */
-  double *center,  /* center of kicking gaussian */
-  double *sigma,   /* sigma of kicking gaussian */
-  long fromBeam,   // If nonzero, center and sigma arrays have (x, x', y, y') data. Otherwise, just (x, y)
-  double kick[2],  /* for return of velocity change (m/s) */
-  double charge,   /* total charge of kicking distribution in Coulomb */
-  double ionMass,  /* mass of kicked particle in kg */
-  double ionCharge /* charge of kicked particle in units of electron charge */
-) {
+                      double *coord,   /* x, xp, y, yp, s, delta of kicked particle */
+                      double *center,  /* center of kicking gaussian */
+                      double *sigma,   /* sigma of kicking gaussian */
+                      long fromBeam,   // If nonzero, center and sigma arrays have (x, x', y, y') data. Otherwise, just (x, y)
+                      double kick[2],  /* for return of velocity change (m/s) */
+                      double charge,   /* total charge of kicking distribution in Coulomb */
+                      double ionMass,  /* mass of kicked particle in kg */
+                      double ionCharge /* charge of kicked particle in units of electron charge */
+                      ) {
   // calculate beam kick on ion, assuming Gaussian beam
   double sx, sy, x, y, sd, Fx, Fy, C1, C2, C3, ay;
   std::complex<double> Fc, w1, w2, erf1, erf2;
@@ -1502,18 +1495,17 @@ void gaussianBeamKick(
   kick[0] = -Fx / ionMass;
   kick[1] = -Fy / ionMass;
 #endif
-
 }
 
 void roundGaussianBeamKick(
-  double *coord,
-  double *center,
-  double *sigma,
-  long fromBeam, // If nonzero, center and sigma arrays have (x, x', y, y') data. Otherwise, just (x, y)
-  double kick[2],
-  double charge,
-  double ionMass,
-  double ionCharge) {
+                           double *coord,
+                           double *center,
+                           double *sigma,
+                           long fromBeam, // If nonzero, center and sigma arrays have (x, x', y, y') data. Otherwise, just (x, y)
+                           double kick[2],
+                           double charge,
+                           double ionMass,
+                           double ionCharge) {
   // calculate beam kick on ion, assuming round Gaussian beam
   double sx, sy, x, y, sig, r, C1, dp, theta;
 
@@ -1603,7 +1595,7 @@ short multipleWhateverFit(double bunchSigma[4], double bunchCentroid[4], double 
       result = find_min_max(&minVal, &peakVal, yData, nData);
       find_min_max(&xMin, &xMax, xData, nData);
 
-      //subtract baseline (minimum point) before fitting
+      // subtract baseline (minimum point) before fitting
       if (ion_fit_subtract_baseline) {
         for (int i = 0; i < nData; i++)
           yData[i] -= minVal;
@@ -1611,7 +1603,7 @@ short multipleWhateverFit(double bunchSigma[4], double bunchCentroid[4], double 
 
       /* smaller sigma is close to the beam size, larger is close to ion sigma */
 
-      if (mFunctions == 1) { //single gaussian fit
+      if (mFunctions == 1) { // single gaussian fit
 #if USE_MPI
         if (myid % 2 == 0 && ionEffects->xyFitSet[plane] & 0x01) {
           memcpy(paramValue, ionEffects->xyFitParameter2[plane], 6 * sizeof(double));
@@ -1638,7 +1630,7 @@ short multipleWhateverFit(double bunchSigma[4], double bunchCentroid[4], double 
           lowerLimit[0] = ionEffects->sigmaLimitMultiplier[plane] * ionEffects->ionDelta[plane];
         lowerLimit[1] = xMin / 10;
         lowerLimit[2] = peakVal / 20;
-        //upperLimit[0] = paramValue[0]*10;
+        // upperLimit[0] = paramValue[0]*10;
         upperLimit[0] = 20 * bunchSigma[2 * plane];
         if (upperLimit[0] < lowerLimit[0])
           upperLimit[0] = 2 * lowerLimit[0];
@@ -1678,8 +1670,8 @@ short multipleWhateverFit(double bunchSigma[4], double bunchCentroid[4], double 
           lowerLimit[0] = ionEffects->sigmaLimitMultiplier[plane] * ionEffects->ionDelta[plane];
         lowerLimit[1] = xMin / 10;
         lowerLimit[2] = peakVal / 20;
-        //upperLimit[0] = paramValue[0]*10;
-        //upperLimit[0] = 20*bunchSigma[2*plane];
+        // upperLimit[0] = paramValue[0]*10;
+        // upperLimit[0] = 20*bunchSigma[2*plane];
         upperLimit[0] = ionEffects->ionDelta[plane] * nData;
         if (upperLimit[0] < lowerLimit[0])
           upperLimit[0] = 2 * lowerLimit[0];
@@ -1695,8 +1687,8 @@ short multipleWhateverFit(double bunchSigma[4], double bunchCentroid[4], double 
           lowerLimit[3] = ionEffects->sigmaLimitMultiplier[plane] * ionEffects->ionDelta[plane];
         lowerLimit[4] = xMin / 10;
         lowerLimit[5] = paramDelta[5] / 5;
-        //upperLimit[3] = paramValue[3]*10;
-        //upperLimit[3] = 20*bunchSigma[2*plane];
+        // upperLimit[3] = paramValue[3]*10;
+        // upperLimit[3] = 20*bunchSigma[2*plane];
         upperLimit[3] = ionEffects->ionDelta[plane] * nData;
         if (upperLimit[3] < lowerLimit[3])
           upperLimit[3] = 2 * lowerLimit[3];
@@ -1745,21 +1737,21 @@ short multipleWhateverFit(double bunchSigma[4], double bunchCentroid[4], double 
           paramValue[i] = 1.1 * lowerLimit[i];
         }
         /*
-	  if (paramValue[i]<0)
-	    lowerLimit[i] = 10*paramValue[i];
-	  else
-	    lowerLimit[i] = paramValue[i]/10;
-	}
-	*/
+          if (paramValue[i]<0)
+          lowerLimit[i] = 10*paramValue[i];
+          else
+          lowerLimit[i] = paramValue[i]/10;
+          }
+        */
         if (upperLimit[i] < paramValue[i]) {
           paramValue[i] = 0.9 * upperLimit[i];
         }
         /*
-	  if (paramValue[i]<0)
-	    upperLimit[i] = paramValue[i]/10;
-	  else
-	    upperLimit[i] = paramValue[i]*10;
-	*/
+          if (paramValue[i]<0)
+          upperLimit[i] = paramValue[i]/10;
+          else
+          upperLimit[i] = paramValue[i]*10;
+        */
         //}
       }
 
@@ -1806,8 +1798,8 @@ short multipleWhateverFit(double bunchSigma[4], double bunchCentroid[4], double 
         fitReturn += simplexMin(&result, paramValue, paramDelta, lowerLimit, upperLimit,
                                 NULL, nVariables, fitTarget, fitTolerance,
                                 ionEffects->ionFieldMethod == ION_FIELD_BIGAUSSIAN || ionEffects->ionFieldMethod == ION_FIELD_TRIGAUSSIAN || ionEffects->ionFieldMethod == ION_FIELD_GAUSSIANFIT
-                                  ? multiGaussianFunction
-                                  : multiLorentzianFunction,
+                                ? multiGaussianFunction
+                                : multiLorentzianFunction,
                                 (verbosity > 200 ? report : NULL), nEvalMax, nPassMax, 12, 3, 1.0, simplexFlags);
         memcpy(paramDelta, paramDeltaSave, sizeof(*paramDelta) * 9);
         if (fitReturn >= 0)
@@ -1966,9 +1958,9 @@ short multipleWhateverFit(double bunchSigma[4], double bunchCentroid[4], double 
     MPI_Barrier(MPI_COMM_WORLD);
     MPI_Allreduce(&nEvaluations, &ionEffects->nEvaluationsMin[plane], 1, MPI_LONG, MPI_MIN, MPI_COMM_WORLD);
     MPI_Allreduce(&nEvaluations, &ionEffects->nEvaluationsMax[plane], 1, MPI_LONG, MPI_MAX, MPI_COMM_WORLD);
-    //min_location = -1;
-    //findGlobalMinIndex(&result, &min_location, MPI_COMM_WORLD);
-    //MPI_Bcast(&nEvaluations, 1, MPI_LONG, min_location, MPI_COMM_WORLD);
+    // min_location = -1;
+    // findGlobalMinIndex(&result, &min_location, MPI_COMM_WORLD);
+    // MPI_Bcast(&nEvaluations, 1, MPI_LONG, min_location, MPI_COMM_WORLD);
     ionEffects->nEvaluationsBest[plane] = nEvaluations;
 #else
     ionEffects->nEvaluations[plane] = nEvaluations;
@@ -2016,9 +2008,9 @@ double multiGaussianFunction(double *param, long *invalid) {
   *invalid = 0;
 
   for (int j = 0; j < mFunctions; j++) {
-    //param[3*j+0] = sig[j]
-    //param[3*j+1] = cen[j]
-    //param[3*j+2] = h[j]
+    // param[3*j+0] = sig[j]
+    // param[3*j+1] = cen[j]
+    // param[3*j+2] = h[j]
     sigma[j] = param[3 * j];
     centroid[j] = param[3 * j + 1];
     height[j] = param[3 * j + 2];
@@ -2129,9 +2121,9 @@ double multiLorentzianFunction(double *param, long *invalid) {
    * Instead of A/(pi*a*(1 + (x/a)^2) we use height/(1 + (x/a)^2)
    */
   for (int j = 0; j < mFunctions; j++) {
-    //param[3*j+0] = a[j]
-    //param[3*j+1] = cen[j]
-    //param[3*j+2] = height[j]
+    // param[3*j+0] = a[j]
+    // param[3*j+1] = cen[j]
+    // param[3*j+2] = height[j]
     a[j] = param[3 * j];
     centroid[j] = param[3 * j + 1];
     height[j] = param[3 * j + 2];
@@ -2329,15 +2321,15 @@ void startSummaryDataOutputPage(IONEFFECTS *ionEffects, long iPass, long nPasses
 }
 
 void computeIonEffectsElectronBunchParameters(
-  double **part,
-  double *time,
-  long np,
-  CHARGE *charge,
-  double *tNow,
-  long *npTotal,
-  double *qBunch,
-  double bunchCentroid[4],
-  double bunchSigma[4]) {
+                                              double **part,
+                                              double *time,
+                                              long np,
+                                              CHARGE *charge,
+                                              double *tNow,
+                                              long *npTotal,
+                                              double *qBunch,
+                                              double bunchCentroid[4],
+                                              double bunchSigma[4]) {
   if (verbosity > 30) {
     printf("Computing bunch parameters\n");
     fflush(stdout);
@@ -2377,14 +2369,14 @@ void computeIonEffectsElectronBunchParameters(
 }
 
 void setIonEffectsElectronBunchOutput(
-  IONEFFECTS *ionEffects,
-  double tNow,
-  long iPass,
-  long iBunch,
-  double qBunch,
-  long npTotal,
-  double bunchSigma[4],
-  double bunchCentroid[4]) {
+                                      IONEFFECTS *ionEffects,
+                                      double tNow,
+                                      long iPass,
+                                      long iBunch,
+                                      double qBunch,
+                                      long npTotal,
+                                      double bunchSigma[4],
+                                      double bunchCentroid[4]) {
   if (verbosity > 30) {
     printf("Setting SDDS file for electron bunch output\n");
     fflush(stdout);
@@ -2415,14 +2407,14 @@ void setIonEffectsElectronBunchOutput(
 }
 
 void setIonEffectsIonParameterOutput(
-  IONEFFECTS *ionEffects,
-  double tNow,
-  long iPass,
-  long iBunch,
-  long nBunches,
-  double qIon,
-  double ionSigma[2],
-  double ionCentroid[2]) {
+                                     IONEFFECTS *ionEffects,
+                                     double tNow,
+                                     long iPass,
+                                     long iBunch,
+                                     long nBunches,
+                                     double qIon,
+                                     double ionSigma[2],
+                                     double ionCentroid[2]) {
   long iSpecies;
 #if USE_MPI
   if (myid == 0) {
@@ -2552,13 +2544,13 @@ void generateIons(IONEFFECTS *ionEffects, long iPass, long iBunch, long nBunches
         nToAdd = 0;
         qToAdd = 0;
         if ((index = ionProperties.sourceGasIndex[iSpecies]) >= 0) {
-          /* this is a singly-ionized molecule, so use source gas 
-	     nToAdd =  someFunctionOfPressure(ionEffects->pressure[index], ...);
-	  */
+          /* this is a singly-ionized molecule, so use source gas
+             nToAdd =  someFunctionOfPressure(ionEffects->pressure[index], ...);
+          */
 #if USE_MPI
-          /* The macroIons parameter is the number for all processors, so we need to 
-	   * apportion the ions among the working processors 
-	   */
+          /* The macroIons parameter is the number for all processors, so we need to
+           * apportion the ions among the working processors
+           */
           long nLeft;
           nToAdd = ionEffects->macroIons / (n_processors - 1.0);
           nLeft = ionEffects->macroIons - nToAdd * (n_processors - 1);
@@ -2573,7 +2565,7 @@ void generateIons(IONEFFECTS *ionEffects, long iPass, long iBunch, long nBunches
 
           if (nToAdd) {
             qToAdd = unitsFactor * qBunch * ionEffects->pressure[index] * ionEffects->generationInterval *
-                     ionProperties.crossSection[iSpecies] * (ionEffects->sEnd - ionEffects->sStart) / ionEffects->macroIons;
+              ionProperties.crossSection[iSpecies] * (ionEffects->sEnd - ionEffects->sStart) / ionEffects->macroIons;
             if (symmetrize) {
               nToAdd *= 2;
               qToAdd /= 2;
@@ -2583,14 +2575,14 @@ void generateIons(IONEFFECTS *ionEffects, long iPass, long iBunch, long nBunches
         } else if (((index = ionProperties.sourceIonIndex[iSpecies]) >= 0) &&
                    (((iPass - ionEffects->startPass) * nBunches + iBunch) % multiple_ionization_interval == 0)) {
           /* This is a multiply-ionized molecule, so use source ion density.
-	   * Relevant quantities:
-	   * ionEffects->nIons[index] --- Number of ions of the source species
-	   * ionEffects->coordinate[index][j][k] --- kth coordinate of jth source ion 
-	   * ionProperties.crossSection[iSpecies] --- Cross section for producing new ion from the source ions
-	   */
-          /* 
-	     nToAdd = someFunctionOfExistingNumberOfIons(...); 
-	  */
+           * Relevant quantities:
+           * ionEffects->nIons[index] --- Number of ions of the source species
+           * ionEffects->coordinate[index][j][k] --- kth coordinate of jth source ion
+           * ionProperties.crossSection[iSpecies] --- Cross section for producing new ion from the source ions
+           */
+          /*
+            nToAdd = someFunctionOfExistingNumberOfIons(...);
+          */
 
           double beamFact, jx, jy, Pmi, rnd;
           beamFact = jx = jy = Pmi = rnd = 0;
@@ -2599,22 +2591,22 @@ void generateIons(IONEFFECTS *ionEffects, long iPass, long iBunch, long nBunches
             jx = ionEffects->coordinate[index][jMacro][0] - bunchCentroid[0];
             jy = ionEffects->coordinate[index][jMacro][2] - bunchCentroid[2];
             Pmi = beamFact * ionProperties.crossSection[iSpecies] *
-                  exp(-sqr(jx) / (2 * sqr(bunchSigma[0])) - sqr(jy) / (2 * sqr(bunchSigma[2])));
+              exp(-sqr(jx) / (2 * sqr(bunchSigma[0])) - sqr(jy) / (2 * sqr(bunchSigma[2])));
 
             rnd = random_2(0);
-            if (rnd < Pmi) { //multiple ionization occurs
+            if (rnd < Pmi) { // multiple ionization occurs
               double qToAdd, mx, my;
               qToAdd = ionEffects->coordinate[index][jMacro][4];
               mx = ionEffects->coordinate[index][jMacro][0];
               my = ionEffects->coordinate[index][jMacro][2];
-              addIon_point(ionEffects, iSpecies, qToAdd, mx, my); //add multiply ionized ion
+              addIon_point(ionEffects, iSpecies, qToAdd, mx, my); // add multiply ionized ion
 
               // Initial kinetic energy
               double vmag, ionMass, vx, vy, rangle, Emi;
               ionMass = 1.672621898e-27 * ionProperties.mass[iSpecies];
               Emi = fabs(gauss_rn_lim(multiple_ionization_energy_peak, multiple_ionization_energy_rms, 3, random_4));
-              //Emi = fabs(gauss_rn_lim(20, 10, 3, random_4));
-              //Emi = 0;
+              // Emi = fabs(gauss_rn_lim(20, 10, 3, random_4));
+              // Emi = 0;
               vmag = sqrt(2 * Emi * e_mks / ionMass);
               rangle = random_2(0) * 2 * PI;
               vx = vmag * cos(rangle);
@@ -2622,7 +2614,7 @@ void generateIons(IONEFFECTS *ionEffects, long iPass, long iBunch, long nBunches
               ionEffects->coordinate[iSpecies][ionEffects->nIons[iSpecies] - 1][1] = vx;
               ionEffects->coordinate[iSpecies][ionEffects->nIons[iSpecies] - 1][3] = vy;
 
-              //delete source ion
+              // delete source ion
               long k;
               for (k = 0; k < 5; k++)
                 ionEffects->coordinate[index][jMacro][k] = ionEffects->coordinate[index][ionEffects->nIons[index] - 1][k];
@@ -2638,7 +2630,7 @@ void generateIons(IONEFFECTS *ionEffects, long iPass, long iBunch, long nBunches
 
 void applyElectronBunchKicksToIons(IONEFFECTS *ionEffects, long iPass, double qBunch, double bunchCentroid[4], double bunchSigma[4],
                                    double dpSum[3]) {
-  //long localCount;
+  // long localCount;
   double ionMass, ionCharge, *coord, kick[2];
   double tempkick[2], maxkick[2], tempart[4];
   long iSpecies, iIon;
@@ -2653,19 +2645,19 @@ void applyElectronBunchKicksToIons(IONEFFECTS *ionEffects, long iPass, double qB
   if (isSlave || !notSinglePart) {
     if (iPass >= freeze_ions_until_pass) {
       /*** Determine and apply kicks from beam to ions */
-      //localCount = 0;
+      // localCount = 0;
       for (iSpecies = 0; iSpecies < ionProperties.nSpecies; iSpecies++) {
         kick[0] = kick[1] = 0;
 
         /* Relevant quantities:
-	 * ionProperties.chargeState[iSpecies] --- Charge state of the ion (integer)
-	 * ionProperties.mass[iSpecies] --- Mass of the ion (AMUs)
-	 * qBunch --- bunch charge (C)
-	 * sigma[0], sigma[1] --- x, y sigma (m)
-	 * centroid[0], centroid[1] --- x , y centroid (m)
-	 * ionEffects->nIons[index] --- Number of ions of the source species
-	 * ionEffects->coordinate[index][j][k] --- kth coordinate of jth source ion 
-	 */
+         * ionProperties.chargeState[iSpecies] --- Charge state of the ion (integer)
+         * ionProperties.mass[iSpecies] --- Mass of the ion (AMUs)
+         * qBunch --- bunch charge (C)
+         * sigma[0], sigma[1] --- x, y sigma (m)
+         * centroid[0], centroid[1] --- x , y centroid (m)
+         * ionEffects->nIons[index] --- Number of ions of the source species
+         * ionEffects->coordinate[index][j][k] --- kth coordinate of jth source ion
+         */
 
         ionMass = 1.672621898e-27 * ionProperties.mass[iSpecies];
         ionCharge = (double)ionProperties.chargeState[iSpecies];
@@ -2682,7 +2674,7 @@ void applyElectronBunchKicksToIons(IONEFFECTS *ionEffects, long iPass, double qB
         gaussianBeamKick(tempart, bunchCentroid, bunchSigma, 1, tempkick, qBunch, ionMass, ionCharge);
         maxkick[1] = 2 * abs(tempkick[1]);
 
-        //localCount += ionEffects->nIons[iSpecies];
+        // localCount += ionEffects->nIons[iSpecies];
         for (iIon = 0; iIon < ionEffects->nIons[iSpecies]; iIon++) {
           coord = ionEffects->coordinate[iSpecies][iIon];
           kick[0] = kick[1] = 0;
@@ -2695,11 +2687,11 @@ void applyElectronBunchKicksToIons(IONEFFECTS *ionEffects, long iPass, double qB
             // in order to account for fact that different macro-ions may represent different
             // numbers of actual ions
 
-            //dpSum[0] += kick[0]*ionMass*(ionEffects->coordinate[iSpecies][iIon][4]/e_mks/ionCharge);
-            //dpSum[1] += kick[1]*ionMass*(ionEffects->coordinate[iSpecies][iIon][4]/e_mks/ionCharge);
-            //dpSum[2] += ionEffects->coordinate[iSpecies][iIon][4]/e_mks/ionCharge;
+            // dpSum[0] += kick[0]*ionMass*(ionEffects->coordinate[iSpecies][iIon][4]/e_mks/ionCharge);
+            // dpSum[1] += kick[1]*ionMass*(ionEffects->coordinate[iSpecies][iIon][4]/e_mks/ionCharge);
+            // dpSum[2] += ionEffects->coordinate[iSpecies][iIon][4]/e_mks/ionCharge;
 
-            //momentum change = (velocity change) x (mass of ion) x (number of ions in macroparticle)
+            // momentum change = (velocity change) x (mass of ion) x (number of ions in macroparticle)
             dpSum[0] += kick[0] * ionMass * (ionEffects->coordinate[iSpecies][iIon][4] / e_mks / ionCharge);
             dpSum[1] += kick[1] * ionMass * (ionEffects->coordinate[iSpecies][iIon][4] / e_mks / ionCharge);
           }
@@ -2713,16 +2705,16 @@ void applyElectronBunchKicksToIons(IONEFFECTS *ionEffects, long iPass, double qB
   double dpSumGlobal[3];
   MPI_Allreduce(dpSum, dpSumGlobal, 3, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   memcpy(&dpSum[0], &dpSumGlobal[0], sizeof(dpSum[0]) * 3);
-  //if (dpSum[2]) {
-  //dpSum[0] /= dpSum[2];
-  //dpSum[1] /= dpSum[2];
-  //}
+  // if (dpSum[2]) {
+  // dpSum[0] /= dpSum[2];
+  // dpSum[1] /= dpSum[2];
+  // }
 #endif
 }
 
 void computeIonOverallParameters(
-  IONEFFECTS *ionEffects, double ionCentroid[2], double ionSigma[2], double *qIonReturn, long *nIonsTotal,
-  double bunchCentroid[4], double bunchSigma[4], long iBunch) {
+                                 IONEFFECTS *ionEffects, double ionCentroid[2], double ionSigma[2], double *qIonReturn, long *nIonsTotal,
+                                 double bunchCentroid[4], double bunchSigma[4], long iBunch) {
   long mTot, nTot, jMacro;
   double bx1, bx2, by1, by2;
   double qIon;
@@ -2734,14 +2726,14 @@ void computeIonOverallParameters(
   }
 
   /* use these as limits on the ion coordinates to include in the centroid and rms calculations,
-   * i.e., the core ions 
+   * i.e., the core ions
    */
   if (ionFieldMethod == ION_FIELD_GAUSSIAN) {
     /*
-    bx1 = bunchCentroid[0] - 3*bunchSigma[0];
-    bx2 = bunchCentroid[0] + 3*bunchSigma[0];
-    by1 = bunchCentroid[2] - 3*bunchSigma[2];
-    by2 = bunchCentroid[2] + 3*bunchSigma[2];
+      bx1 = bunchCentroid[0] - 3*bunchSigma[0];
+      bx2 = bunchCentroid[0] + 3*bunchSigma[0];
+      by1 = bunchCentroid[2] - 3*bunchSigma[2];
+      by2 = bunchCentroid[2] + 3*bunchSigma[2];
     */
     bx1 = bunchCentroid[0] - gaussian_ion_range * bunchSigma[0];
     bx2 = bunchCentroid[0] + gaussian_ion_range * bunchSigma[0];
@@ -2773,7 +2765,7 @@ void computeIonOverallParameters(
       /* Relevant quantities:
        * ionProperties.chargeState[iSpecies] --- Charge state of the ion (integer)
        * ionEffects->nIons[index] --- Number of ions of the source species
-       * ionEffects->coordinate[index][j][k] --- kth coordinate of jth source ion 
+       * ionEffects->coordinate[index][j][k] --- kth coordinate of jth source ion
        */
       if (ion_species_output) {
         speciesCentroid[iSpecies][0] = speciesCentroid[iSpecies][1] = speciesCharge[iSpecies] = 0;
@@ -2904,7 +2896,7 @@ void computeIonOverallParameters(
       /* Relevant quantities:
        * ionProperties.chargeState[iSpecies] --- Charge state of the ion (integer)
        * ionEffects->nIons[index] --- Number of ions of the source species
-       * ionEffects->coordinate[index][j][k] --- kth coordinate of jth source ion 
+       * ionEffects->coordinate[index][j][k] --- kth coordinate of jth source ion
        */
 
       if (ion_species_output)
@@ -2979,21 +2971,21 @@ void computeIonOverallParameters(
 }
 
 void applyIonKicksToElectronBunch(
-  IONEFFECTS *ionEffects,
-  double **part,
-  long np,
-  double Po,
-  long iBunch,
-  long iPass,
-  double qBunch,
-  double bunchCentroid[4],
-  double bunchSigma[4],
-  double qIon,
-  long nIonsTotal,
-  double ionCentroid[2],
-  double ionSigma[2],
-  double dpSum[3] // sum of momentum change applied to ions
-) {
+                                  IONEFFECTS *ionEffects,
+                                  double **part,
+                                  long np,
+                                  double Po,
+                                  long iBunch,
+                                  long iPass,
+                                  double qBunch,
+                                  double bunchCentroid[4],
+                                  double bunchSigma[4],
+                                  double qIon,
+                                  long nIonsTotal,
+                                  double ionCentroid[2],
+                                  double ionSigma[2],
+                                  double dpSum[3] // sum of momentum change applied to ions
+                                  ) {
   double kick[2], dpSumBunch[2];
   long ip;
   double paramValueX[9], paramValueY[9];
@@ -3016,13 +3008,13 @@ void applyIonKicksToElectronBunch(
 
     /* - Solve poisson equation */
 
-    //double C1;
+    // double C1;
     double delta[2];
 
-    //C1 = e_mks * re_mks / me_mks / c_mks;
+    // C1 = e_mks * re_mks / me_mks / c_mks;
 
-    for (int iPlane=0; iPlane<2; iPlane++) {
-      delta[iPlane] = 2*ionEffects->poisson_span[iPlane]/(ionEffects->n2dGridIon[iPlane]-1.0);
+    for (int iPlane = 0; iPlane < 2; iPlane++) {
+      delta[iPlane] = 2 * ionEffects->poisson_span[iPlane] / (ionEffects->n2dGridIon[iPlane] - 1.0);
     }
 
 #if TURBO_FASTPOISSON >= 2
@@ -3033,22 +3025,21 @@ void applyIonKicksToElectronBunch(
     memset(ionEffects->yKickPoisson[0], 0, sizeof(double) * ionEffects->n2dGridIon[0] * ionEffects->n2dGridIon[1]);
 #endif
 
-
-    poissonSolverWrapper(ionEffects->ion2dDensity,  ionEffects->ionPotential,
+    poissonSolverWrapper(ionEffects->ion2dDensity, ionEffects->ionPotential,
                          ionEffects->n2dGridIon[0], ionEffects->n2dGridIon[1],
                          ionEffects->xKickPoisson, ionEffects->yKickPoisson, delta);
 
-    //testFunc();
-    // debug output
+    // testFunc();
+    //  debug output
     /*
-    FILE *findex1, *findex2, *findex3, *findex4;
-    double C3;
-    double temp3[2];
-    //if ((iPass >= 80) && (iBunch > 180) && (ionEffects->sLocation > 900)) {
-    //if ((iPass == 0) && (iBunch == 0) && (ionEffects->sLocation < 100)) {
-    //if ((iPass%81 == 0) && (iBunch == 0)) {
-    //if ((ionSigma[1] > 3e-4) || (iBunch == 1)) {
-    if ((iBunch == 0) && (ionEffects->sLocation < 200) && (iPass%10==1)) {
+      FILE *findex1, *findex2, *findex3, *findex4;
+      double C3;
+      double temp3[2];
+      //if ((iPass >= 80) && (iBunch > 180) && (ionEffects->sLocation > 900)) {
+      //if ((iPass == 0) && (iBunch == 0) && (ionEffects->sLocation < 100)) {
+      //if ((iPass%81 == 0) && (iBunch == 0)) {
+      //if ((ionSigma[1] > 3e-4) || (iBunch == 1)) {
+      if ((iBunch == 0) && (ionEffects->sLocation < 200) && (iPass%10==1)) {
       printf("pass %d, bunch %d \n", iPass, iBunch);
       C3 =  -e_mks / (Po * me_mks * c_mks * c_mks * 8.85e-12);
       findex1 = fopen("dens.dat", "a");
@@ -3056,16 +3047,16 @@ void applyIonKicksToElectronBunch(
       findex3 = fopen("xkick.dat", "a");
       findex4 = fopen("ykick.dat", "a");
       for(int i=0; i<ionEffects->n2dGridIon[0]; i++) {
-	for(int j=0; j<ionEffects->n2dGridIon[1]; j++) {
-	  fprintf(findex1, "%4.3e \n ", ionEffects->ion2dDensity[i][j]);
-	  fprintf(findex2, "%4.3e \n ", ionEffects->ionPotential[i][j]);
+      for(int j=0; j<ionEffects->n2dGridIon[1]; j++) {
+      fprintf(findex1, "%4.3e \n ", ionEffects->ion2dDensity[i][j]);
+      fprintf(findex2, "%4.3e \n ", ionEffects->ionPotential[i][j]);
 
-	  temp3[0] = C3 * ionEffects->xKickPoisson[i][j];
-	  temp3[1] = C3 * ionEffects->yKickPoisson[i][j];
-	  fprintf(findex3, "%4.3e \n ", temp3[0]);
-	  fprintf(findex4, "%4.3e \n ", temp3[1]);
-	}
-	  //fprintf(findex, "\n");
+      temp3[0] = C3 * ionEffects->xKickPoisson[i][j];
+      temp3[1] = C3 * ionEffects->yKickPoisson[i][j];
+      fprintf(findex3, "%4.3e \n ", temp3[0]);
+      fprintf(findex4, "%4.3e \n ", temp3[1]);
+      }
+      //fprintf(findex, "\n");
       }
       fclose(findex1);
       fclose(findex2);
@@ -3074,59 +3065,54 @@ void applyIonKicksToElectronBunch(
 
       //gaussian comp
       double fkick[2], fpart[4], xdelta, ydelta, C1, tempk[2];
-      FILE * fcalc, *fgauss;  
+      FILE * fcalc, *fgauss;
 
       fgauss = fopen("gauss_kick.dat", "a");
 
       for (int i=0; i<ionEffects->n2dGridIon[0]; i++) {
-	fpart[0] = -ionEffects->span[0] + i*delta[0];
+      fpart[0] = -ionEffects->span[0] + i*delta[0];
 
-	for (int j=0; j<ionEffects->n2dGridIon[1]; j++) {
-	  fpart[2] = -ionEffects->span[1] + j*delta[1];
-	  fkick[0] = 0;
-	  fkick[1] = 0;
+      for (int j=0; j<ionEffects->n2dGridIon[1]; j++) {
+      fpart[2] = -ionEffects->span[1] + j*delta[1];
+      fkick[0] = 0;
+      fkick[1] = 0;
 
-	  gaussianBeamKick(fpart, ionCentroid, ionSigma, 0, kick, qIon, me_mks, 1);
-	  tempk[0] = kick[0] / c_mks / Po;
-	  tempk[1] = kick[1] / c_mks / Po; 
-	  fprintf(fgauss, "%4.3e %4.3e \n", tempk[0], tempk[1]);
+      gaussianBeamKick(fpart, ionCentroid, ionSigma, 0, kick, qIon, me_mks, 1);
+      tempk[0] = kick[0] / c_mks / Po;
+      tempk[1] = kick[1] / c_mks / Po;
+      fprintf(fgauss, "%4.3e %4.3e \n", tempk[0], tempk[1]);
 
-	}
+      }
       }
 
       fclose(fgauss);
       printf("output written \n");
 
-    }
+      }
     */
-    
-    
+
     /* - Compute field and apply kicks to electrons */
     double C2;
     long iBin[2];
     C2 = e_mks / (Po * me_mks * c_mks * c_mks * 8.85e-12);
 
-    for (ip=0; ip<np; ip++) {
-      if ((abs(part[ip][0]) <  ionEffects->poisson_span[0]) && (abs(part[ip][2]) <  ionEffects->poisson_span[1])) {
-        iBin[0] = floor((part[ip][0] + ionEffects->poisson_span[0])/delta[0]);
-        iBin[1] = floor((part[ip][2] + ionEffects->poisson_span[1])/delta[1]);
+    for (ip = 0; ip < np; ip++) {
+      if ((abs(part[ip][0]) < ionEffects->poisson_span[0]) && (abs(part[ip][2]) < ionEffects->poisson_span[1])) {
+        iBin[0] = floor((part[ip][0] + ionEffects->poisson_span[0]) / delta[0]);
+        iBin[1] = floor((part[ip][2] + ionEffects->poisson_span[1]) / delta[1]);
         part[ip][1] -= C2 * ionEffects->xKickPoisson[iBin[0]][iBin[1]];
         part[ip][3] -= C2 * ionEffects->yKickPoisson[iBin[0]][iBin[1]];
-	  //debug
-	  /*
-	  double kickampy;
-	  kickampy = abs(C2 * ionEffects->yKickPoisson[iBin[0]][iBin[1]]);
-	  if (kickampy > 5e-7) {
-	    int tempint = 0;
-	    //printf("large kickampy: %3.2e, Pass %d, bunch %d, sLoc %3.1f \n", kickampy, iPass, iBunch, ionEffects->sLocation);
-	  }
-	  */
-
+        // debug
+        /*
+          double kickampy;
+          kickampy = abs(C2 * ionEffects->yKickPoisson[iBin[0]][iBin[1]]);
+          if (kickampy > 5e-7) {
+          int tempint = 0;
+          //printf("large kickampy: %3.2e, Pass %d, bunch %d, sLoc %3.1f \n", kickampy, iPass, iBunch, ionEffects->sLocation);
+          }
+        */
       }
     }
-
-
-
 
   } else {
     /* Use 1D fits for ion fields */
@@ -3217,10 +3203,10 @@ void applyIonKicksToElectronBunch(
             //  paramValueX[2+ix*3] / normX * paramValueY[2+iy*3] / normY *
             //  2 * PI * paramValueX[0+ix*3] * paramValueY[0+iy*3] / qIon;
 
-            //tempQ[ix+iy*nFunctions] =
-            //  paramValueX[2+ix*3] / normX / ionEffects->ionChargeFromFit[0] *
-            //  paramValueY[2+iy*3] / normY /  ionEffects->ionChargeFromFit[1] *
-            //  2 * PI * paramValueX[0+ix*3] * paramValueY[0+iy*3] * ionEffects->qTotal;
+            // tempQ[ix+iy*nFunctions] =
+            //   paramValueX[2+ix*3] / normX / ionEffects->ionChargeFromFit[0] *
+            //   paramValueY[2+iy*3] / normY /  ionEffects->ionChargeFromFit[1] *
+            //   2 * PI * paramValueX[0+ix*3] * paramValueY[0+iy*3] * ionEffects->qTotal;
 
             if (tempQ[ix + iy * nFunctions] < 1e-6 * ionEffects->qTotal)
               // Ignore these contributions, as they are likely to have wild values for centroid and size that
@@ -3240,7 +3226,7 @@ void applyIonKicksToElectronBunch(
 
             /* Here we account for the bin sizes (normX and normY) and convert the height parameters to those
              * used in a standard Lorentzian, PI*L(0)*a. We also divide out the total
-             * charge since otherwise the 2d integral will be qIon^2, instead of qIon. 
+             * charge since otherwise the 2d integral will be qIon^2, instead of qIon.
              */
             tempQ[ix + iy * nFunctions] =
               paramValueX[2 + ix * 3] * PI * paramValueX[0 + ix * 3] / normX *
@@ -3318,11 +3304,11 @@ void applyIonKicksToElectronBunch(
                   kick[0] += tempkick[0];
                   kick[1] += tempkick[1];
                 } else {
-                  //printf("kick %3.2e,%3.2e > maxkick %3.2e,%3.2e: turn %ld , bunch %ld , cx1=%3.2e, cy=%3.2e, cx2=%3.2e,
-                  //cy2=%3.2e, sx1=%3.2e, sy1=%3.2e, sx2=%3.2e, sy2=%3.2e, x=%3.2e, y=%3.2e \n",
-                  //tempkick[0], tempkick[1], maxkick[0], maxkick[1], iPass, iBunch, tempCentroid[0][0],
-                  //tempCentroid[0][1],  tempCentroid[1][0], tempCentroid[1][1], tempSigma[0][0],
-                  //tempSigma[0][1], tempSigma[1][0], tempSigma[1][1], part[ip][0], part[ip][2]);
+                  // printf("kick %3.2e,%3.2e > maxkick %3.2e,%3.2e: turn %ld , bunch %ld , cx1=%3.2e, cy=%3.2e, cx2=%3.2e,
+                  // cy2=%3.2e, sx1=%3.2e, sy1=%3.2e, sx2=%3.2e, sy2=%3.2e, x=%3.2e, y=%3.2e \n",
+                  // tempkick[0], tempkick[1], maxkick[0], maxkick[1], iPass, iBunch, tempCentroid[0][0],
+                  // tempCentroid[0][1],  tempCentroid[1][0], tempCentroid[1][1], tempSigma[0][0],
+                  // tempSigma[0][1], tempSigma[1][0], tempSigma[1][1], part[ip][0], part[ip][2]);
                   circuitBreaker[i]++;
                 }
               }
@@ -3383,7 +3369,7 @@ void applyIonKicksToElectronBunch(
     if (verbosity) {
 #if USE_MPI
       long circuitBreakerGlobal[9];
-      MPI_Allreduce((long*)&circuitBreaker, (long*)&circuitBreakerGlobal, 9, MPI_LONG, MPI_SUM, MPI_COMM_WORLD);
+      MPI_Allreduce((long *)&circuitBreaker, (long *)&circuitBreakerGlobal, 9, MPI_LONG, MPI_SUM, MPI_COMM_WORLD);
       memcpy(circuitBreaker, circuitBreakerGlobal, sizeof(*circuitBreaker) * 9);
 #endif
       int count = 0;
@@ -3416,9 +3402,9 @@ void doIonEffectsIonHistogramOutput(IONEFFECTS *ionEffects, long iBunch, long iP
 #endif
       for (iPlane = 0; iPlane < 2; iPlane++) {
         /*
-	determineOffsetAndActiveBins(ionEffects->ionHistogram[iPlane], ionEffects->ionBins[iPlane],
-				     &binOffset, &activeBins);
-	*/
+          determineOffsetAndActiveBins(ionEffects->ionHistogram[iPlane], ionEffects->ionBins[iPlane],
+          &binOffset, &activeBins);
+        */
         binOffset = 0;
         activeBins = ionEffects->ionBins[iPlane];
         if (!SDDS_StartPage(SDDS_ionHistogramOutput, activeBins) ||
@@ -3460,7 +3446,7 @@ void doIonEffectsIonHistogramOutput(IONEFFECTS *ionEffects, long iBunch, long iP
                                   "nEvaluationsMin", ionEffects->nEvaluationsMin[iPlane],
                                   "nEvaluationsMax", ionEffects->nEvaluationsMax[iPlane],
 #else
-                                "nEvaluations", ionEffects->nEvaluations[iPlane],
+                                  "nEvaluations", ionEffects->nEvaluations[iPlane],
 #endif
                                   isLorentzian ? "a2" : "sigma2",
                                   nFunctions == 2 ? ionEffects->xyFitParameter2[iPlane][3] : ionEffects->xyFitParameter3[iPlane][3],
@@ -3561,15 +3547,15 @@ void flushIonEffectsSummaryOutput(IONEFFECTS *ionEffects) {
 /* This is for performing beam-beam kicks and really doesn't belong here, but it is a convenient place. */
 /* Based on M. Furman, LBL-34682 */
 void ellipsoidalBeamKick(
-  double *coord,      /* particle coordinates */
-  double P0,          /* reference beta*gamma */
-  double pMass,       /* mass of particle (kg) */
-  double pCharge,     /* charge of particle (C) */
-  double centroid[2], /* centroid of opposing beam */
-  double size[2],     /* semi-axes of opposing beam */
-  double charge,      /* charge of opposing beam (C) */
-  short parabolic     /* if non-zero, density is a parabolic function of x/a and y/b */
-) {
+                         double *coord,      /* particle coordinates */
+                         double P0,          /* reference beta*gamma */
+                         double pMass,       /* mass of particle (kg) */
+                         double pCharge,     /* charge of particle (C) */
+                         double centroid[2], /* centroid of opposing beam */
+                         double size[2],     /* semi-axes of opposing beam */
+                         double charge,      /* charge of opposing beam (C) */
+                         short parabolic     /* if non-zero, density is a parabolic function of x/a and y/b */
+                         ) {
   double x, y, a, b, ELx, ELy;
   double xsign = 1, ysign = 1;
 

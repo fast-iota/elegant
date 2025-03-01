@@ -1,18 +1,18 @@
 /*************************************************************************\
-* Copyright (c) 2002 The University of Chicago, as Operator of Argonne
-* National Laboratory.
-* Copyright (c) 2002 The Regents of the University of California, as
-* Operator of Los Alamos National Laboratory.
-* This file is distributed subject to a Software License Agreement found
-* in the file LICENSE that is included with this distribution. 
+ * Copyright (c) 2002 The University of Chicago, as Operator of Argonne
+ * National Laboratory.
+ * Copyright (c) 2002 The Regents of the University of California, as
+ * Operator of Los Alamos National Laboratory.
+ * This file is distributed subject to a Software License Agreement found
+ * in the file LICENSE that is included with this distribution.
 \*************************************************************************/
 
 /* routine: get_beamline()
  * purpose: read a mad-format lattice and return a pointer to a linked
- *          list for the beamline specified. 
- * 
+ *          list for the beamline specified.
+ *
  *	    It is assumed that the MAD-style input file is in
- *          the usual units of meters, radians, etc.  The 
+ *          the usual units of meters, radians, etc.  The
  *          output has the same units.
  *
  * Michael Borland, 1989
@@ -30,14 +30,14 @@ void copyEdgeIndices(char *target, long targetType, char *source, long sourceTyp
 long getAddStartFlag();
 void setUpBMapXYZApContour(BMAPXYZ *bmxyz, ELEMENT_LIST *eptr0);
 
-/* elem: root of linked-list of ELEM structures 
+/* elem: root of linked-list of ELEM structures
  * This list contains the definitions of all elements as supplied in the
  * input file.  An important use of this list is to keep track of the lattice
  * that will be saved with save_lattice.
  */
 static ELEMENT_LIST *elem = NULL;
 
-/* line: root of linked-list of LINE structures 
+/* line: root of linked-list of LINE structures
  * This list contains the definitions of all beamlines as supplied in the
  * input file.  Each beamline contains instances of the elements that it
  * contains.  I.e., it does not refer explicitly to the structures in
@@ -290,20 +290,20 @@ LINE_LIST *get_beamline(char *madfile, char *use_beamline, double p_central, lon
               free(eptr->p_elem);
               eptr->p_elem = pNew;
               eptr->type = newType;
-              /* 
+              /*
                 if (entity_description[newType].flags&HAS_LENGTH)
                 ((DRIFT*)eptr->p_elem)->length = length;
-                */
+              */
             }
             eptr->ignore = 0;
             if (ignoreElement(eptr->name, eptr->type, 0)) {
               /*
-	      printf("Ignoring %s in multi-particle tracking\n", eptr->name); 
+                printf("Ignoring %s in multi-particle tracking\n", eptr->name);
               */
               eptr->ignore = 1;
             } else if (ignoreElement(eptr->name, eptr->type, 1)) {
               /*
-	      printf("Ignoring %s completely\n", eptr->name);
+                printf("Ignoring %s completely\n", eptr->name);
               */
               eptr->ignore = 2;
             }
@@ -330,9 +330,7 @@ LINE_LIST *get_beamline(char *madfile, char *use_beamline, double p_central, lon
     }
     if (echo) {
       printf("finished reading from files\n");
-#if defined(__linux__) || defined(_WIN32) || defined(__APPLE__)
       report_stats(stdout, "statistics: ");
-#endif
       fflush(stdout);
     }
 
@@ -346,8 +344,8 @@ LINE_LIST *get_beamline(char *madfile, char *use_beamline, double p_central, lon
 
     /* since the lists were being extended before it was known that
        the was another object to put in them, must eliminate references
-       to the most recently added nodes. 
-       */
+       to the most recently added nodes.
+    */
     (eptr->pred)->succ = NULL;
     (lptr->pred)->succ = NULL;
     eptr = eptr->pred;
@@ -499,7 +497,7 @@ LINE_LIST *get_beamline(char *madfile, char *use_beamline, double p_central, lon
     }
     while (eptr) {
       long code;
-      /* The end position will have been set in a previous call to get_beamline(), prior to 
+      /* The end position will have been set in a previous call to get_beamline(), prior to
          definition of insertions */
       if ((code = insertElem(eptr->name, eptr->type, &skip, eptr->occurence, eptr->end_pos))) {
         if (code == 1) {
@@ -556,9 +554,9 @@ LINE_LIST *get_beamline(char *madfile, char *use_beamline, double p_central, lon
         lptr->n_elems--;
       }
     } else {
-      if (eptr->type==T_BMAPXYZ) {
+      if (eptr->type == T_BMAPXYZ) {
         BMAPXYZ *bmxyz;
-        bmxyz = (BMAPXYZ*)eptr->p_elem;
+        bmxyz = (BMAPXYZ *)eptr->p_elem;
         if (bmxyz->apContourElement && strlen(bmxyz->apContourElement))
           setUpBMapXYZApContour(bmxyz, eptr);
       }
@@ -568,9 +566,7 @@ LINE_LIST *get_beamline(char *madfile, char *use_beamline, double p_central, lon
 
   if (echo) {
     printf("Beginning organization of lattice input data.\n");
-#if defined(__linux__) || defined(_WIN32) || defined(__APPLE__)
     report_stats(stdout, "statistics: ");
-#endif
     fflush(stdout);
   }
 
@@ -687,8 +683,8 @@ LINE_LIST *get_beamline(char *madfile, char *use_beamline, double p_central, lon
     totalElements++;
     if (entity_description[eptr->type].flags & MATRIX_TRACKING)
       lptr->flags |= BEAMLINE_MATRICES_NEEDED;
-    if (eptr->type==T_CWIGGLER)
-      determineCWigglerEndFlags((CWIGGLER*)eptr->p_elem, eptr);
+    if (eptr->type == T_CWIGGLER)
+      determineCWigglerEndFlags((CWIGGLER *)eptr->p_elem, eptr);
     eptr = eptr->succ;
   }
 
@@ -714,9 +710,7 @@ LINE_LIST *get_beamline(char *madfile, char *use_beamline, double p_central, lon
   if (echo) {
     printf("Created occurence hash table for %ld unique elements of %ld total elements\n",
            uniqueElements, totalElements);
-#if defined(__linux__) || defined(_WIN32) || defined(__APPLE__)
     report_stats(stdout, "statistics: ");
-#endif
     fflush(stdout);
   }
 
@@ -749,9 +743,7 @@ LINE_LIST *get_beamline(char *madfile, char *use_beamline, double p_central, lon
 
   if (echo) {
     printf("Step 1 done.\n");
-#if defined(__linux__) || defined(_WIN32) || defined(__APPLE__)
     report_stats(stdout, "statistics: ");
-#endif
     fflush(stdout);
   }
 
@@ -782,9 +774,7 @@ LINE_LIST *get_beamline(char *madfile, char *use_beamline, double p_central, lon
 
   if (echo) {
     printf("Step 2 done.\n");
-#if defined(__linux__) || defined(_WIN32) || defined(__APPLE__)
     report_stats(stdout, "statistics: ");
-#endif
     fflush(stdout);
   }
 
@@ -792,9 +782,7 @@ LINE_LIST *get_beamline(char *madfile, char *use_beamline, double p_central, lon
 
   if (echo) {
     printf("Step 3 done.\n");
-#if defined(__linux__) || defined(_WIN32) || defined(__APPLE__)
     report_stats(stdout, "statistics: ");
-#endif
     fflush(stdout);
   }
 
@@ -804,9 +792,7 @@ LINE_LIST *get_beamline(char *madfile, char *use_beamline, double p_central, lon
 
   if (echo) {
     printf("Step 4 done.\n");
-#if defined(__linux__) || defined(_WIN32) || defined(__APPLE__)
     report_stats(stdout, "statistics: ");
-#endif
     fflush(stdout);
   }
 
@@ -1170,7 +1156,7 @@ void delete_matrix_data(LINE_LIST *beamline) {
 
 /* routine: do_save_lattice()
  * purpose: save the element and beamline definitions to a file
- * 
+ *
  * Michael Borland, 1991
  */
 #include "save_lattice.h"
@@ -1235,13 +1221,13 @@ void do_save_lattice(NAMELIST_TEXT *nltext, RUN *run, LINE_LIST *beamline) {
             case IS_DOUBLE:
               dvalue = *(double *)(eptr->p_elem + parameter[j].offset);
               /*
-              if ((parameter[j].flags&PARAM_DIVISION_RELATED) && 
-              eptr->divisions>1) {
-              fprintf(stderr, "Multiplying %s by %ld\n",
-              parameter[j].name, eptr->divisions);
-              dvalue *= eptr->divisions;
-              }
-            */
+                if ((parameter[j].flags&PARAM_DIVISION_RELATED) &&
+                eptr->divisions>1) {
+                fprintf(stderr, "Multiplying %s by %ld\n",
+                parameter[j].name, eptr->divisions);
+                dvalue *= eptr->divisions;
+                }
+              */
               if (!suppress_defaults || dvalue != parameter[j].number) {
                 /* value is not the default, so add to output */
                 sprintf(t, "%s=%.16g", parameter[j].name, dvalue);
@@ -1319,13 +1305,13 @@ void do_save_lattice(NAMELIST_TEXT *nltext, RUN *run, LINE_LIST *beamline) {
               case IS_DOUBLE:
                 dvalue = *(double *)(eptr->p_elem + parameter[j].offset);
                 /*
-                if ((parameter[j].flags&PARAM_DIVISION_RELATED) && 
-                eptr->divisions>1) {
-                fprintf(stderr, "Multiplying %s by %ld\n",
-                parameter[j].name, eptr->divisions);
-                dvalue *= eptr->divisions;
-                }
-              */
+                  if ((parameter[j].flags&PARAM_DIVISION_RELATED) &&
+                  eptr->divisions>1) {
+                  fprintf(stderr, "Multiplying %s by %ld\n",
+                  parameter[j].name, eptr->divisions);
+                  dvalue *= eptr->divisions;
+                  }
+                */
                 if (!suppress_defaults || dvalue != parameter[j].number) {
                   /* value is not the default, so add to output */
                   sprintf(t, "%s=%.16g", parameter[j].name, dvalue);
@@ -1376,9 +1362,9 @@ void do_save_lattice(NAMELIST_TEXT *nltext, RUN *run, LINE_LIST *beamline) {
         }
       }
       /* Write beamline sequence now
-     * if output_seq=1, each line has 40 elements limitation 
-     * otherwise, a single beamline is created
-     */
+       * if output_seq=1, each line has 40 elements limitation
+       * otherwise, a single beamline is created
+       */
       eptr = beamline->elem;
       sprintf(s, "L%04ld: LINE = (", nline);
       while (eptr) {
@@ -1569,7 +1555,8 @@ void change_defined_parameter_divopt(char *elem_name, long param, long elem_type
         value /= eptr->divisions;
       if (mode & LOAD_FLAG_VERBOSE)
         printf("Changing definition (mode %s) %s.%s from %21.15e to ",
-               (mode & LOAD_FLAG_ABSOLUTE) ? "absolute" : ((mode & LOAD_FLAG_DIFFERENTIAL) ? "differential" : (mode & LOAD_FLAG_FRACTIONAL) ? "fractional" : "unknown"),
+               (mode & LOAD_FLAG_ABSOLUTE) ? "absolute" : ((mode & LOAD_FLAG_DIFFERENTIAL) ? "differential" : (mode & LOAD_FLAG_FRACTIONAL) ? "fractional"
+                                                           : "unknown"),
                elem_name, entity_description[elem_type].parameter[param].name,
                *((double *)(p_elem + entity_description[elem_type].parameter[param].offset)));
       fflush(stdout);
@@ -1596,7 +1583,8 @@ void change_defined_parameter_divopt(char *elem_name, long param, long elem_type
       }
       if (mode & LOAD_FLAG_VERBOSE) {
         printf("Changing definition (mode %s) %s.%s ",
-               (mode & LOAD_FLAG_ABSOLUTE) ? "absolute" : ((mode & LOAD_FLAG_DIFFERENTIAL) ? "differential" : (mode & LOAD_FLAG_FRACTIONAL) ? "fractional" : "unknown"),
+               (mode & LOAD_FLAG_ABSOLUTE) ? "absolute" : ((mode & LOAD_FLAG_DIFFERENTIAL) ? "differential" : (mode & LOAD_FLAG_FRACTIONAL) ? "fractional"
+                                                           : "unknown"),
                elem_name, entity_description[elem_type].parameter[param].name);
         if (data_type == IS_LONG)
           printf("from %ld to ",
@@ -1677,7 +1665,7 @@ void change_used_parameter_divopt(LINE_LIST *beamline, char *elem_name, long par
   char *p_elem;
   long data_type;
   short wildcards = 0;
-  
+
   log_entry("change_used_parameter_divopt");
 
   eptr = NULL;
@@ -1702,7 +1690,8 @@ void change_used_parameter_divopt(LINE_LIST *beamline, char *elem_name, long par
         value /= eptr->divisions;
       if (mode & LOAD_FLAG_VERBOSE)
         printf("Changing value (mode %s) %s.%s from %21.15e to ",
-               (mode & LOAD_FLAG_ABSOLUTE) ? "absolute" : ((mode & LOAD_FLAG_DIFFERENTIAL) ? "differential" : (mode & LOAD_FLAG_FRACTIONAL) ? "fractional" : "unknown"),
+               (mode & LOAD_FLAG_ABSOLUTE) ? "absolute" : ((mode & LOAD_FLAG_DIFFERENTIAL) ? "differential" : (mode & LOAD_FLAG_FRACTIONAL) ? "fractional"
+                                                           : "unknown"),
                elem_name, entity_description[elem_type].parameter[param].name,
                *((double *)(p_elem + entity_description[elem_type].parameter[param].offset)));
       fflush(stdout);
@@ -1729,7 +1718,8 @@ void change_used_parameter_divopt(LINE_LIST *beamline, char *elem_name, long par
       }
       if (mode & LOAD_FLAG_VERBOSE) {
         printf("Changing value (mode %s) %s.%s ",
-               (mode & LOAD_FLAG_ABSOLUTE) ? "absolute" : ((mode & LOAD_FLAG_DIFFERENTIAL) ? "differential" : (mode & LOAD_FLAG_FRACTIONAL) ? "fractional" : "unknown"),
+               (mode & LOAD_FLAG_ABSOLUTE) ? "absolute" : ((mode & LOAD_FLAG_DIFFERENTIAL) ? "differential" : (mode & LOAD_FLAG_FRACTIONAL) ? "fractional"
+                                                           : "unknown"),
                elem_name, entity_description[elem_type].parameter[param].name);
         if (data_type == IS_LONG)
           printf("from %ld to ",
@@ -1853,8 +1843,8 @@ void add_element(ELEMENT_LIST *elem0, ELEMENT_LIST *elem1) {
 ELEMENT_LIST *rm_element(ELEMENT_LIST *elem) {
   ELEMENT_LIST *eptr0, *pred, *succ;
   eptr0 = elem;
-  pred=elem->pred;
-  succ=elem->succ;
+  pred = elem->pred;
+  succ = elem->succ;
   if (pred)
     pred->succ = succ;
   if (succ)
@@ -2141,18 +2131,17 @@ void modify_for_backtracking(ELEMENT_LIST *eptr) {
   }
 }
 
-void determineCWigglerEndFlags(CWIGGLER *cwig, ELEMENT_LIST *eptr0)
-{
+void determineCWigglerEndFlags(CWIGGLER *cwig, ELEMENT_LIST *eptr0) {
   ELEMENT_LIST *eptr;
 
   eptr = eptr0->pred;
   cwig->endFlag[0] = 1;
   while (eptr) {
-    if (eptr->type==T_CWIGGLER) {
+    if (eptr->type == T_CWIGGLER) {
       cwig->endFlag[0] = 0;
       break;
     }
-    if (eptr->type!=T_MARK && eptr->type!=T_WATCH) {
+    if (eptr->type != T_MARK && eptr->type != T_WATCH) {
       cwig->endFlag[0] = 1;
       break;
     } else
@@ -2162,11 +2151,11 @@ void determineCWigglerEndFlags(CWIGGLER *cwig, ELEMENT_LIST *eptr0)
   eptr = eptr0->succ;
   cwig->endFlag[1] = 1;
   while (eptr) {
-    if (eptr->type==T_CWIGGLER) {
+    if (eptr->type == T_CWIGGLER) {
       cwig->endFlag[1] = 0;
       break;
     }
-    if (eptr->type!=T_MARK && eptr->type!=T_WATCH) {
+    if (eptr->type != T_MARK && eptr->type != T_WATCH) {
       cwig->endFlag[1] = 1;
       break;
     } else
@@ -2174,13 +2163,12 @@ void determineCWigglerEndFlags(CWIGGLER *cwig, ELEMENT_LIST *eptr0)
   }
 }
 
-void setUpBMapXYZApContour(BMAPXYZ *bmxyz, ELEMENT_LIST *eptr0)
-{
+void setUpBMapXYZApContour(BMAPXYZ *bmxyz, ELEMENT_LIST *eptr0) {
   ELEMENT_LIST *eptr;
   eptr = elem;
   while (eptr) {
-    if (eptr->type==T_APCONTOUR && strcmp(eptr->name, bmxyz->apContourElement)==0) {
-      copy_p_elem((char*)&bmxyz->apContour, eptr->p_elem, T_APCONTOUR);
+    if (eptr->type == T_APCONTOUR && strcmp(eptr->name, bmxyz->apContourElement) == 0) {
+      copy_p_elem((char *)&bmxyz->apContour, eptr->p_elem, T_APCONTOUR);
       initializeApContour(&bmxyz->apContour);
       return;
     }
@@ -2190,8 +2178,7 @@ void setUpBMapXYZApContour(BMAPXYZ *bmxyz, ELEMENT_LIST *eptr0)
                 bmxyz->apContourElement, eptr0->name);
 }
 
-void initializeApContour(APCONTOUR *apcontour)
-{
+void initializeApContour(APCONTOUR *apcontour) {
   if (!apcontour->initialized && !apcontour->cancel) {
     SDDS_DATASET SDDSin;
     long readCode;
@@ -2211,34 +2198,34 @@ void initializeApContour(APCONTOUR *apcontour)
       bombElegantVA("Error: No YCOLUMN given for APCONTOUR\n", apcontour->yColumn);
     if (!SDDS_InitializeInputFromSearchPath(&SDDSin, apcontour->filename))
       bombElegantVA("Error: APCONTOUR file %s is unreadable\n", apcontour->filename);
-    while ((readCode=SDDS_ReadPage(&SDDSin))>0) {
-      if (readCode==1) {
+    while ((readCode = SDDS_ReadPage(&SDDSin)) > 0) {
+      if (readCode == 1) {
         if (SDDS_CheckColumn(&SDDSin, apcontour->xColumn, "m", SDDS_ANY_FLOATING_TYPE, stdout) != SDDS_CHECK_OK)
           bombElegantVA("Error: problem with x column (%s) for APCONTOUR file %s---check existence, units, and type\n",
                         apcontour->xColumn, apcontour->filename);
         if (SDDS_CheckColumn(&SDDSin, apcontour->yColumn, "m", SDDS_ANY_FLOATING_TYPE, stdout) != SDDS_CHECK_OK)
           bombElegantVA("Error: problem with y column (%s) for APCONTOUR file %s---check existence, units, and type\n",
                         apcontour->yColumn, apcontour->filename);
-        if ((apcontour->hasLogic = SDDS_GetParameterIndex(&SDDSin, "Logic")>=0)) {
+        if ((apcontour->hasLogic = SDDS_GetParameterIndex(&SDDSin, "Logic") >= 0)) {
           if (SDDS_CheckParameter(&SDDSin, "Logic", NULL, SDDS_STRING, stdout) != SDDS_CHECK_OK)
             bombElegantVA("Error: parameter \"Logic\" in APCONTOUR file %s must have string type\n", apcontour->filename);
         }
       }
-      apcontour->x = SDDS_Realloc(apcontour->x, sizeof(*(apcontour->x))*(apcontour->nContours+1));
-      apcontour->y = SDDS_Realloc(apcontour->y, sizeof(*(apcontour->y))*(apcontour->nContours+1));
-      apcontour->logic = SDDS_Realloc(apcontour->logic, sizeof(*(apcontour->logic))*(apcontour->nContours+1)); 
+      apcontour->x = SDDS_Realloc(apcontour->x, sizeof(*(apcontour->x)) * (apcontour->nContours + 1));
+      apcontour->y = SDDS_Realloc(apcontour->y, sizeof(*(apcontour->y)) * (apcontour->nContours + 1));
+      apcontour->logic = SDDS_Realloc(apcontour->logic, sizeof(*(apcontour->logic)) * (apcontour->nContours + 1));
       if (!apcontour->hasLogic)
         apcontour->logic[apcontour->nContours] = NULL;
       else if (!SDDS_GetParameter(&SDDSin, "Logic", &apcontour->logic[apcontour->nContours]))
         bombElegantVA("Error: problem getting parameter \"Logic\" from APCONTOUR file %s\n", apcontour->filename);
-      apcontour->nPoints = SDDS_Realloc(apcontour->nPoints, sizeof(*(apcontour->nPoints))*(apcontour->nContours+1));
-      if ((apcontour->nPoints[apcontour->nContours] = SDDS_RowCount(&SDDSin)) < 3) 
+      apcontour->nPoints = SDDS_Realloc(apcontour->nPoints, sizeof(*(apcontour->nPoints)) * (apcontour->nContours + 1));
+      if ((apcontour->nPoints[apcontour->nContours] = SDDS_RowCount(&SDDSin)) < 3)
         bombElegantVA("Error: APCONTOUR file %s page %d has too few points\n", apcontour->filename, readCode);
       if (!(apcontour->x[apcontour->nContours] = SDDS_GetColumnInDoubles(&SDDSin, apcontour->xColumn)) ||
           !(apcontour->y[apcontour->nContours] = SDDS_GetColumnInDoubles(&SDDSin, apcontour->yColumn)))
         bombElegantVA("Error: failed to get x or y data from APCONTOUR file %s\n", apcontour->filename);
-      if (apcontour->x[apcontour->nContours][0] != apcontour->x[apcontour->nContours][apcontour->nPoints[apcontour->nContours]-1] ||
-          apcontour->y[apcontour->nContours][0] != apcontour->y[apcontour->nContours][apcontour->nPoints[apcontour->nContours]-1])
+      if (apcontour->x[apcontour->nContours][0] != apcontour->x[apcontour->nContours][apcontour->nPoints[apcontour->nContours] - 1] ||
+          apcontour->y[apcontour->nContours][0] != apcontour->y[apcontour->nContours][apcontour->nPoints[apcontour->nContours] - 1])
         bombElegantVA("Error: contour provided in file %s for APCONTOUR is not a closed shape\n", apcontour->filename);
       apcontour->nContours += 1;
     }

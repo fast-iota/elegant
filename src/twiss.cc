@@ -1,10 +1,10 @@
 /*************************************************************************\
-* Copyright (c) 2002 The University of Chicago, as Operator of Argonne
-* National Laboratory.
-* Copyright (c) 2002 The Regents of the University of California, as
-* Operator of Los Alamos National Laboratory.
-* This file is distributed subject to a Software License Agreement found
-* in the file LICENSE that is included with this distribution. 
+ * Copyright (c) 2002 The University of Chicago, as Operator of Argonne
+ * National Laboratory.
+ * Copyright (c) 2002 The Regents of the University of California, as
+ * Operator of Los Alamos National Laboratory.
+ * This file is distributed subject to a Software License Agreement found
+ * in the file LICENSE that is included with this distribution.
 \*************************************************************************/
 
 /* file: twiss.cc
@@ -19,7 +19,7 @@
 #  endif
 #endif
 #include <complex>
-#if defined(darwin) || (_MINGW)
+#if defined(__APPLE__)
 #  include <cmath>
 #  define isnan(x) std::isnan(x)
 #endif
@@ -52,10 +52,10 @@ long determineScraperAperture(long plane, unsigned long direction, double positi
 #ifdef __cplusplus
 extern "C" {
 #endif
-void AddWigglerRadiationIntegrals(double length, long periods, double radius,
-                                  double eta, double etap,
-                                  double beta, double alpha,
-                                  double *I1, double *I2, double *I3, double *I4, double *I5);
+  void AddWigglerRadiationIntegrals(double length, long periods, double radius,
+                                    double eta, double etap,
+                                    double beta, double alpha,
+                                    double *I1, double *I2, double *I3, double *I4, double *I5);
 #ifdef __cplusplus
 }
 #endif
@@ -121,10 +121,10 @@ static ELEMENT_LIST **rfcaElem = NULL;
 static FILE *fpRf = NULL;
 
 VMATRIX *compute_periodic_twiss(
-  double *betax, double *alphax, double *etax, double *etapx, double *NUx,
-  double *betay, double *alphay, double *etay, double *etapy, double *NUy,
-  ELEMENT_LIST *elem, double *clorb, RUN *run, unsigned long *unstable,
-  double *eta2, double *eta3) {
+                                double *betax, double *alphax, double *etax, double *etapx, double *NUx,
+                                double *betay, double *alphay, double *etay, double *etapy, double *NUy,
+                                ELEMENT_LIST *elem, double *clorb, RUN *run, unsigned long *unstable,
+                                double *eta2, double *eta3) {
   VMATRIX *M, *M1;
   double cos_phi, sin_phi, **R, beta[2], alpha[2], phi[2];
   double ***T, ****Q, eta2f[6];
@@ -181,39 +181,39 @@ VMATRIX *compute_periodic_twiss(
     free(M1);
     M1 = NULL;
     /*
-    printf("Computed revolution matrix on closed orbit to %ld order\n",
-            twissConcatOrder);
-    fflush(stdout);
-    printf("matrix concatenation for periodic Twiss computation:\n");
-    fflush(stdout);
-    printf("closed orbit at input:\n  ");
-    fflush(stdout);
-    for (i=0; i<6; i++)
+      printf("Computed revolution matrix on closed orbit to %ld order\n",
+      twissConcatOrder);
+      fflush(stdout);
+      printf("matrix concatenation for periodic Twiss computation:\n");
+      fflush(stdout);
+      printf("closed orbit at input:\n  ");
+      fflush(stdout);
+      for (i=0; i<6; i++)
       printf("%14.6e ", clorb[i]);
       fflush(stdout);
-    printf("\nclosed orbit at output:\n  ");
-    fflush(stdout);
-    for (i=0; i<6; i++)
+      printf("\nclosed orbit at output:\n  ");
+      fflush(stdout);
+      for (i=0; i<6; i++)
       printf("%14.6e ", M->C[i]);
       fflush(stdout);
-    printf("\nR matrix:\n");
-    fflush(stdout);
-    for (i=0; i<6; i++) {
+      printf("\nR matrix:\n");
+      fflush(stdout);
+      for (i=0; i<6; i++) {
       printf("  ");
       fflush(stdout);
       for (j=0; j<6; j++)
-        printf("%14.6e ", M->R[i][j]);
-        fflush(stdout);
+      printf("%14.6e ", M->R[i][j]);
+      fflush(stdout);
       printf("\n");
       fflush(stdout);
-    }
-*/
+      }
+    */
   } else {
     M = full_matrix(elem, run, twissConcatOrder);
     /*
-    printf("Computed revolution matrix to %ld order\n", twissConcatOrder);
-    fflush(stdout);
-*/
+      printf("Computed revolution matrix to %ld order\n", twissConcatOrder);
+      fflush(stdout);
+    */
   }
 #ifdef DEBUG
   report_stats(stdout, "computed revolution matrix: ");
@@ -244,12 +244,12 @@ VMATRIX *compute_periodic_twiss(
   }
 
   /* allocate matrices for computing dispersion, which I do
-   * in 4-d using 
+   * in 4-d using
    * eta[i] = Inv(I - R)[i][j] R[j][5]
    * eta2[i] = Inv(I-R)[i][j] Sum[0<=k<=j<=5] T[i][j][k]*eta[i]*eta[k]
    *  with eta[4]=0 and eta[5]=1
-   * The dispersion is defined by, for example, 
-   *  x = x(delta=0) + delta*eta + delta^2*eta2 + delta^3*eta3 ... 
+   * The dispersion is defined by, for example,
+   *  x = x(delta=0) + delta*eta + delta^2*eta2 + delta^3*eta3 ...
    */
   m_alloc(&dispM, 4, 4);
   m_alloc(&dispMInv, 4, 4);
@@ -347,7 +347,7 @@ VMATRIX *compute_periodic_twiss(
   *NUy = phi[1] / PIx2;
 
   /* Copy the periodic values to the twiss_output input variables.  This makes them available
-   * for bunched_beams via the use_twiss_command_values qualifier 
+   * for bunched_beams via the use_twiss_command_values qualifier
    */
   periodicTwissComputed = 1;
   memset(&lastPeriodicTwiss, 0, sizeof(lastPeriodicTwiss));
@@ -378,9 +378,9 @@ void propagate_twiss_parameters(TWISS *twiss0, double *tune, long *waists,
   double *func, path[6], path0[6], detR[2], length, sTotal;
   double **R = NULL, C[2], S[2], Cp[2], Sp[2], D[2], Dp[2], sin_dphi, cos_dphi, dphi;
   double lastRI[6];
-  //long n_mat_computed;
+  // long n_mat_computed;
   long i, j, plane, hasMatrix, hasPath;
-  //long otherPlane;
+  // long otherPlane;
   VMATRIX *M1, *M2;
   MATRIX *dispM, *dispOld, *dispNew;
   VMATRIX *dispM1, *dispM2;
@@ -451,12 +451,12 @@ void propagate_twiss_parameters(TWISS *twiss0, double *tune, long *waists,
     dispM1->C[5] = 1;
   }
 
-  //n_mat_computed = 0;
+  // n_mat_computed = 0;
 
   /*
-  printf("Twiss parameter computation on path %e, %e, %e, %e, %e, %e\n",
-          path[0], path[1], path[2], path[3], path[4], path[5]);
-*/
+    printf("Twiss parameter computation on path %e, %e, %e, %e, %e, %e\n",
+    path[0], path[1], path[2], path[3], path[4], path[5]);
+  */
 
   if (radIntegrals) {
     for (i = 0; i < 6; i++)
@@ -520,9 +520,9 @@ void propagate_twiss_parameters(TWISS *twiss0, double *tune, long *waists,
                                                   &twissInput);
               if (((TWISSELEMENT *)elem->p_elem)->fromBeam)
                 /* If user wants the transform from the beam, we don't regard the transform as having
-		 * been computed in final form.  Hence, we set this flag to zero.  This allows twiss and moments
-		 * computations to be done with a possibly valid matrix prior to tracking
-		 */
+                 * been computed in final form.  Hence, we set this flag to zero.  This allows twiss and moments
+                 * computations to be done with a possibly valid matrix prior to tracking
+                 */
                 ((TWISSELEMENT *)elem->p_elem)->transformComputed = 0;
               else
                 ((TWISSELEMENT *)elem->p_elem)->transformComputed = 1;
@@ -536,7 +536,7 @@ void propagate_twiss_parameters(TWISS *twiss0, double *tune, long *waists,
           }
           elem->matrix = compute_matrix(elem, run, NULL);
         }
-        //n_mat_computed++;
+        // n_mat_computed++;
       }
       hasMatrix = 1;
       /* Use matrix concatenation to include effect of beam path. */
@@ -577,15 +577,15 @@ void propagate_twiss_parameters(TWISS *twiss0, double *tune, long *waists,
           /* print_matrices(stdout, elem->name, elem->matrix); */
         }
       }
-      /* 
-      if (!local_dispersion) {
+      /*
+        if (!local_dispersion) {
         printf("\n%20s dispM1->C: ", elem->name);
         for (i=0; i<6; i++)
-          printf("%e,%c", dispM1->C[i], i==5?'\n':' ');
+        printf("%e,%c", dispM1->C[i], i==5?'\n':' ');
         printf("%20s dispM2->C: ", elem->name);
         for (i=0; i<6; i++)
-          printf("%e,%c", dispM2->C[i], i==5?'\n':' ');
-      }
+        printf("%e,%c", dispM2->C[i], i==5?'\n':' ');
+        }
       */
 
       for (plane = 0; plane < 2; plane++) {
@@ -596,9 +596,9 @@ void propagate_twiss_parameters(TWISS *twiss0, double *tune, long *waists,
       }
     } else {
       hasMatrix = 0;
-      if (elem->pred) 
+      if (elem->pred)
         elem->Pref_input = elem->pred->Pref_output;
-      if (elem->Pref_output<=0)
+      if (elem->Pref_output <= 0)
         elem->Pref_output = elem->Pref_input;
       for (plane = 0; plane < 2; plane++) {
         C[plane] = Sp[plane] = 1;
@@ -653,7 +653,7 @@ void propagate_twiss_parameters(TWISS *twiss0, double *tune, long *waists,
       }
     }
     for (plane = 0; plane < 2; plane++) {
-      //otherPlane = plane?0:1;
+      // otherPlane = plane?0:1;
       detR[plane] = C[plane] * Sp[plane] - Cp[plane] * S[plane];
       /* set up pointers to Twiss functions */
       func = ((double *)elem->twiss) + (plane ? TWISS_Y_OFFSET : 0);
@@ -669,7 +669,7 @@ void propagate_twiss_parameters(TWISS *twiss0, double *tune, long *waists,
         func[1] = (-C[plane] * Cp[plane] * beta[plane] +
                    (Sp[plane] * C[plane] + S[plane] * Cp[plane]) * alpha[plane] -
                    S[plane] * Sp[plane] * gamma[plane]) /
-                  detR[plane];
+          detR[plane];
         /* use R12=S to find sin(dphi) */
         if ((sin_dphi = S[plane] / sqrt(beta[plane] * func[0])) > 1) {
           printWarning((char *)"twiss_output: argument of asin() is >1 when propagating twiss parameters", NULL);
@@ -790,7 +790,7 @@ void propagate_twiss_parameters(TWISS *twiss0, double *tune, long *waists,
   tune[0] = phi[0] / PIx2 * n_periods;
   tune[1] = phi[1] / PIx2 * n_periods;
   if (couplingFactor) {
-    /* Compute linear coupling based on 187 of Handbook of Accelerator Physics and Engineering 
+    /* Compute linear coupling based on 187 of Handbook of Accelerator Physics and Engineering
      * and P.J. Bryant, "A Simple Theory for Weak Betatron Coupling", CERN 94-01, Vol 1., 207-217.
      */
     std::complex<double> integrand, phaseFactor;
@@ -853,11 +853,11 @@ void propagate_twiss_parameters(TWISS *twiss0, double *tune, long *waists,
             break;
           case T_SEXT:
             K1r = ((SEXT *)(elem->p_elem))->k2 * (y - ((SEXT *)(elem->p_elem))->dy) +
-                  ((SEXT *)(elem->p_elem))->j1;
+              ((SEXT *)(elem->p_elem))->j1;
             break;
           case T_KSEXT:
             K1r = ((KSEXT *)(elem->p_elem))->k2 * (y - ((SEXT *)(elem->p_elem))->dy) +
-                  ((KSEXT *)(elem->p_elem))->j1;
+              ((KSEXT *)(elem->p_elem))->j1;
             break;
           case T_SOLE:
             ks = -((SOLE *)(elem->p_elem))->ks;
@@ -918,17 +918,17 @@ void propagate_twiss_parameters(TWISS *twiss0, double *tune, long *waists,
 
   /*
     printf("beta, eta, alpha: %e, %e; %e, %e; %e, %e\n",
-          beta[0], beta[1],
-          eta[0], eta[1], 
-          alpha[0], alpha[1]);
-  if (radIntegrals)
+    beta[0], beta[1],
+    eta[0], eta[1],
+    alpha[0], alpha[1]);
+    if (radIntegrals)
     printf("Radiation integrals: %e, %e, %e, %e, %e\n",
-            radIntegrals->RI[0], 
-            radIntegrals->RI[1], 
-            radIntegrals->RI[2], 
-            radIntegrals->RI[3], 
-            radIntegrals->RI[4]);
-*/
+    radIntegrals->RI[0],
+    radIntegrals->RI[1],
+    radIntegrals->RI[2],
+    radIntegrals->RI[3],
+    radIntegrals->RI[4]);
+  */
 
   if (local_dispersion) {
     m_free(&dispNew);
@@ -958,8 +958,8 @@ void propagate_twiss_parameters(TWISS *twiss0, double *tune, long *waists,
 #endif
 
   if (finalTraj)
-    memcpy(finalTraj, path, 6*sizeof(*finalTraj));
-  
+    memcpy(finalTraj, path, 6 * sizeof(*finalTraj));
+
   log_exit("propagate_twiss_parameters");
 }
 
@@ -1293,19 +1293,19 @@ static SDDS_DEFINITION driving_term_parameter_definition[N_DT_PARAMETERS] = {
 };
 
 void dump_twiss_parameters(
-  LINE_LIST *beamline,
-  long n_elem,
-  double *tune,
-  RADIATION_INTEGRALS *radIntegrals,
-  double *chromaticity,
-  double *dbeta,
-  double *dalpha,
-  double *acceptance,
-  char **acceptanceElementName,
-  double *alphac,
-  long final_values_only_inner_scope,
-  long tune_corrected,
-  RUN *run) {
+                           LINE_LIST *beamline,
+                           long n_elem,
+                           double *tune,
+                           RADIATION_INTEGRALS *radIntegrals,
+                           double *chromaticity,
+                           double *dbeta,
+                           double *dalpha,
+                           double *acceptance,
+                           char **acceptanceElementName,
+                           double *alphac,
+                           long final_values_only_inner_scope,
+                           long tune_corrected,
+                           RUN *run) {
   double *data;
   long i, j, row_count;
   char *stage;
@@ -1338,9 +1338,9 @@ void dump_twiss_parameters(
   if (!SDDS_SetParameters(&SDDS_twiss, SDDS_SET_BY_INDEX | SDDS_PASS_BY_VALUE,
                           IP_STEP, twiss_count, IP_STAGE, stage,
                           IP_NUX, tune[0], IP_DNUXDP, chromaticity[0], IP_AX, acceptance[0], IP_AXLOC, acceptance[2],
-                          IP_AXNAME, acceptanceElementName[0], 
+                          IP_AXNAME, acceptanceElementName[0],
                           IP_NUY, tune[1], IP_DNUYDP, chromaticity[1], IP_AY, acceptance[1], IP_AYLOC, acceptance[3],
-                          IP_AYNAME, acceptanceElementName[1], 
+                          IP_AYNAME, acceptanceElementName[1],
                           IP_DNUXDP2, beamline->chrom2[0],
                           IP_DNUYDP2, beamline->chrom2[1],
                           IP_DNUXDP3, beamline->chrom3[0],
@@ -1921,7 +1921,7 @@ long run_twiss_output(RUN *run, LINE_LIST *beamline, double *starting_coord, lon
   /*
     if (beamline->flags&BEAMLINE_TWISS_CURRENT)
     return;
-    */
+  */
 
   log_entry((char *)"run_twiss_output");
 
@@ -2059,7 +2059,7 @@ long run_twiss_output(RUN *run, LINE_LIST *beamline, double *starting_coord, lon
     free(beamline->acc_limit_name[1]);
     beamline->acc_limit_name[1] = NULL;
   }
-  
+
   log_exit((char *)"run_twiss_output");
   return 1;
 }
@@ -2077,7 +2077,7 @@ void compute_twiss_parameters(RUN *run, LINE_LIST *beamline, double *starting_co
   char *x_acc_name, *y_acc_name;
   long i, j;
   double ending_coord[MAX_PROPERTIES_PER_PARTICLE];
-  
+
   log_entry((char *)"compute_twiss_parameters");
 
   *unstable = 0;
@@ -2200,7 +2200,7 @@ void compute_twiss_parameters(RUN *run, LINE_LIST *beamline, double *starting_co
     cp_str(&beamline->acc_limit_name[0], x_acc_name);
   } else
     beamline->acc_limit_name[0] = NULL;
-  if (y_acc_name){
+  if (y_acc_name) {
     if (beamline->acc_limit_name[1])
       free(beamline->acc_limit_name[1]);
     beamline->acc_limit_name[1] = NULL;
@@ -2227,9 +2227,9 @@ void compute_twiss_parameters(RUN *run, LINE_LIST *beamline, double *starting_co
   for (i = 0; i < 3; i++)
     beamline->drivingTerms.h21000[i] = beamline->drivingTerms.h30000[i] = beamline->drivingTerms.h10110[i] =
       beamline->drivingTerms.h10020[i] = beamline->drivingTerms.h10200[i] =
-        beamline->drivingTerms.h22000[i] = beamline->drivingTerms.h11110[i] = beamline->drivingTerms.h00220[i] = beamline->drivingTerms.h31000[i] =
-          beamline->drivingTerms.h40000[i] = beamline->drivingTerms.h20110[i] = beamline->drivingTerms.h11200[i] = beamline->drivingTerms.h20020[i] =
-            beamline->drivingTerms.h20200[i] = beamline->drivingTerms.h00310[i] = beamline->drivingTerms.h00400[i] = 0;
+      beamline->drivingTerms.h22000[i] = beamline->drivingTerms.h11110[i] = beamline->drivingTerms.h00220[i] = beamline->drivingTerms.h31000[i] =
+      beamline->drivingTerms.h40000[i] = beamline->drivingTerms.h20110[i] = beamline->drivingTerms.h11200[i] = beamline->drivingTerms.h20020[i] =
+      beamline->drivingTerms.h20200[i] = beamline->drivingTerms.h00310[i] = beamline->drivingTerms.h00400[i] = 0;
 
   if (periodic) {
     if (!(M = beamline->matrix))
@@ -2250,7 +2250,7 @@ void compute_twiss_parameters(RUN *run, LINE_LIST *beamline, double *starting_co
       if (twissConcatOrder > 1 && higher_order_chromaticity)
         computeHigherOrderChromaticities(beamline, starting_coord, run, twissConcatOrder,
                                          higher_order_chromaticity_range /
-                                           (higher_order_chromaticity_points - 1),
+                                         (higher_order_chromaticity_points - 1),
                                          higher_order_chromaticity_points, quick_higher_order_chromaticity);
       beamline->chromaticity[0] *= n_periods;
       beamline->chromaticity[1] *= n_periods;
@@ -2298,7 +2298,7 @@ void compute_twiss_parameters(RUN *run, LINE_LIST *beamline, double *starting_co
       if (twissConcatOrder > 1 && higher_order_chromaticity)
         computeHigherOrderChromaticities(beamline, starting_coord, run, twissConcatOrder,
                                          higher_order_chromaticity_range /
-                                           (higher_order_chromaticity_points - 1),
+                                         (higher_order_chromaticity_points - 1),
                                          higher_order_chromaticity_points, quick_higher_order_chromaticity);
       beamline->chromaticity[0] *= n_periods;
       beamline->chromaticity[1] *= n_periods;
@@ -2330,7 +2330,7 @@ void compute_twiss_parameters(RUN *run, LINE_LIST *beamline, double *starting_co
               beamline->matrix->R[4][1] * elast->twiss->etapx +
               beamline->matrix->R[4][2] * elast->twiss->etay +
               beamline->matrix->R[4][3] * elast->twiss->etapy) /
-             beamline->matrix->C[4];
+      beamline->matrix->C[4];
     if (beamline->matrix->T) {
       double eta[6];
       long k;
@@ -2348,29 +2348,29 @@ void compute_twiss_parameters(RUN *run, LINE_LIST *beamline, double *starting_co
       alpha2 /= beamline->matrix->C[4];
 
       if (beamline->matrix->Q) {
-	long l;
-	// for (j = 0; j < 6; ++j)
-	//   for (k = 0; k <= j; ++k)
-	//     for (l = 0; l <= k; ++l)
-	//       printf("Q[4][%ld][%ld][%ld] = %lf\n", j, k, l, beamline->matrix->Q[4][j][k][l]);
-	// for (j = 0; j < 6; ++j)
-	//   for (k = 0; k <= j; ++k)
-	//     printf("T[4][%ld][%ld] = %lf\n", j, k, beamline->matrix->T[4][j][k]);
-	for (j = 0; j < 4; j++)
-	  alpha3 += beamline->matrix->R[4][j] * beamline->eta3[j];
-	for (j = 0; j < 4; j++)
-	  for (k = 0; k <= j; k++)
-	    alpha3 += beamline->matrix->T[4][j][k] * (beamline->eta2[j] * beamline->eta2[k] +
-						      eta[j] * beamline->eta2[k] +
-						      beamline->eta2[j] * eta[k]);
-	for (j = 0; j < 6; j++)
-	  for (k = 0; k <= j; k++)
-	    for (l = 0; l <= k; l++)
-	      alpha3 += beamline->matrix->Q[4][j][k][l] * eta[j] * eta[k] * eta[l];
-	alpha3 /= beamline->matrix->C[4];
+        long l;
+        // for (j = 0; j < 6; ++j)
+        //   for (k = 0; k <= j; ++k)
+        //     for (l = 0; l <= k; ++l)
+        //       printf("Q[4][%ld][%ld][%ld] = %lf\n", j, k, l, beamline->matrix->Q[4][j][k][l]);
+        // for (j = 0; j < 6; ++j)
+        //   for (k = 0; k <= j; ++k)
+        //     printf("T[4][%ld][%ld] = %lf\n", j, k, beamline->matrix->T[4][j][k]);
+        for (j = 0; j < 4; j++)
+          alpha3 += beamline->matrix->R[4][j] * beamline->eta3[j];
+        for (j = 0; j < 4; j++)
+          for (k = 0; k <= j; k++)
+            alpha3 += beamline->matrix->T[4][j][k] * (beamline->eta2[j] * beamline->eta2[k] +
+                                                      eta[j] * beamline->eta2[k] +
+                                                      beamline->eta2[j] * eta[k]);
+        for (j = 0; j < 6; j++)
+          for (k = 0; k <= j; k++)
+            for (l = 0; l <= k; l++)
+              alpha3 += beamline->matrix->Q[4][j][k][l] * eta[j] * eta[k] * eta[l];
+        alpha3 /= beamline->matrix->C[4];
       } // alpha3
-    } // alpha2
-  } // alpha
+    }   // alpha2
+  }     // alpha
   beamline->alpha[0] = alpha1;
   beamline->alpha[1] = alpha2;
   beamline->alpha[2] = alpha3;
@@ -2422,7 +2422,7 @@ void copy_doubles(double *target, double *source, long n) {
 long has_aperture(ELEMENT_LIST *elem);
 
 double find_acceptance(
-  ELEMENT_LIST *elem, long plane, RUN *run, char **name, double *z) {
+                       ELEMENT_LIST *elem, long plane, RUN *run, char **name, double *z) {
   double beta, acceptance, tmp;
   double tube_aperture, aperture, centroid, offset;
   double other_centroid, a_tube, b_tube, aperture1;
@@ -2461,7 +2461,7 @@ double find_acceptance(
         else
           tube_aperture = ((MAXAMP *)ap_elem->p_elem)->x_max;
         if (tube_aperture > 0) {
-          if ((aperture = tube_aperture - fabs(centroid))<0)
+          if ((aperture = tube_aperture - fabs(centroid)) < 0)
             aperture = 0;
           aperture_set = 1;
           tube_set = 1;
@@ -2476,7 +2476,7 @@ double find_acceptance(
           a_tube = ((MAXAMP *)ap_elem->p_elem)->x_max;
           b_tube = ((MAXAMP *)ap_elem->p_elem)->y_max;
         }
-        if (a_tube>0) {
+        if (a_tube > 0) {
           aperture = effectiveEllipticalAperture(a_tube, b_tube, centroid, other_centroid);
           aperture_set = 1;
           tube_set = 1;
@@ -2502,14 +2502,14 @@ double find_acceptance(
       break;
     case T_ECOL:
       if (plane) {
-        if (((ECOL *)ap_elem->p_elem)->y_max>0) {
+        if (((ECOL *)ap_elem->p_elem)->y_max > 0) {
           aperture = effectiveEllipticalAperture(((ECOL *)ap_elem->p_elem)->y_max,
                                                  ((ECOL *)ap_elem->p_elem)->x_max,
                                                  centroid - ((ECOL *)ap_elem->p_elem)->dy,
                                                  other_centroid - ((ECOL *)ap_elem->p_elem)->dx);
         }
       } else {
-        if (((ECOL *)ap_elem->p_elem)->x_max>0) {
+        if (((ECOL *)ap_elem->p_elem)->x_max > 0) {
           aperture = effectiveEllipticalAperture(((ECOL *)ap_elem->p_elem)->x_max,
                                                  ((ECOL *)ap_elem->p_elem)->y_max,
                                                  centroid - ((ECOL *)ap_elem->p_elem)->dx,
@@ -2625,21 +2625,21 @@ double find_acceptance(
     if (tube_set) {
       aperture1 = 0;
       if (elliptical_tube) {
-        if (a_tube>0)
+        if (a_tube > 0)
           aperture1 = effectiveEllipticalAperture(a_tube, b_tube, centroid, other_centroid);
-      } else if (tube_aperture>0)
+      } else if (tube_aperture > 0)
         aperture1 = tube_aperture - fabs(centroid);
-      if (aperture1<0)
+      if (aperture1 < 0)
         aperture1 = 0;
-      if (!aperture_set || aperture1<aperture)
+      if (!aperture_set || aperture1 < aperture)
         aperture = aperture1;
       aperture_set = 1;
     }
 
     if (!aperture_set)
       aperture = coordLimit;
-    if (aperture>0)
-      tmp = sqr(aperture)/beta;
+    if (aperture > 0)
+      tmp = sqr(aperture) / beta;
     else
       tmp = 0;
     if (tmp < acceptance || !acceptance_set) {
@@ -2678,7 +2678,7 @@ long has_aperture(ELEMENT_LIST *elem) {
 }
 
 void modify_rfca_matrices(ELEMENT_LIST *eptr, long order)
-/* Replace the matrices for rf cavities with drift matrices. 
+/* Replace the matrices for rf cavities with drift matrices.
    Used prior to periodic twiss parameter computations. */
 {
   while (eptr) {
@@ -3033,7 +3033,7 @@ void incrementRadIntegrals(RADIATION_INTEGRALS *radIntegrals, double *dI, ELEMEN
     double startingCoord[6] = {0, 0, 0, 0, 0, 0};
     LGBEND *lgbend;
     lgbend = (LGBEND *)elem->p_elem;
-    if (lgbend->optimized!=1 && lgbend->optimizeFse) {
+    if (lgbend->optimized != 1 && lgbend->optimizeFse) {
       double **oneParticle;
       oneParticle = (double **)czarray_2d(sizeof(**oneParticle), 1, totalPropertiesPerParticle);
       track_through_lgbend(oneParticle, 1, elem, lgbend, pCentral, NULL, 0, NULL, NULL, NULL, NULL, NULL, -1, -1);
@@ -3089,7 +3089,7 @@ void incrementRadIntegrals(RADIATION_INTEGRALS *radIntegrals, double *dI, ELEMEN
           isBend = 0;
         } else {
           /* The kick is subtracted because a positive angle bends toward the
-           * right (negative x) 
+           * right (negative x)
            */
           angle = length * h - kick;
           E1 = E2 = 0;
@@ -3161,8 +3161,8 @@ void incrementRadIntegrals(RADIATION_INTEGRALS *radIntegrals, double *dI, ELEMEN
 
     if (isBend && angle != 0) {
       if (coord) {
-	K1 /= 1+coord[5];
-	angle /= 1+coord[5];
+        K1 /= 1 + coord[5];
+        angle /= 1 + coord[5];
       }
       double tanE1, tanE2, h2, l2, l3, l4;
       rho = length / angle;
@@ -3191,7 +3191,7 @@ void incrementRadIntegrals(RADIATION_INTEGRALS *radIntegrals, double *dI, ELEMEN
       gamma1 = (1 + sqr(alpha1)) / beta0;
       if (kl > 1e-2) {
         etaAve = eta0 * sin_kl / kl + etap1 * (1 - cos_kl) / (k2 * length) +
-                 (kl - sin_kl) / (k2 * kl * rho);
+          (kl - sin_kl) / (k2 * kl * rho);
         etaK1_rhoAve = -etaAve * K1 / rho + (eta0 * tanE1 + eta2 * tanE2) / (2 * length) * h2;
         HAve = gamma1 * sqr(eta0) + 2 * alpha1 * eta0 * etap1 + beta0 * sqr(etap1) + 2 * angle * (-(gamma1 * eta0 + alpha1 * etap1) * (kl - sin_kl) / (k * k2 * l2) + (alpha1 * eta0 + beta0 * etap1) * (1 - cos_kl) / (k2 * l2)) + sqr(angle) * (gamma1 * (3 * kl - 4 * sin_kl + sin_kl * cos_kl) / (2 * k * k2 * k2 * l3) - alpha1 * sqr(1 - cos_kl) / (k2 * k2 * l3) + beta0 * (kl - cos_kl * sin_kl) / (2 * kl * k2 * l2));
       }
@@ -3222,22 +3222,22 @@ void incrementRadIntegrals(RADIATION_INTEGRALS *radIntegrals, double *dI, ELEMEN
                (70 * beta0 * etap1 - 14 * eta0 * gamma1 * length + 56 * beta0 * h * length +
                 5 * gamma1 * h * l3 +
                 7 * alpha1 * (10 * eta0 - length * (2 * etap1 + 5 * h * length)))) /
-             (840. * length);
+          (840. * length);
         T4 = (h * l2 *
               (-8 * eta0 * gamma1 * length + 7 * gamma1 * h * l3 +
                8 * beta0 * (7 * etap1 + 16 * h * length) +
                alpha1 * (56 * eta0 - length * (8 * etap1 + 63 * h * length)))) /
-             (20160. * length);
+          (20160. * length);
         T6 = (-2.505210838544172e-7 * h * l2 *
               (-22. * eta0 * gamma1 * length + 51. * gamma1 * h * l3 +
                22. * beta0 * (9. * etap1 + 64. * h * length) +
                11. * alpha1 * (18. * eta0 - 1. * length * (2. * etap1 + 51. * h * length)))) /
-             length;
+          length;
         T8 = (9.635426302092969e-10 * h * l2 *
               (-52. * eta0 * gamma1 * length + 341. * gamma1 * h * l3 +
                52. * beta0 * (11. * etap1 + 256. * h * length) +
                13. * alpha1 * (44. * eta0 - 1. * length * (4. * etap1 + 341. * h * length)))) /
-             length;
+          length;
         HAve = T0 + T2 * kl2 + T4 * kl4 + T6 * kl6 + T8 * kl8;
       }
       I1 = etaAve * length / rho;
@@ -3422,7 +3422,7 @@ void computeTuneShiftWithAmplitude(double dnux_dA[N_TSWA][N_TSWA], double dnuy_d
   double upperLimit[2], lowerLimit[2];
   /*  MATRIX *AxAy, *Coef, *Nu, *AxAyTr, *Mf, *MfInv, *AxAyTrNu; */
   long j, ix1, iy1;
-  //long m;
+  // long m;
 
   tune1[0] = tune1[1] = -1; /* suppress a compiler warning */
 
@@ -3456,14 +3456,14 @@ void computeTuneShiftWithAmplitude(double dnux_dA[N_TSWA][N_TSWA], double dnuy_d
   upperLimit[0] = upperLimit[1] = 1;
   lowerLimit[0] = lowerLimit[1] = 0;
   while (tries--) {
-    //m = 0; /* number of tune points */
+    // m = 0; /* number of tune points */
     tuneLowerLimit[0] = tuneLowerLimit[1] = 0;
     tuneUpperLimit[0] = tuneUpperLimit[1] = 0;
     nLost = 0;
     for (ix = 0; ix < gridSize; ix++) {
       x0[ix] =
         x = sqrt(ix *
-                   sqr((tune_shift_with_amplitude_struct.x1 - tune_shift_with_amplitude_struct.x0)) / (gridSize - 1) +
+                 sqr((tune_shift_with_amplitude_struct.x1 - tune_shift_with_amplitude_struct.x0)) / (gridSize - 1) +
                  sqr(tune_shift_with_amplitude_struct.x0));
       Ax[ix] = sqr(x) * (1 + sqr(twiss->alphax)) / twiss->betax;
       for (iy = 0; iy < gridSize; iy++) {
@@ -3475,10 +3475,10 @@ void computeTuneShiftWithAmplitude(double dnux_dA[N_TSWA][N_TSWA], double dnuy_d
             (tune_shift_with_amplitude_struct.lines_only &&
              !(ix == 0 || iy == 0)))
           continue;
-        //m++;
+        // m++;
         y0[iy] =
           y = sqrt(iy *
-                     sqr((tune_shift_with_amplitude_struct.y1 - tune_shift_with_amplitude_struct.y0)) / (gridSize - 1) +
+                   sqr((tune_shift_with_amplitude_struct.y1 - tune_shift_with_amplitude_struct.y0)) / (gridSize - 1) +
                    sqr(tune_shift_with_amplitude_struct.y0));
         Ay[iy] = sqr(y) * (1 + sqr(twiss->alphay)) / twiss->betay;
         if (ix == 0 && iy == 0) {
@@ -3646,8 +3646,8 @@ void computeTuneShiftWithAmplitude(double dnux_dA[N_TSWA][N_TSWA], double dnuy_d
       tune_shift_with_amplitude_struct.order = 1;
     maxOrder = tune_shift_with_amplitude_struct.order;
     if (tune_shift_with_amplitude_struct.lines_only) {
-      /* Perform 1-D fits vs Ax and Ay. 
-       * No cross terms get included. 
+      /* Perform 1-D fits vs Ax and Ay.
+       * No cross terms get included.
        */
       terms = 2 * maxOrder + 1;
       order[0] = (int32_t *)tmalloc(sizeof(*order[0]) * terms);
@@ -3684,7 +3684,7 @@ void computeTuneShiftWithAmplitude(double dnux_dA[N_TSWA][N_TSWA], double dnuy_d
         Axy[1][iterm] = Ay[iy];
       }
     } else {
-      /* Perform 2-D fits vs Ax and Ay. 
+      /* Perform 2-D fits vs Ax and Ay.
        */
       terms = (maxOrder + 1) * (maxOrder + 2) / 2;
       order[0] = (int32_t *)tmalloc(sizeof(*order[0]) * terms);
@@ -3859,7 +3859,7 @@ long computeTunesFromTracking(double *tune, double *amp, VMATRIX *M, LINE_LIST *
 #endif
   x = xp = y = yp = NULL;
   if (flags & CTFT_USE_MATRIX) {
-    /* this is necessary because the concatenated matrix includes the closed orbit in 
+    /* this is necessary because the concatenated matrix includes the closed orbit in
      * C.  We don't want to put this in at each turn.
      */
     for (i = 0; i < 6; i++) {
@@ -3977,9 +3977,9 @@ long computeTunesFromTracking(double *tune, double *amp, VMATRIX *M, LINE_LIST *
                   tuneUpperLimit ? (tuneUpperLimit[0] > 0.5 ? 1 - tuneUpperLimit[0] : tuneUpperLimit[0]) : 0) != 1) {
     printWarning((char *)"NAFF failed for tune analysis from tracking (x).\n", NULL);
     /*
-    printf((char*)"Limits: %e, %e\n",
-	    tuneLowerLimit?(tuneLowerLimit[0]>0.5 ? 1-tuneLowerLimit[0] : tuneLowerLimit[0]):0,
-	    tuneUpperLimit?(tuneUpperLimit[0]>0.5 ? 1-tuneUpperLimit[0] : tuneUpperLimit[0]):0);
+      printf((char*)"Limits: %e, %e\n",
+      tuneLowerLimit?(tuneLowerLimit[0]>0.5 ? 1-tuneLowerLimit[0] : tuneLowerLimit[0]):0,
+      tuneUpperLimit?(tuneUpperLimit[0]>0.5 ? 1-tuneUpperLimit[0] : tuneUpperLimit[0]):0);
     */
     return 0;
   }
@@ -4083,7 +4083,7 @@ void computeTuneShiftWithAmplitudeM(double dnux_dA[N_TSWA][N_TSWA], double dnuy_
   initialize_matrices(&M1, 3);
   initialize_matrices(&M2, 3);
   copy_matrices(&M2, M);
-  /* the matrix M is already formed for any closed orbit, so we don't want 
+  /* the matrix M is already formed for any closed orbit, so we don't want
    * to concatenate the closed orbit
    */
   for (it = 0; it < 6; it++)
@@ -4100,10 +4100,10 @@ void computeTuneShiftWithAmplitudeM(double dnux_dA[N_TSWA][N_TSWA], double dnuy_
   free_matrices(&M2);
 
   /*
-  fprintf(stderr, (char*)"Tune check: \n%le %le\n%le %le\n",
-          cos(PIx2*turns*tune[0]), (M1.R[0][0]+M1.R[1][1])/2,
-          cos(PIx2*turns*tune[1]), (M1.R[2][2]+M1.R[3][3])/2);
-*/
+    fprintf(stderr, (char*)"Tune check: \n%le %le\n%le %le\n",
+    cos(PIx2*turns*tune[0]), (M1.R[0][0]+M1.R[1][1])/2,
+    cos(PIx2*turns*tune[1]), (M1.R[2][2]+M1.R[3][3])/2);
+  */
 
   alpha[0] = twiss->alphax;
   alpha[1] = twiss->alphay;
@@ -4124,20 +4124,20 @@ void computeTuneShiftWithAmplitudeM(double dnux_dA[N_TSWA][N_TSWA], double dnuy_
       js = is + 1;
       shift[splane] = 0;
       /*
-      fprintf(stderr, (char*)"tplane=%ld splane=%ld\n", tplane, splane);
-      fprintf(stderr, (char*)"Q%ld%ld%ld%ld = %e\n",
-              it, it, is, is, QElement(M1.Q, it, it, is, is));
-      fprintf(stderr, (char*)"Q%ld%ld%ld%ld = %e\n",
-              jt, jt, is, is, QElement(M1.Q, jt, jt, is, is));
-      fprintf(stderr, (char*)"Q%ld%ld%ld%ld = %e\n",
-              it, it, is, js, QElement(M1.Q, it, it, is, js));
-      fprintf(stderr, (char*)"Q%ld%ld%ld%ld = %e\n",
-              jt, jt, is, js, QElement(M1.Q, jt, jt, is, js));
-      fprintf(stderr, (char*)"Q%ld%ld%ld%ld = %e\n",
-              it, it, js, js, QElement(M1.Q, it, it, js, js));
-      fprintf(stderr, (char*)"Q%ld%ld%ld%ld = %e\n",
-              jt, jt, js, js, QElement(M1.Q, jt, jt, js, js));
-      fprintf(stderr, (char*)"\n");
+        fprintf(stderr, (char*)"tplane=%ld splane=%ld\n", tplane, splane);
+        fprintf(stderr, (char*)"Q%ld%ld%ld%ld = %e\n",
+        it, it, is, is, QElement(M1.Q, it, it, is, is));
+        fprintf(stderr, (char*)"Q%ld%ld%ld%ld = %e\n",
+        jt, jt, is, is, QElement(M1.Q, jt, jt, is, is));
+        fprintf(stderr, (char*)"Q%ld%ld%ld%ld = %e\n",
+        it, it, is, js, QElement(M1.Q, it, it, is, js));
+        fprintf(stderr, (char*)"Q%ld%ld%ld%ld = %e\n",
+        jt, jt, is, js, QElement(M1.Q, jt, jt, is, js));
+        fprintf(stderr, (char*)"Q%ld%ld%ld%ld = %e\n",
+        it, it, js, js, QElement(M1.Q, it, it, js, js));
+        fprintf(stderr, (char*)"Q%ld%ld%ld%ld = %e\n",
+        jt, jt, js, js, QElement(M1.Q, jt, jt, js, js));
+        fprintf(stderr, (char*)"\n");
       */
       for (ia = 0, theta = 0; ia < 72; ia++, theta += PIx2 / 72) {
         C = cos(theta);
@@ -4254,12 +4254,12 @@ void addTwissAnalysisRequest(char *tag, char *startName, char *endName,
     if (strcmp(twissAnalysisRequest[i].tag, tag) == 0)
       bombElegant((char *)"duplicate tag names seen (addTwissAnalysisRequest)", NULL);
   if (!(twissAnalysisRequest =
-          (TWISS_ANALYSIS_REQUEST *)SDDS_Realloc(twissAnalysisRequest, sizeof(*twissAnalysisRequest) * (twissAnalysisRequests + 1))) ||
+        (TWISS_ANALYSIS_REQUEST *)SDDS_Realloc(twissAnalysisRequest, sizeof(*twissAnalysisRequest) * (twissAnalysisRequests + 1))) ||
       !SDDS_CopyString(&twissAnalysisRequest[twissAnalysisRequests].tag, tag))
     bombElegant((char *)"memory allocation failure (addTwissAnalysisRequest)", NULL);
   twissAnalysisRequest[twissAnalysisRequests].startName =
     twissAnalysisRequest[twissAnalysisRequests].endName =
-      twissAnalysisRequest[twissAnalysisRequests].matchName = NULL;
+    twissAnalysisRequest[twissAnalysisRequests].matchName = NULL;
   if ((startName &&
        !SDDS_CopyString(&twissAnalysisRequest[twissAnalysisRequests].startName, startName)) ||
       (endName &&
@@ -4285,11 +4285,11 @@ void processTwissAnalysisRequests(ELEMENT_LIST *elem) {
   char buffer[1024];
   ELEMENT_LIST *elemOrig;
   double value;
-  //double end_pos, start_pos;
+  // double end_pos, start_pos;
   double twissData[TWISS_ANALYSIS_STATS][TWISS_ANALYSIS_QUANTITIES];
 
   elemOrig = elem;
-  //start_pos = 0;
+  // start_pos = 0;
 
   for (i = 0; i < twissAnalysisRequests; i++) {
     /* initialize statistics buffers and rpn memories */
@@ -4298,7 +4298,7 @@ void processTwissAnalysisRequests(ELEMENT_LIST *elem) {
       for (is = 0; is < TWISS_ANALYSIS_STATS; is++)
         if (!twissAnalysisRequest[i].initialized) {
           snprintf(buffer, 1024, (char *)"%s.%s.%s", twissAnalysisRequest[i].tag,
-                  twissAnalysisStatName[is], twissAnalysisQuantityName[iq]);
+                   twissAnalysisStatName[is], twissAnalysisQuantityName[iq]);
           twissAnalysisRequest[i].twissMem[is][iq] = rpn_create_mem(buffer, 0);
         }
       twissData[TWISS_ANALYSIS_AVE][iq] = 0;
@@ -4308,7 +4308,7 @@ void processTwissAnalysisRequests(ELEMENT_LIST *elem) {
     twissAnalysisRequest[i].initialized = 1;
 
     count = 0;
-    //end_pos = 0;
+    // end_pos = 0;
     while (elem) {
       if (twissAnalysisRequest[i].sStart < twissAnalysisRequest[i].sEnd &&
           elem->end_pos > twissAnalysisRequest[i].sEnd)
@@ -4337,13 +4337,13 @@ void processTwissAnalysisRequests(ELEMENT_LIST *elem) {
       }
       count++;
       /*
-      if (count==1) {
+        if (count==1) {
         if (elem->pred) {
-          start_pos = elem->pred->end_pos;
+        start_pos = elem->pred->end_pos;
         } else {
-          start_pos = 0;
+        start_pos = 0;
         }
-      }
+        }
       */
       if (twiss_analysis_struct.verbosity > 1 && firstTime) {
         printf((char *)"twiss analysis %s will include %s#%ld\n",
@@ -4460,7 +4460,7 @@ void setupTwissAnalysisRequest(NAMELIST_TEXT *nltext, RUN *run,
 #ifdef __cplusplus
 extern "C" {
 #endif
-void setupLinearChromaticTracking(NAMELIST_TEXT *nltext, LINE_LIST *beamline);
+  void setupLinearChromaticTracking(NAMELIST_TEXT *nltext, LINE_LIST *beamline);
 #ifdef __cplusplus
 }
 #endif
@@ -4582,7 +4582,7 @@ void computeSDrivingTerms(LINE_LIST *beamline) {
 
     f10010 = f10100 = f30000 = f12000 =
       f10200 = f01200 = f01110 = f00300 =
-        f00120 = f20100 = f20010 = f11010 = std::complex<double>(0, 0);
+      f00120 = f20100 = f20010 = f11010 = std::complex<double>(0, 0);
 
     src_ptr = beamline->elem_twiss;
 
@@ -4604,51 +4604,51 @@ void computeSDrivingTerms(LINE_LIST *beamline) {
       case T_KSEXT:
         tilt = ((KSEXT *)src_ptr->p_elem)->tilt;
         k2 = ((KSEXT *)src_ptr->p_elem)->k2 *
-             ((KSEXT *)src_ptr->p_elem)->length;
+          ((KSEXT *)src_ptr->p_elem)->length;
         break;
       case T_KQUSE:
         tilt = ((KQUSE *)src_ptr->p_elem)->tilt;
         j1 = -((KQUSE *)src_ptr->p_elem)->k1 *
-             ((KQUSE *)src_ptr->p_elem)->length * sin(2. * tilt);
+          ((KQUSE *)src_ptr->p_elem)->length * sin(2. * tilt);
         k2 = ((KQUSE *)src_ptr->p_elem)->k2 * ((KQUSE *)src_ptr->p_elem)->length;
         break;
       case T_SBEN:
       case T_RBEN:
         tilt = ((BEND *)src_ptr->p_elem)->tilt;
         j1 = -((BEND *)src_ptr->p_elem)->k1 *
-             ((BEND *)src_ptr->p_elem)->length * sin(2. * tilt);
+          ((BEND *)src_ptr->p_elem)->length * sin(2. * tilt);
         k2 = ((BEND *)src_ptr->p_elem)->k2 * ((BEND *)src_ptr->p_elem)->length;
         break;
       case T_CSBEND:
         tilt = ((CSBEND *)src_ptr->p_elem)->tilt;
         j1 = -((CSBEND *)src_ptr->p_elem)->k1 *
-             ((CSBEND *)src_ptr->p_elem)->length * sin(2. * tilt);
+          ((CSBEND *)src_ptr->p_elem)->length * sin(2. * tilt);
         k2 = ((CSBEND *)src_ptr->p_elem)->k2 *
-             ((CSBEND *)src_ptr->p_elem)->length;
+          ((CSBEND *)src_ptr->p_elem)->length;
         break;
       case T_CCBEND:
         tilt = ((CCBEND *)src_ptr->p_elem)->tilt;
         j1 = -((CCBEND *)src_ptr->p_elem)->K1 *
-             ((CCBEND *)src_ptr->p_elem)->length * sin(2. * tilt);
+          ((CCBEND *)src_ptr->p_elem)->length * sin(2. * tilt);
         k2 = ((CCBEND *)src_ptr->p_elem)->K2 *
-             ((CCBEND *)src_ptr->p_elem)->length;
+          ((CCBEND *)src_ptr->p_elem)->length;
         break;
       case T_CSRCSBEND:
         tilt = ((CSRCSBEND *)src_ptr->p_elem)->tilt;
         j1 = -((CSRCSBEND *)src_ptr->p_elem)->k1 *
-             ((CSRCSBEND *)src_ptr->p_elem)->length * sin(2. * tilt);
+          ((CSRCSBEND *)src_ptr->p_elem)->length * sin(2. * tilt);
         k2 = ((CSRCSBEND *)src_ptr->p_elem)->k2 *
-             ((CSRCSBEND *)src_ptr->p_elem)->length;
+          ((CSRCSBEND *)src_ptr->p_elem)->length;
         break;
       case T_QUAD:
         tilt = ((QUAD *)src_ptr->p_elem)->tilt;
         j1 = -((QUAD *)src_ptr->p_elem)->k1 *
-             ((QUAD *)src_ptr->p_elem)->length * sin(2. * tilt);
+          ((QUAD *)src_ptr->p_elem)->length * sin(2. * tilt);
         break;
       case T_KQUAD:
         tilt = ((KQUAD *)src_ptr->p_elem)->tilt;
         j1 = -((KQUAD *)src_ptr->p_elem)->k1 *
-             ((KQUAD *)src_ptr->p_elem)->length * sin(2. * tilt);
+          ((KQUAD *)src_ptr->p_elem)->length * sin(2. * tilt);
         break;
       default:
         break;
@@ -4767,7 +4767,7 @@ void computeDrivingTerms(DRIVING_TERMS *d, ELEMENT_LIST *elem, TWISS *twiss0, do
   std::complex<double> h22000, h11110, h00220, h31000, h40000;
   std::complex<double> h20110, h11200, h20020, h20200, h00310, h00400;
   std::complex<double> t1, t2;
-  //std::complex<double>  t3, t4;
+  // std::complex<double>  t3, t4;
   std::complex<double> ii;
   std::complex<double> periodicFactor[9][9];
 #define PF(i, j) (periodicFactor[4 + i][4 + j])
@@ -4777,11 +4777,11 @@ void computeDrivingTerms(DRIVING_TERMS *d, ELEMENT_LIST *elem, TWISS *twiss0, do
   double two = 2, three = 3, four = 4;
   ELEMDATA *ed = NULL;
   long nE = 0, iE, jE, i, j;
-  //double sqrt8, sqrt2;
+  // double sqrt8, sqrt2;
   double tilt;
 
-  //sqrt8 = sqrt((double)8);
-  //sqrt2 = sqrt((double)2);
+  // sqrt8 = sqrt((double)8);
+  // sqrt2 = sqrt((double)2);
   ii = std::complex<double>(0, 1);
 
   /* accumulate real and imaginary parts */
@@ -5005,58 +5005,58 @@ void computeDrivingTerms(DRIVING_TERMS *d, ELEMENT_LIST *elem, TWISS *twiss0, do
         for (jE = 0; jE < nE; jE++) {
           if (ed[jE].b3L) {
             d->dnux_dJx += ed[iE].b3L * ed[jE].b3L / (-16 * PI) * pow(ed[iE].betax * ed[jE].betax, 1.5) *
-                           (3 * cos(fabs(ed[iE].phix - ed[jE].phix) - PI * nux) / sin(PI * nux) + cos(fabs(3 * (ed[iE].phix - ed[jE].phix)) - 3 * PI * nux) / sin(3 * PI * nux));
+              (3 * cos(fabs(ed[iE].phix - ed[jE].phix) - PI * nux) / sin(PI * nux) + cos(fabs(3 * (ed[iE].phix - ed[jE].phix)) - 3 * PI * nux) / sin(3 * PI * nux));
             d->dnux_dJy += ed[iE].b3L * ed[jE].b3L / (8 * PI) * sqrt(ed[iE].betax * ed[jE].betax) * ed[iE].betay *
-                           (2 * ed[jE].betax * cos(fabs(ed[iE].phix - ed[jE].phix) - PI * nux) / sin(PI * nux) - ed[jE].betay * cos(fabs(ed[iE].phix - ed[jE].phix) + 2 * fabs(ed[iE].phiy - ed[jE].phiy) - PI * (nux + 2 * nuy)) / sin(PI * (nux + 2 * nuy)) + ed[jE].betay * cos(fabs(ed[iE].phix - ed[jE].phix) - 2 * fabs(ed[iE].phiy - ed[jE].phiy) - PI * (nux - 2 * nuy)) / sin(PI * (nux - 2 * nuy)));
+              (2 * ed[jE].betax * cos(fabs(ed[iE].phix - ed[jE].phix) - PI * nux) / sin(PI * nux) - ed[jE].betay * cos(fabs(ed[iE].phix - ed[jE].phix) + 2 * fabs(ed[iE].phiy - ed[jE].phiy) - PI * (nux + 2 * nuy)) / sin(PI * (nux + 2 * nuy)) + ed[jE].betay * cos(fabs(ed[iE].phix - ed[jE].phix) - 2 * fabs(ed[iE].phiy - ed[jE].phiy) - PI * (nux - 2 * nuy)) / sin(PI * (nux - 2 * nuy)));
             d->dnuy_dJy += ed[iE].b3L * ed[jE].b3L / (-16 * PI) * sqrt(ed[iE].betax * ed[jE].betax) * ed[iE].betay * ed[jE].betay *
-                           (4 * cos(fabs(ed[iE].phix - ed[jE].phix) - PI * nux) / sin(PI * nux) + cos(fabs(ed[iE].phix - ed[jE].phix) + 2 * fabs(ed[iE].phiy - ed[jE].phiy) - PI * (nux + 2 * nuy)) / sin(PI * (nux + 2 * nuy)) + cos(fabs(ed[iE].phix - ed[jE].phix) - 2 * fabs(ed[iE].phiy - ed[jE].phiy) - PI * (nux - 2 * nuy)) / sin(PI * (nux - 2 * nuy)));
+              (4 * cos(fabs(ed[iE].phix - ed[jE].phix) - PI * nux) / sin(PI * nux) + cos(fabs(ed[iE].phix - ed[jE].phix) + 2 * fabs(ed[iE].phiy - ed[jE].phiy) - PI * (nux + 2 * nuy)) / sin(PI * (nux + 2 * nuy)) + cos(fabs(ed[iE].phix - ed[jE].phix) - 2 * fabs(ed[iE].phiy - ed[jE].phiy) - PI * (nux - 2 * nuy)) / sin(PI * (nux - 2 * nuy)));
             termSign = SIGN(ed[iE].s - ed[jE].s);
             if (termSign) {
               /* geometric terms */
               h22000 += (1. / 64) * termSign * ii * ed[iE].b3L * ed[jE].b3L *
-                        ed[iE].rbetax * ed[jE].rbetax * ed[iE].betax * ed[jE].betax *
-                        (ed[iE].px[3] * conj(ed[jE].px[3]) + three * ed[iE].px[1] * conj(ed[jE].px[1]));
+                ed[iE].rbetax * ed[jE].rbetax * ed[iE].betax * ed[jE].betax *
+                (ed[iE].px[3] * conj(ed[jE].px[3]) + three * ed[iE].px[1] * conj(ed[jE].px[1]));
               h31000 += (1. / 32) * termSign * ii * ed[iE].b3L * ed[jE].b3L *
-                        ed[iE].rbetax * ed[jE].rbetax * ed[iE].betax * ed[jE].betax *
-                        ed[iE].px[3] * conj(ed[jE].px[1]);
+                ed[iE].rbetax * ed[jE].rbetax * ed[iE].betax * ed[jE].betax *
+                ed[iE].px[3] * conj(ed[jE].px[1]);
               t1 = conj(ed[iE].px[1]) * ed[jE].px[1];
               t2 = ed[iE].px[1] * conj(ed[jE].px[1]);
               h11110 += (1. / 16) * termSign * ii * ed[iE].b3L * ed[jE].b3L *
-                        ed[iE].rbetax * ed[jE].rbetax * ed[iE].betay *
-                        (ed[jE].betax * (t1 - conj(t1)) +
-                         ed[jE].betay * ed[iE].py[2] * conj(ed[jE].py[2]) * (conj(t1) + t1));
+                ed[iE].rbetax * ed[jE].rbetax * ed[iE].betay *
+                (ed[jE].betax * (t1 - conj(t1)) +
+                 ed[jE].betay * ed[iE].py[2] * conj(ed[jE].py[2]) * (conj(t1) + t1));
               t1 = exp(-ii * (ed[iE].phix - ed[jE].phix));
               t2 = conj(t1);
               h11200 += (1. / 32) * termSign * ii * ed[iE].b3L * ed[jE].b3L *
-                        ed[iE].rbetax * ed[jE].rbetax * ed[iE].betay * exp(ii * (2 * ed[iE].phiy)) *
-                        (ed[jE].betax * (t1 - t2) +
-                         two * ed[jE].betay * (t2 + t1));
+                ed[iE].rbetax * ed[jE].rbetax * ed[iE].betay * exp(ii * (2 * ed[iE].phiy)) *
+                (ed[jE].betax * (t1 - t2) +
+                 two * ed[jE].betay * (t2 + t1));
               h40000 += (1. / 64) * termSign * ii * ed[iE].b3L * ed[jE].b3L *
-                        ed[iE].rbetax * ed[jE].rbetax * ed[iE].betax * ed[jE].betax *
-                        ed[iE].px[3] * ed[jE].px[1];
+                ed[iE].rbetax * ed[jE].rbetax * ed[iE].betax * ed[jE].betax *
+                ed[iE].px[3] * ed[jE].px[1];
               h20020 += (1. / 64) * termSign * ii * ed[iE].b3L * ed[jE].b3L *
-                        ed[iE].rbetax * ed[jE].rbetax * ed[iE].betay *
-                        (ed[jE].betax * conj(ed[iE].px[1] * ed[iE].py[2]) * ed[jE].px[3] - (ed[jE].betax + four * ed[jE].betay) * ed[iE].px[1] * ed[jE].px[1] * conj(ed[iE].py[2]));
+                ed[iE].rbetax * ed[jE].rbetax * ed[iE].betay *
+                (ed[jE].betax * conj(ed[iE].px[1] * ed[iE].py[2]) * ed[jE].px[3] - (ed[jE].betax + four * ed[jE].betay) * ed[iE].px[1] * ed[jE].px[1] * conj(ed[iE].py[2]));
               h20110 += (1. / 32) * termSign * ii * ed[iE].b3L * ed[jE].b3L *
-                        ed[iE].rbetax * ed[jE].rbetax * ed[iE].betay *
-                        (ed[jE].betax * (conj(ed[iE].px[1]) * ed[jE].px[3] -
-                                         ed[iE].px[1] * ed[jE].px[1]) +
-                         two * ed[jE].betay * ed[iE].px[1] * ed[jE].px[1] * ed[iE].py[2] * conj(ed[jE].py[2]));
+                ed[iE].rbetax * ed[jE].rbetax * ed[iE].betay *
+                (ed[jE].betax * (conj(ed[iE].px[1]) * ed[jE].px[3] -
+                                 ed[iE].px[1] * ed[jE].px[1]) +
+                 two * ed[jE].betay * ed[iE].px[1] * ed[jE].px[1] * ed[iE].py[2] * conj(ed[jE].py[2]));
               h20200 += (1. / 64) * termSign * ii * ed[iE].b3L * ed[jE].b3L *
-                        ed[iE].rbetax * ed[jE].rbetax * ed[iE].betay *
-                        (ed[jE].betax *
-                           conj(ed[iE].px[1]) * ed[jE].px[3] * ed[iE].py[2] -
-                         (ed[jE].betax - four * ed[jE].betay) *
-                           ed[iE].px[1] * ed[jE].px[1] * ed[iE].py[2]);
+                ed[iE].rbetax * ed[jE].rbetax * ed[iE].betay *
+                (ed[jE].betax *
+                 conj(ed[iE].px[1]) * ed[jE].px[3] * ed[iE].py[2] -
+                 (ed[jE].betax - four * ed[jE].betay) *
+                 ed[iE].px[1] * ed[jE].px[1] * ed[iE].py[2]);
               h00220 += (1. / 64) * termSign * ii * ed[iE].b3L * ed[jE].b3L *
-                        ed[iE].rbetax * ed[jE].rbetax * ed[iE].betay * ed[jE].betay *
-                        (ed[iE].px[1] * ed[iE].py[2] * conj(ed[jE].px[1] * ed[jE].py[2]) + four * ed[iE].px[1] * conj(ed[jE].px[1]) - conj(ed[iE].px[1] * ed[jE].py[2]) * ed[jE].px[1] * ed[iE].py[2]);
+                ed[iE].rbetax * ed[jE].rbetax * ed[iE].betay * ed[jE].betay *
+                (ed[iE].px[1] * ed[iE].py[2] * conj(ed[jE].px[1] * ed[jE].py[2]) + four * ed[iE].px[1] * conj(ed[jE].px[1]) - conj(ed[iE].px[1] * ed[jE].py[2]) * ed[jE].px[1] * ed[iE].py[2]);
               h00310 += (1. / 32) * termSign * ii * ed[iE].b3L * ed[jE].b3L *
-                        ed[iE].rbetax * ed[jE].rbetax * ed[iE].betay * ed[jE].betay * ed[iE].py[2] *
-                        (ed[iE].px[1] * conj(ed[jE].px[1]) - conj(ed[iE].px[1]) * ed[jE].px[1]);
+                ed[iE].rbetax * ed[jE].rbetax * ed[iE].betay * ed[jE].betay * ed[iE].py[2] *
+                (ed[iE].px[1] * conj(ed[jE].px[1]) - conj(ed[iE].px[1]) * ed[jE].px[1]);
               h00400 += (1. / 64) * termSign * ii * ed[iE].b3L * ed[jE].b3L *
-                        ed[iE].rbetax * ed[jE].rbetax * ed[iE].betay * ed[jE].betay *
-                        ed[iE].px[1] * conj(ed[jE].px[1]) * ed[iE].py[2] * ed[jE].py[2];
+                ed[iE].rbetax * ed[jE].rbetax * ed[iE].betay * ed[jE].betay *
+                ed[iE].px[1] * conj(ed[jE].px[1]) * ed[iE].py[2] * ed[jE].py[2];
             }
           }
         }
@@ -5215,9 +5215,9 @@ void run_rf_setup(RUN *run, LINE_LIST *beamline, long writeToFile) {
   dPOverP = 0;
   if (beamline->closed_orbit) {
     /*
-    printf("Using closed orbit to compute orbit length: centroid[4] = %21.15e, centroid[5] = %21.15e\n",
-           beamline->closed_orbit[beamline->n_elems-1].centroid[4],
-           beamline->closed_orbit[beamline->n_elems-1].centroid[5]);
+      printf("Using closed orbit to compute orbit length: centroid[4] = %21.15e, centroid[5] = %21.15e\n",
+      beamline->closed_orbit[beamline->n_elems-1].centroid[4],
+      beamline->closed_orbit[beamline->n_elems-1].centroid[5]);
     */
     dPOverP = beamline->closed_orbit[beamline->n_elems - 1].centroid[5];
     pCentral = run->p_central * (1 + dPOverP);
@@ -5387,9 +5387,9 @@ long determineScraperAperture(long plane, unsigned long direction, double positi
       a1 = a2 = 0;
       if (!scraperConvention)
         position = fabs(position);
-      if (position<centroid)
+      if (position < centroid)
         a1 = 0;
-      else if (centroid<-position)
+      else if (centroid < -position)
         a2 = 0;
       else {
         a1 = position - centroid;
@@ -5400,15 +5400,15 @@ long determineScraperAperture(long plane, unsigned long direction, double positi
       /* inserted from positive side */
       if (centroid > position)
         aperture = 0;
-      else 
+      else
         aperture = position - centroid;
     } else {
       /* inserted from negative side */
-      position *= scraperConvention ? -1: 1;
+      position *= scraperConvention ? -1 : 1;
       centroid *= -1;
       if (centroid > position)
         aperture = 0;
-      else 
+      else
         aperture = position - centroid;
     }
     *apertureRet = aperture;
@@ -5421,20 +5421,20 @@ double effectiveEllipticalAperture(double a, double b, double x, double y) {
   double aperture = 0, position = 0;
   x = fabs(x);
   y = fabs(y);
-  if (a>0 && x>a)
+  if (a > 0 && x > a)
     return 0;
-  if (b>0 && y>b)
+  if (b > 0 && y > b)
     return 0;
   if (a > 0) {
     if (b > 0) {
-      if ((sqr(x/a)+sqr(y/b))>=1)
+      if ((sqr(x / a) + sqr(y / b)) >= 1)
         return 0;
       if ((position = sqr(a) * (1 - sqr(y / b))) < 0)
         return 0;
       position = sqrt(position);
     } else
       position = a;
-    if ((aperture = position - x)<0)
+    if ((aperture = position - x) < 0)
       aperture = 0;
   }
   return aperture;

@@ -3,7 +3,7 @@
  */
 /* program: brat.c
  * purpose: Bending magnet RAy Trace program for gridded data for dipole magnet.
- *           
+ *
  * The equations of motion are
  *        -
  *      d w    -1  -   - -
@@ -91,79 +91,79 @@ static char *option[N_OPTIONS] = {
   "3dfieldfile", "ftable", "interpolate", "weight", "dxDzFactor"};
 
 static char *USAGE = "abrat {<field-file>|-ideal=<fieldInTesla>,<chordInMeters>,<edgeAngleInDeg>}\n"
-                     " [-3dFieldFile] [-interpolateField=<parameterName>[,order=<order>(1)][,extrapolate][,permissive]]\n"
-                     " [-zDuplicate] [-extendData[=edge-angle]] [-fieldSign={+|-}]\n"
-                     " [{-scan={x | xp | y | yp | delta},lower,upper,number | -beamFiles=<input>,<output> }]\n"
-                     " -vertex=<x-in-meters>,<z-in-meters> -nominalEntrance=<x>,<y> -nominalExit=<x>,<y>\n"
-                     " -theta=<targetInDegrees> -rigidity=<Tesla-meters>\n"
-                     " [-output=filename] [-singleScan | -arcScan=<sName>,<fieldName>,<rhoIdeal>]\n"
-                     " [-fsc=<value>] [-dxDipole=<m>] [-dzDipole=<m>] [-yawDipole=<value>]\n"
-                     " {[-optimize[=verbose][{fse,dx,dz,yaw}]]\n"
-                     "  -fseLimit=<min>,<max> -dxLimit=<min>,<max> -dzLimit=<min>,<max> -yawLimit=<min>,<max>\n"
-                     "  -weight=<xfWeight>,<xfpWeight> -dxDzFactor=<value>}\n"
-                     " [-fieldmapOutput=filename,zmin,zmax,nz,xmin,xmax,nx]\n"
-                     " [-tolerance=integration-tolerance]\n"
-                     " [-gap=<meters>] [-ftable=<kicks>] [-quiet]\n"
-                     " Integrates particle trajectories through a symmetric or asymmetric bending magnet.\n\n"
-                     " The data is in a SDDS-format file of (x, z, B), where x is parallel to\n"
-                     " the line through the center of the magnet and the center of curvature,\n"
-                     " and z is perpedicular to x.  The integration takes place in the (x, z) coordinate\n"
-                     " system, starting at z<0.  x>0 is to the left as the particle enters the magnet,\n"
-                     " with y pointing upwards.\n\n"
-                     " The central bending radius can be optimized to give the desired bending angle.\n"
-                     " -ideal            specifies parameters of an ideal hard-edge field for testing.\n"
-                     " -3dFieldFile      specifies that field-file has (x, y, z, Bx, By, Bz).\n"
-                     "                   The grid must be equi-spaced and sorted in (z, y, x) order.\n"
-                     "                   E.g., sddssort <filename> -col=z,incr -col=y,incr -col=x,incr\n"
-                     " -interpolateField If given, field file is expected to have multiple pages.\n"
-                     "                   In this case, interpolation as a function of the named parameter\n"
-                     "                   will be performed in place of FSE adjustment. By default, linear\n"
-                     "                   (order=1) interpolation is performed. In 'permissive' mode, ignores\n"
-                     "                   mismatch between grid parameters (assuming they are correct).\n"
-                     " -scan             specifies which accelerator coordinate to scan and over what range\n"
-                     " -beamFiles        specifies elegant-style SDDS beam file, <input>, to track and\n"
-                     "                   file, <output>, in which to place resulting beam \n"
-                     " -vertex           Specifies (x, z) coordinates of the vertex of the magnet.\n"
-                     " -nominalEntry     \n"
-                     " -nominalExit      Give nominal entry and exit points for the trajectory,\n"
-                     "                   to define the hard-edge entrance and exit points relative to which\n"
-                     "                   accelerator coordinates and transfer matrices are defined.\n"
-                     " -theta            bending angle in degrees desired for this magnet.\n"
-                     " -rigidity         Rigidity for the beam.\n"
-                     " -fsc              fractional strength change, which may be the FSE value\n"
-                     "                   obtained from a previous optimization with this field map\n"
-                     " -dxDipole         Set the offset in the transverse dipole position along the \n"
-                     "                   magnet vertical midplane.  This value can be supplied from a\n"
-                     "                   previous run.  A positive value moves the magnet away from the\n"
-                     "                   center of curvature.\n"
-                     " -dzDipole         Set the offset in the dipole position perpendicular the \n"
-                     "                   magnet vertical midplane.  A positive value moves the magnet\n"
-                     "                   away from the incoming beam.\n"
-                     " -yawDipole        Set the yaw angle about (0,0). A positive value rotates the\n"
-                     "                   magnet clockwise as see from above.\n"
-                     " -output           give file for particle trajectory output\n"
-                     " -singleScan       input file has a single scan vs z. Untested in this version.\n"
-                     " -arcScan          input file has a single arc scan vs s, distance along the ideal\n"
-                     "                   beam path.  This is only correct for a sector magnet!\n"
-                     "                   Untested in this version.\n"
-                     " -optimize         optimize bending radius, offset, or rotation to get desired bending angle and\n"
-                     "                   exit trajectory\n"
-                     " -fseLimit         Set range for FSE in optimization\n"
-                     " -dxLimit          Set range for dx of dipole in optimization\n"
-                     " -dzLimit          Set range for dz of dipole in optimization\n"
-                     " -yawLimit         Set range for yaw of dipole in optimization\n"
-                     " -weight           Set optimization weights for x and x'\n"
-                     " -dxDzFactor       Link DX to DZ: DZ=factor*DX\n"
-                     " -fieldMapOutput   outputs the field data to a file for checking\n"
-                     " -extendData       extend data in x dimension as needed so particles see field\n"
-                     " -zDuplicate       reflect copy of -z data into +z\n"
-                     " -tolerance        tolerance for integration\n"
-                     " -fieldSign        specify the sign of the bending radius (normally +)\n"
-                     " -gap              specify the full gap of the magnet in meters.  Used to\n"
-                     "                   compute the edge-field integral.\n"
-                     " -ftable           use FTABLE method (see elegant manual).\n"
-                     " -quiet            Suppress informational printouts.\n\n"
-                     "Program by Michael Borland  (Version 9, December 2021).\n";
+  " [-3dFieldFile] [-interpolateField=<parameterName>[,order=<order>(1)][,extrapolate][,permissive]]\n"
+  " [-zDuplicate] [-extendData[=edge-angle]] [-fieldSign={+|-}]\n"
+  " [{-scan={x | xp | y | yp | delta},lower,upper,number | -beamFiles=<input>,<output> }]\n"
+  " -vertex=<x-in-meters>,<z-in-meters> -nominalEntrance=<x>,<y> -nominalExit=<x>,<y>\n"
+  " -theta=<targetInDegrees> -rigidity=<Tesla-meters>\n"
+  " [-output=filename] [-singleScan | -arcScan=<sName>,<fieldName>,<rhoIdeal>]\n"
+  " [-fsc=<value>] [-dxDipole=<m>] [-dzDipole=<m>] [-yawDipole=<value>]\n"
+  " {[-optimize[=verbose][{fse,dx,dz,yaw}]]\n"
+  "  -fseLimit=<min>,<max> -dxLimit=<min>,<max> -dzLimit=<min>,<max> -yawLimit=<min>,<max>\n"
+  "  -weight=<xfWeight>,<xfpWeight> -dxDzFactor=<value>}\n"
+  " [-fieldmapOutput=filename,zmin,zmax,nz,xmin,xmax,nx]\n"
+  " [-tolerance=integration-tolerance]\n"
+  " [-gap=<meters>] [-ftable=<kicks>] [-quiet]\n"
+  " Integrates particle trajectories through a symmetric or asymmetric bending magnet.\n\n"
+  " The data is in a SDDS-format file of (x, z, B), where x is parallel to\n"
+  " the line through the center of the magnet and the center of curvature,\n"
+  " and z is perpedicular to x.  The integration takes place in the (x, z) coordinate\n"
+  " system, starting at z<0.  x>0 is to the left as the particle enters the magnet,\n"
+  " with y pointing upwards.\n\n"
+  " The central bending radius can be optimized to give the desired bending angle.\n"
+  " -ideal            specifies parameters of an ideal hard-edge field for testing.\n"
+  " -3dFieldFile      specifies that field-file has (x, y, z, Bx, By, Bz).\n"
+  "                   The grid must be equi-spaced and sorted in (z, y, x) order.\n"
+  "                   E.g., sddssort <filename> -col=z,incr -col=y,incr -col=x,incr\n"
+  " -interpolateField If given, field file is expected to have multiple pages.\n"
+  "                   In this case, interpolation as a function of the named parameter\n"
+  "                   will be performed in place of FSE adjustment. By default, linear\n"
+  "                   (order=1) interpolation is performed. In 'permissive' mode, ignores\n"
+  "                   mismatch between grid parameters (assuming they are correct).\n"
+  " -scan             specifies which accelerator coordinate to scan and over what range\n"
+  " -beamFiles        specifies elegant-style SDDS beam file, <input>, to track and\n"
+  "                   file, <output>, in which to place resulting beam \n"
+  " -vertex           Specifies (x, z) coordinates of the vertex of the magnet.\n"
+  " -nominalEntry     \n"
+  " -nominalExit      Give nominal entry and exit points for the trajectory,\n"
+  "                   to define the hard-edge entrance and exit points relative to which\n"
+  "                   accelerator coordinates and transfer matrices are defined.\n"
+  " -theta            bending angle in degrees desired for this magnet.\n"
+  " -rigidity         Rigidity for the beam.\n"
+  " -fsc              fractional strength change, which may be the FSE value\n"
+  "                   obtained from a previous optimization with this field map\n"
+  " -dxDipole         Set the offset in the transverse dipole position along the \n"
+  "                   magnet vertical midplane.  This value can be supplied from a\n"
+  "                   previous run.  A positive value moves the magnet away from the\n"
+  "                   center of curvature.\n"
+  " -dzDipole         Set the offset in the dipole position perpendicular the \n"
+  "                   magnet vertical midplane.  A positive value moves the magnet\n"
+  "                   away from the incoming beam.\n"
+  " -yawDipole        Set the yaw angle about (0,0). A positive value rotates the\n"
+  "                   magnet clockwise as see from above.\n"
+  " -output           give file for particle trajectory output\n"
+  " -singleScan       input file has a single scan vs z. Untested in this version.\n"
+  " -arcScan          input file has a single arc scan vs s, distance along the ideal\n"
+  "                   beam path.  This is only correct for a sector magnet!\n"
+  "                   Untested in this version.\n"
+  " -optimize         optimize bending radius, offset, or rotation to get desired bending angle and\n"
+  "                   exit trajectory\n"
+  " -fseLimit         Set range for FSE in optimization\n"
+  " -dxLimit          Set range for dx of dipole in optimization\n"
+  " -dzLimit          Set range for dz of dipole in optimization\n"
+  " -yawLimit         Set range for yaw of dipole in optimization\n"
+  " -weight           Set optimization weights for x and x'\n"
+  " -dxDzFactor       Link DX to DZ: DZ=factor*DX\n"
+  " -fieldMapOutput   outputs the field data to a file for checking\n"
+  " -extendData       extend data in x dimension as needed so particles see field\n"
+  " -zDuplicate       reflect copy of -z data into +z\n"
+  " -tolerance        tolerance for integration\n"
+  " -fieldSign        specify the sign of the bending radius (normally +)\n"
+  " -gap              specify the full gap of the magnet in meters.  Used to\n"
+  "                   compute the edge-field integral.\n"
+  " -ftable           use FTABLE method (see elegant manual).\n"
+  " -quiet            Suppress informational printouts.\n\n"
+  "Program by Michael Borland  (Version 9, December 2021).\n";
 
 unsigned long optimizeFlags;
 #define OPTIMIZE_ON 0x0001
@@ -179,12 +179,12 @@ unsigned long optimizeFlags;
 #define TOLERANCE_FACTOR 1e-14
 
 /*
-double particleMass = me_mks;
-double particleCharge = e_mks;
-double particleMassMV = me_mev;
-double particleRadius = re_mks;
-double particleRelSign = 1;
-long particleIsElectron = 1;
+  double particleMass = me_mks;
+  double particleCharge = e_mks;
+  double particleMassMV = me_mev;
+  double particleRadius = re_mks;
+  double particleRelSign = 1;
+  long particleIsElectron = 1;
 */
 
 int make_fieldmap_file(char *filename, char *data_file, double Zi, double Zf, long nZ, double Xi, double Xf, long nX);
@@ -198,10 +198,10 @@ int setup_integration_output(SDDS_TABLE *SDDS_output, char *filename, char *inpu
 #  if defined(_WIN32)
 __declspec(dllexport) int abrat(int argc, char **argv)
 #  else
-int abrat(int argc, char **argv)
+  int abrat(int argc, char **argv)
 #  endif
 #else
-int main(int argc, char **argv)
+  int main(int argc, char **argv)
 #endif
 {
   int i_arg;

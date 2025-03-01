@@ -1,10 +1,10 @@
 /*************************************************************************\
-* Copyright (c) 2002 The University of Chicago, as Operator of Argonne
-* National Laboratory.
-* Copyright (c) 2002 The Regents of the University of California, as
-* Operator of Los Alamos National Laboratory.
-* This file is distributed subject to a Software License Agreement found
-* in the file LICENSE that is included with this distribution. 
+ * Copyright (c) 2002 The University of Chicago, as Operator of Argonne
+ * National Laboratory.
+ * Copyright (c) 2002 The Regents of the University of California, as
+ * Operator of Los Alamos National Laboratory.
+ * This file is distributed subject to a Software License Agreement found
+ * in the file LICENSE that is included with this distribution.
 \*************************************************************************/
 
 /* file: trace.c
@@ -14,10 +14,9 @@
  *         In addition, a list of strings is maintained so that a trace-back
  *         can be given in event of a crash.
  *
- * M.Borland, 1992 
+ * M.Borland, 1992
  */
 #include "mdb.h"
-//#include "mdbsun.h"
 #include "track.h"
 #include "trace.h"
 #include <signal.h>
@@ -52,11 +51,6 @@ void process_trace_request(NAMELIST_TEXT *nltext) {
   if (record_allocation && filename)
     keep_alloc_record(filename);
 
-#if defined(VAX_VMS)
-  fputs("warning: program trace is not supported on this system", stdout);
-  return;
-#endif
-
   trace_mode = 0;
 
   if (!filename && trace_on)
@@ -78,10 +72,6 @@ void process_trace_request(NAMELIST_TEXT *nltext) {
 
 void log_entry(const char *routine) {
   long len;
-
-#if defined(VAX_VMS)
-  return;
-#endif
 
   if (!trace_mode)
     return;
@@ -139,9 +129,6 @@ void log_entry(const char *routine) {
 void log_exit(const char *routine) {
   long memlev;
 
-#if defined(VAX_VMS)
-  return;
-#endif
   if (!trace_mode)
     return;
 

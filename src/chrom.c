@@ -1,10 +1,10 @@
 /*************************************************************************\
-* Copyright (c) 2002 The University of Chicago, as Operator of Argonne
-* National Laboratory.
-* Copyright (c) 2002 The Regents of the University of California, as
-* Operator of Los Alamos National Laboratory.
-* This file is distributed subject to a Software License Agreement found
-* in the file LICENSE that is included with this distribution. 
+ * Copyright (c) 2002 The University of Chicago, as Operator of Argonne
+ * National Laboratory.
+ * Copyright (c) 2002 The Regents of the University of California, as
+ * Operator of Los Alamos National Laboratory.
+ * This file is distributed subject to a Software License Agreement found
+ * in the file LICENSE that is included with this distribution.
 \*************************************************************************/
 
 /* file: chrom.c
@@ -12,9 +12,6 @@
  *
  * Michael Borland, 1992
  */
-#if defined(SOLARIS) && !defined(__GNUC__)
-#  include <sunmath.h>
-#endif
 #include "mdb.h"
 #include "track.h"
 #include "chromDefs.h"
@@ -43,7 +40,7 @@ void setup_chromaticity_correction(NAMELIST_TEXT *nltext, RUN *run, LINE_LIST *b
 #include "chrom.h"
   unsigned long unstable;
   long nFSE;
-  
+
   log_entry("setup_chromaticity_correction");
 
   if (fp_sl) {
@@ -92,19 +89,19 @@ void setup_chromaticity_correction(NAMELIST_TEXT *nltext, RUN *run, LINE_LIST *b
     long ii;
 #define N_KNOWN_ITEMS 2
     char *knownItem[N_KNOWN_ITEMS] = {"K2", "FSE"};
-    for (ii=0; ii<chrom->n_families; ii++) {
+    for (ii = 0; ii < chrom->n_families; ii++) {
       if (!(chrom->item[ii] = get_token(items)) || !strlen(chrom->item[ii]))
         bombElegant("too few items given for tune correction", NULL);
-      if ((chrom->itemIsFSE[ii]=match_string(chrom->item[ii], knownItem, N_KNOWN_ITEMS, EXACT_MATCH))<0) 
+      if ((chrom->itemIsFSE[ii] = match_string(chrom->item[ii], knownItem, N_KNOWN_ITEMS, EXACT_MATCH)) < 0)
         bombElegant("item is not recognized", NULL);
       nFSE += chrom->itemIsFSE[ii] ? 1 : 0;
     }
-    if (nFSE!=0 && nFSE != chrom->n_families)
+    if (nFSE != 0 && nFSE != chrom->n_families)
       fprintf(stderr, "Warning: some tune controls are physical units (K2) and others are FSE\n");
   } else {
     long ii;
     chrom->item[0] = "K2";
-    for (ii=1; ii<chrom->n_families; ii++)
+    for (ii = 1; ii < chrom->n_families; ii++)
       chrom->item[ii] = chrom->item[0];
   }
 
@@ -318,7 +315,7 @@ void computeChromCorrectionMatrix(RUN *run, LINE_LIST *beamline, CHROM_CORRECTIO
         fflush(stdout);
         exitElegant(1);
       }
-      if (verbosityLevel>10)
+      if (verbosityLevel > 10)
         printf("Including %s#%ld in family %ld of %ld\n", context->name, context->occurence,
                i, chrom->n_families);
       if (!(K2ptr = (double *)(context->p_elem + entity_description[context->type].parameter[K2_param].offset)))
@@ -431,8 +428,8 @@ void computeChromCorrectionMatrix(RUN *run, LINE_LIST *beamline, CHROM_CORRECTIO
     for (i = 0; i < chrom->n_families; i++) {
       if (!chrom->itemIsFSE[i])
         printf("%10s:    %14.7e     %14.7e\n", chrom->name[i], C->a[0][i], C->a[1][i]);
-      else 
-        printf("%10s:    %14.7e     %14.7e\n", chrom->name[i], C->a[0][i]/chrom->K2[i], C->a[1][i]/chrom->K2[i]);
+      else
+        printf("%10s:    %14.7e     %14.7e\n", chrom->name[i], C->a[0][i] / chrom->K2[i], C->a[1][i] / chrom->K2[i]);
     }
     fflush(stdout);
   }
@@ -444,7 +441,7 @@ void computeChromCorrectionMatrix(RUN *run, LINE_LIST *beamline, CHROM_CORRECTIO
         if (!chrom->itemIsFSE[i])
           fprintf(fp_response, "%s %22.15e %22.15e\n",
                   chrom->name[i], C->a[0][i] / chrom->length[i], C->a[1][i] / chrom->length[i]);
-        else 
+        else
           fprintf(fp_response, "%s %22.15e %22.15e\n",
                   chrom->name[i], C->a[0][i] / chrom->length[i] / chrom->K2[i], C->a[1][i] / chrom->length[i] / chrom->K2[i]);
       } else {
@@ -474,7 +471,7 @@ void computeChromCorrectionMatrix(RUN *run, LINE_LIST *beamline, CHROM_CORRECTIO
       if (!chrom->itemIsFSE[i])
         printf("%10s:    %14.7e     %14.7e\n", chrom->name[i], chrom->T->a[i][0], chrom->T->a[i][1]);
       else
-        printf("%10s:    %14.7e     %14.7e\n", chrom->name[i], chrom->T->a[i][0]*chrom->K2[i], chrom->T->a[i][1]*chrom->K2[i]);
+        printf("%10s:    %14.7e     %14.7e\n", chrom->name[i], chrom->T->a[i][0] * chrom->K2[i], chrom->T->a[i][1] * chrom->K2[i]);
     }
     printf("\n");
     fflush(stdout);
@@ -746,7 +743,7 @@ long do_chromaticity_correction(CHROM_CORRECTION *chrom, RUN *run, LINE_LIST *be
     beamline->twiss0->etapy = etap_y;
 
     propagate_twiss_parameters(beamline->twiss0, beamline->tune, beamline->waists,
-                               NULL, beamline->elem_twiss, run, do_closed_orbit ? clorb : NULL, NULL, 
+                               NULL, beamline->elem_twiss, run, do_closed_orbit ? clorb : NULL, NULL,
                                beamline->couplingFactor);
 
     if (!M || !M->C || !M->R || !M->T)
@@ -926,7 +923,7 @@ void computeHigherOrderChromaticities(LINE_LIST *beamline, double *clorb, RUN *r
     delta[p] = (p - (deltaPoints / 2 + 1)) * deltaStep;
     for (i = 0; i < 6; i++) {
       M0.C[i] = (clorb ? clorb[i] : 0) + delta[p] * eta[i] +
-                (i < 4 ? sqr(delta[p]) * beamline->eta2[i] + pow3(delta[p]) * beamline->eta3[i] : 0);
+        (i < 4 ? sqr(delta[p]) * beamline->eta2[i] + pow3(delta[p]) * beamline->eta3[i] : 0);
       M0.R[i][i] = 1;
     }
     if (quickMode)
@@ -1127,13 +1124,13 @@ void computeChromaticTuneLimits(LINE_LIST *beamline) {
       c2 = beamline->chrom2[i] / 2.0;
       c3 = beamline->chrom3[i] / 6.0;
       tuneValue[1] = beamline->tune[i] +
-                     beamline->chromDeltaHalfRange * c1 +
-                     sqr(beamline->chromDeltaHalfRange) * c2 +
-                     ipow3(beamline->chromDeltaHalfRange) * c3;
+        beamline->chromDeltaHalfRange * c1 +
+        sqr(beamline->chromDeltaHalfRange) * c2 +
+        ipow3(beamline->chromDeltaHalfRange) * c3;
       tuneValue[2] = beamline->tune[i] -
-                     beamline->chromDeltaHalfRange * c1 +
-                     sqr(beamline->chromDeltaHalfRange) * c2 -
-                     ipow3(beamline->chromDeltaHalfRange) * c3;
+        beamline->chromDeltaHalfRange * c1 +
+        sqr(beamline->chromDeltaHalfRange) * c2 -
+        ipow3(beamline->chromDeltaHalfRange) * c3;
       p = 3;
       /* find extrema */
       n = solveQuadratic(3 * c3, 2 * c2, c1, solution);
@@ -1141,8 +1138,8 @@ void computeChromaticTuneLimits(LINE_LIST *beamline) {
         if (fabs(solution[j]) > beamline->chromDeltaHalfRange)
           continue;
         tuneValue[p] = beamline->tune[i] +
-                       solution[j] * c1 + sqr(solution[j]) * c2 +
-                       ipow3(solution[j]) * c3;
+          solution[j] * c1 + sqr(solution[j]) * c2 +
+          ipow3(solution[j]) * c3;
         p += 1;
       }
       find_min_max(beamline->tuneChromLower + i, beamline->tuneChromUpper + i,

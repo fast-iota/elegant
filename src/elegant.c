@@ -1,10 +1,10 @@
 /*************************************************************************\
-* Copyright (c) 2002 The University of Chicago, as Operator of Argonne
-* National Laboratory.
-* Copyright (c) 2002 The Regents of the University of California, as
-* Operator of Los Alamos National Laboratory.
-* This file is distributed subject to a Software License Agreement found
-* in the file LICENSE that is included with this distribution. 
+ * Copyright (c) 2002 The University of Chicago, as Operator of Argonne
+ * National Laboratory.
+ * Copyright (c) 2002 The Regents of the University of California, as
+ * Operator of Los Alamos National Laboratory.
+ * This file is distributed subject to a Software License Agreement found
+ * in the file LICENSE that is included with this distribution.
 \*************************************************************************/
 
 /* program: elegant
@@ -12,7 +12,6 @@
  * Michael Borland, 1989-2018
  */
 #include "mdb.h"
-//#include "mdbsun.h"
 #include "track.h"
 #include "elegant.h"
 #include "SDDS.h"
@@ -22,7 +21,7 @@
 #include <signal.h>
 #include <time.h>
 #if defined(__linux__) || defined(_WIN32)
-#    include <malloc.h>
+#  include <malloc.h>
 #endif
 #if defined(_WIN32)
 #  include <fcntl.h>
@@ -84,21 +83,21 @@ void showUsageOrGreeting(unsigned long mode) {
 #  if HAVE_GPU
   char *USAGE = "usage: mpirun -np <number of processes> gpu-Pelegant <inputfile> [-macro=<tag>=<value>,[...]] [-rpnDefns=<filename>] [-configuration=<filename>]";
   char *GREETING = "This is gpu-Pelegant 2025.1Beta1 ALPHA RELEASE, "__DATE__
-                   ", by M. Borland, K. Amyx, J. Calvey, M. Carla', N. Carmignani, AJ Dick, Z. Duan, M. Ehrlichman, L. Emery, W. Guo, J.R. King, N. Kuklev, R. Lindberg, I.V. Pogorelov, V. Sajaev, R. Soliday, Y.-P. Sun, M. Wallbank, C.-X. Wang, Y. Wang, Y. Wu, and A. Xiao.\nParallelized by Y. Wang, H. Shang, and M. Borland.";
+    ", by M. Borland, K. Amyx, J. Calvey, M. Carla', N. Carmignani, AJ Dick, Z. Duan, M. Ehrlichman, L. Emery, W. Guo, J.R. King, N. Kuklev, R. Lindberg, I.V. Pogorelov, V. Sajaev, R. Soliday, Y.-P. Sun, M. Wallbank, C.-X. Wang, Y. Wang, Y. Wu, and A. Xiao.\nParallelized by Y. Wang, H. Shang, and M. Borland.";
 #  else
   char *USAGE = "usage: mpirun -np <number of processes> Pelegant <inputfile> [-macro=<tag>=<value>,[...]] [-rpnDefns=<filename>] [-configuration=<filename>]";
   char *GREETING = "This is elegant 2025.1Beta1 "__DATE__
-                   ", by M. Borland, J. Calvey, M. Carla', N. Carmignani, AJ Dick, Z. Duan, M. Ehrlichman, L. Emery, W. Guo, N. Kuklev, R. Lindberg, V. Sajaev, R. Soliday, Y.-P. Sun, M. Wallbank, C.-X. Wang, Y. Wang, Y. Wu, and A. Xiao.\nParallelized by Y. Wang, H. Shang, and M. Borland.";
+    ", by M. Borland, J. Calvey, M. Carla', N. Carmignani, AJ Dick, Z. Duan, M. Ehrlichman, L. Emery, W. Guo, N. Kuklev, R. Lindberg, V. Sajaev, R. Soliday, Y.-P. Sun, M. Wallbank, C.-X. Wang, Y. Wang, Y. Wu, and A. Xiao.\nParallelized by Y. Wang, H. Shang, and M. Borland.";
 #  endif
 #else
 #  if HAVE_GPU
   char *USAGE = "usage: gpu-elegant {<inputfile>|-pipe=in} [-macro=<tag>=<value>,[...]] [-rpnDefns=<filename>] [-configuration=<filename>]";
   char *GREETING = "This is gpu-elegant 2025.1Beta1 ALPHA RELEASE, "__DATE__
-                   ", by M. Borland, K. Amyx, J. Calvey, M. Carla', N. Carmignani, AJ Dick, Z. Duan, M. Ehrlichman, L. Emery, W. Guo, J.R. King, N. Kuklev, R. Lindberg, I.V. Pogorelov, V. Sajaev, R. Soliday, Y.-P. Sun, M. Wallbank, C.-X. Wang, Y. Wang, Y. Wu, and A. Xiao.";
+    ", by M. Borland, K. Amyx, J. Calvey, M. Carla', N. Carmignani, AJ Dick, Z. Duan, M. Ehrlichman, L. Emery, W. Guo, J.R. King, N. Kuklev, R. Lindberg, I.V. Pogorelov, V. Sajaev, R. Soliday, Y.-P. Sun, M. Wallbank, C.-X. Wang, Y. Wang, Y. Wu, and A. Xiao.";
 #  else
   char *USAGE = "usage: elegant {<inputfile>|-pipe=in} [-macro=<tag>=<value>,[...]] [-rpnDefns=<filename>] [-configuration=<filename>]";
   char *GREETING = "This is elegant 2025.1Beta1, "__DATE__
-                   ", by M. Borland, J. Calvey, M. Carla', N. Carmignani, AJ Dick, Z. Duan, M. Ehrlichman, L. Emery, W. Guo, N. Kuklev, R. Lindberg, V. Sajaev, R. Soliday, Y.-P. Sun, M. Wallbank, C.-X. Wang, Y. Wang, Y. Wu, and A. Xiao.";
+    ", by M. Borland, J. Calvey, M. Carla', N. Carmignani, AJ Dick, Z. Duan, M. Ehrlichman, L. Emery, W. Guo, N. Kuklev, R. Lindberg, V. Sajaev, R. Soliday, Y.-P. Sun, M. Wallbank, C.-X. Wang, Y. Wang, Y. Wu, and A. Xiao.";
 #  endif
 #endif
   time_t timeNow;
@@ -107,7 +106,7 @@ void showUsageOrGreeting(unsigned long mode) {
   timeNowString = ctime(&timeNow);
 #if USE_MPI
   printf("Running Pelegant on %d cores at %s\n", n_processors, timeNowString ? timeNowString : "?");
-#else  
+#else
   printf("Running elegant at %s\n", timeNowString ? timeNowString : "?");
 #endif
   if (mode & SHOW_GREETING)
@@ -350,8 +349,7 @@ char *description[N_COMMANDS] = {
   "change_start                     modify the beamline to start at a named location",
   "change_end                       modify the beamline to end at a named location",
   "include_commands                 include commands from a file",
-  "particle_tunes                   accumulate data and find tunes for each particle in a multi-particle beam"
-};
+  "particle_tunes                   accumulate data and find tunes for each particle in a multi-particle beam"};
 
 #define NAMELIST_BUFLEN 65536
 
@@ -413,8 +411,9 @@ void setupInelasticScattering(NAMELIST_TEXT *nltext, RUN *run, VARY *control);
 long runInelasticScattering(RUN *run, VARY *control, ERRORVAL *errcon, LINE_LIST *beamline, double *startingCoord);
 void finishInelasticScattering();
 
-int main(argc, argv) int argc;
-char **argv;
+int main(argc, argv)
+     int argc;
+     char **argv;
 {
   char **macroTag, **macroValue = NULL;
   long macros;
@@ -459,18 +458,18 @@ char **argv;
   CHANGE_START_SPEC changeStart = {0, NULL, -1, 0};
   CHANGE_END_SPEC changeEnd = {0, NULL, -1};
   output_data = &(run_conditions.outputFiles);
-  
+
   if (0) {
     long i, j, missing = 0;
-    for (i=0; i<N_COMMANDS; i++) {
-      for (j=0; j<N_COMMANDS; j++) {
-        if (strncmp(command[i], description[j], strlen(command[i]))==0) {
-          printf("Match of command[%ld]=%s and description[%ld]\n", 
+    for (i = 0; i < N_COMMANDS; i++) {
+      for (j = 0; j < N_COMMANDS; j++) {
+        if (strncmp(command[i], description[j], strlen(command[i])) == 0) {
+          printf("Match of command[%ld]=%s and description[%ld]\n",
                  i, command[i], j);
           break;
         }
       }
-      if (j==N_COMMANDS) {
+      if (j == N_COMMANDS) {
         printf("No match for command[%ld]=%s\n", i, command[i]);
         missing++;
       }
@@ -489,9 +488,9 @@ char **argv;
   MPI_Comm_size(MPI_COMM_WORLD, &n_processors);
   MPI_Comm_rank(MPI_COMM_WORLD, &myid);
 
-  if (n_processors<=1)
+  if (n_processors <= 1)
     bombElegant("You must specify at least 2 processors to run Pelegant.", "mpiexec -np N Pelegant, where N is greater than 1.");
-  
+
   /* create a new communicator group with the slave processors only */
   ranks[0] = 0; /* first process is master */
   MPI_Comm_group(MPI_COMM_WORLD, &world_group);
@@ -530,7 +529,7 @@ char **argv;
     printWarning("The INT_MAX could be too small to record the number of particles.", NULL);
   }
 #  if !SDDS_MPI_IO
-  if (isSlave && (n_processors > 3))   /* This will avoid wasting memory on a laptop with a small number of cores */
+  if (isSlave && (n_processors > 3))          /* This will avoid wasting memory on a laptop with a small number of cores */
     memDistFactor = 2.0 / (n_processors - 1); /* In parallel version, a portion of memory will be allocated on each slave */
 #  endif
 #endif
@@ -569,9 +568,7 @@ char **argv;
   macroTag[0] = "INPUTFILENAME";
   macroValue[0] = NULL; /* will fill in later */
 
-#if defined(__linux__) || defined(_WIN32) || defined(__APPLE__)
   init_stats();
-#endif
 
   argc = scanargs(&scanned, argc, argv);
   if (argc < 2) {
@@ -651,9 +648,9 @@ char **argv;
             processorMask |= (unsigned long)(ipow(2, k) + 0.5);
           }
           /*
-	    This code isn't valid with the current version of sched_setaffinity
-	    printf("processorMask = %lx\n", processorMask);
-	    sched_setaffinity(0, sizeof(processorMask), &processorMask);
+            This code isn't valid with the current version of sched_setaffinity
+            printf("processorMask = %lx\n", processorMask);
+            sched_setaffinity(0, sizeof(processorMask), &processorMask);
           */
         }
 #  else  /* (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,0)) */
@@ -777,10 +774,8 @@ char **argv;
 #if DEBUG
         fprintf(stderr, "%s\n", s);
 #endif
-#if defined(__linux__) || defined(_WIN32) || defined(__APPLE__)
         report_stats(stdout, "statistics: ");
         fflush(stdout);
-#endif
         if (namelists_read)
           free_namelist_text(&namelist_text);
         scan_namelist(&namelist_text, s);
@@ -845,7 +840,7 @@ char **argv;
           set_print_namelist_flags(0);
           if (processNamelist(&run_setup, &namelist_text) == NAMELIST_ERROR)
             bombElegant(NULL, NULL);
-            
+
           if ((!search_path || !strlen(search_path)) && searchPath && strlen(searchPath)) {
             search_path = searchPath;
           }
@@ -942,7 +937,7 @@ char **argv;
           seedElegantRandomNumbers(random_number_seed, 0);
 
           /* In the version with parallel I/O, these file names need to be known by all the processors, otherwise there
-	     will be a synchronization issue when calculated accumulated sum in do_tracking */
+             will be a synchronization issue when calculated accumulated sum in do_tracking */
           run_conditions.acceptance = compose_filename(acceptance, rootname);
 #if USE_MPI
           if (run_conditions.acceptance)
@@ -992,11 +987,11 @@ char **argv;
 #if !SDDS_MPI_IO
           if (isMaster)
 #endif
-          {
-            run_conditions.output = compose_filename(output, rootname);
-            run_conditions.losses = compose_filename(losses, rootname);
-            run_conditions.final = compose_filename(final, rootname);
-          }
+            {
+              run_conditions.output = compose_filename(output, rootname);
+              run_conditions.losses = compose_filename(losses, rootname);
+              run_conditions.final = compose_filename(final, rootname);
+            }
 #if !SDDS_MPI_IO
           else
             run_conditions.final = run_conditions.output = run_conditions.losses = NULL;
@@ -1023,7 +1018,7 @@ char **argv;
           delete_phase_references(); /* necessary for multi-step runs */
           reset_special_elements(beamline, RESET_INCLUDE_ALL);
           reset_driftCSR();
-	  finishSCSpecs();
+          finishSCSpecs();
           last_default_order = default_order;
           run_setuped = 1;
           break;
@@ -1086,7 +1081,7 @@ char **argv;
           setup_bunched_beam(&beam, &namelist_text, &run_conditions, &run_control, &error_control, &optimize.variables,
                              output_data, beamline, beamline->n_elems,
                              correct.mode != -1 &&
-                               (correct.track_before_and_after || correct.start_from_centroid));
+                             (correct.track_before_and_after || correct.start_from_centroid));
           setup_output(output_data, &run_conditions, &run_control, &error_control, &optimize.variables, beamline);
           beam_type = SET_BUNCHED_BEAM;
           break;
@@ -1098,7 +1093,7 @@ char **argv;
           setup_bunched_beam_moments(&beam, &namelist_text, &run_conditions, &run_control, &error_control, &optimize.variables,
                                      output_data, beamline, beamline->n_elems,
                                      correct.mode != -1 &&
-                                       (correct.track_before_and_after || correct.start_from_centroid));
+                                     (correct.track_before_and_after || correct.start_from_centroid));
           setup_output(output_data, &run_conditions, &run_control, &error_control, &optimize.variables, beamline);
           beam_type = SET_BUNCHED_BEAM;
           break;
@@ -1113,7 +1108,7 @@ char **argv;
           setup_sdds_beam(&beam, &namelist_text, &run_conditions, &run_control, &error_control,
                           &optimize.variables, output_data, beamline, beamline->n_elems,
                           correct.mode != -1 &&
-                            (correct.track_before_and_after || correct.start_from_centroid));
+                          (correct.track_before_and_after || correct.start_from_centroid));
           setup_output(output_data, &run_conditions, &run_control, &error_control, &optimize.variables, beamline);
           beam_type = SET_SDDS_BEAM;
           break;
@@ -1145,11 +1140,11 @@ char **argv;
                 run_conditions.trackingInterruptFileMtime = get_mtime(run_conditions.trackingInterruptFile);
             }
             /*
-	      #if USE_MPI
-	      if (stop_tracking_particle_limit!=-1)
-	      bombElegant("stop_tracking_particle_limit feature not supported in Pelegant", NULL);
-	      #endif
-	    */
+              #if USE_MPI
+              if (stop_tracking_particle_limit!=-1)
+              bombElegant("stop_tracking_particle_limit feature not supported in Pelegant", NULL);
+              #endif
+            */
             if (use_linear_chromatic_matrix &&
                 !(linear_chromatic_tracking_setup_done || twiss_computed || do_twiss_output))
               bombElegant("you must compute twiss parameters or give linear_chromatic_tracking_setup to do linear chromatic tracking", NULL);
@@ -1196,8 +1191,8 @@ char **argv;
                            beamline, &beam, output_data,
                            PRECORRECTION_BEAM, 0, &finalCharge);
                 /* This is needed to put the original bunch back in the tracking buffer, since it may
-		 * be needed as the starting point for orbit/trajectory correction 
-		 */
+                 * be needed as the starting point for orbit/trajectory correction
+                 */
                 if (beam_type == SET_SDDS_BEAM) {
                   if (new_sdds_beam(&beam, &run_conditions, &run_control, output_data, 0) < 0)
                     break;
@@ -1208,11 +1203,11 @@ char **argv;
             }
 
             /* If needed, find closed orbit, twiss parameters, moments, and response matrix, but don't write
-	     * output unless requested to do so "pre-correction"
-	     */
+             * output unless requested to do so "pre-correction"
+             */
             /* If closed orbit is calculated, starting_coord will store the closed orbit at the start of
-	     * the beamline 
-	     */
+             * the beamline
+             */
             if (do_closed_orbit &&
                 !run_closed_orbit(&run_conditions, beamline, starting_coord, NULL, 0)) {
               if (soft_failure) {
@@ -1308,9 +1303,9 @@ char **argv;
 
             if (correct.mode != -1 && (correct.track_before_and_after || (correct.start_from_centroid && correct.mode == TRAJECTORY_CORRECTION))) {
               /* If we are performing orbit/trajectory correction and tracking before/after correction, we need to
-		 generate a beam (will in fact just restore the beam generated above.
-		 Also, if we need the beam to give the starting point for trajectory correction, we need to genrate a beam.
-	      */
+                 generate a beam (will in fact just restore the beam generated above.
+                 Also, if we need the beam to give the starting point for trajectory correction, we need to genrate a beam.
+              */
               if (beam_type == SET_SDDS_BEAM) {
                 if (new_sdds_beam(&beam, &run_conditions, &run_control, output_data, new_beam_flags) < 0)
                   break;
@@ -1379,8 +1374,8 @@ char **argv;
               track_beam(&run_conditions, &run_control, &error_control, &optimize.variables,
                          beamline, &beam, output_data,
                          (use_linear_chromatic_matrix ? LINEAR_CHROMATIC_MATRIX : 0) +
-                           (longitudinal_ring_only ? LONGITUDINAL_RING_ONLY : 0) +
-                           (ibs_only ? IBS_ONLY_TRACKING : 0),
+                         (longitudinal_ring_only ? LONGITUDINAL_RING_ONLY : 0) +
+                         (ibs_only ? IBS_ONLY_TRACKING : 0),
                          0, &finalCharge);
               break;
             case ANALYZE_MAP:
@@ -1422,11 +1417,11 @@ char **argv;
             if (run_control.stepDoneSemaphore && strlen(run_control.stepDoneSemaphore)) {
               FILE *fpsem;
 #if USE_MPI
-              if (myid==0) {
+              if (myid == 0) {
 #endif
-              printf("Creating step-done semaphore file %s\n", run_control.stepDoneSemaphore);
-              fpsem = fopen(run_control.stepDoneSemaphore, "w");
-              fclose(fpsem);
+                printf("Creating step-done semaphore file %s\n", run_control.stepDoneSemaphore);
+                fpsem = fopen(run_control.stepDoneSemaphore, "w");
+                fclose(fpsem);
 #if USE_MPI
               }
               MPI_Barrier(MPI_COMM_WORLD);
@@ -1480,7 +1475,7 @@ char **argv;
           concat_order = print_statistics = p_central = 0;
           run_setuped = run_controled = error_controled = correction_setuped = do_chromatic_correction =
             fl_do_tune_correction = do_closed_orbit = do_twiss_output = do_coupled_twiss_output = do_response_output =
-              ionEffectsSeen = back_tracking = losses_include_global_coordinates = 0;
+            ionEffectsSeen = back_tracking = losses_include_global_coordinates = 0;
           element_divisions = 0;
           run_conditions.rampData.valuesInitialized =
             run_conditions.modulationData.valuesInitialized = 0;
@@ -1550,10 +1545,10 @@ char **argv;
           lorentz_report();
           finish_load_parameters();
           /* if (semaphore_file)
-	     createSemaphoreFile(semaphore_file);
-	     if (semaphoreFile[1])
-	     createSemaphoreFile(semaphoreFile[1]);
-	  */
+             createSemaphoreFile(semaphore_file);
+             if (semaphoreFile[1])
+             createSemaphoreFile(semaphoreFile[1]);
+          */
           free_beamdata(&beam);
           printFarewell(stdout);
           exitElegant(0);
@@ -1597,7 +1592,7 @@ char **argv;
           concat_order = print_statistics = p_central = 0;
           run_setuped = run_controled = error_controled = correction_setuped = do_chromatic_correction =
             fl_do_tune_correction = do_closed_orbit = do_twiss_output = do_coupled_twiss_output = do_response_output =
-              ionEffectsSeen = 0;
+            ionEffectsSeen = 0;
 #if USE_MPI
           runInSinglePartMode = 0; /* We should set the flag to the normal parallel tracking after parallel optimization */
 #endif
@@ -1656,9 +1651,9 @@ char **argv;
             do_closed_orbit = 0;
           }
           /*
-	    if (correction_setuped)
-	    printWarning("You've asked to do both closed-orbit calculation and orbit correction, which may duplicate effort.\n");
-	  */
+            if (correction_setuped)
+            printWarning("You've asked to do both closed-orbit calculation and orbit correction, which may duplicate effort.\n");
+          */
           fflush(stdout);
           break;
         case PARTICLE_TUNES:
@@ -1927,7 +1922,7 @@ char **argv;
           concat_order = print_statistics = p_central = 0;
           run_setuped = run_controled = error_controled = correction_setuped = do_chromatic_correction =
             fl_do_tune_correction = do_closed_orbit = do_twiss_output = do_coupled_twiss_output = do_response_output =
-              ionEffectsSeen = 0;
+            ionEffectsSeen = 0;
           break;
         case LINK_CONTROL:
           if (!run_setuped || !run_controled)
@@ -2007,26 +2002,26 @@ char **argv;
           break;
         case FIT_TRACES:
 #if 0
-	  do_fit_trace_data(&namelist_text, &run_conditions, beamline);
-	  if (parameters) {
-	    dumpLatticeParameters(parameters, &run_conditions, beamline, suppress_parameter_defaults);
-	    finishLatticeParametersFile();
-	  }
-	  /* reassert defaults for namelist run_setup */
-	  lattice = use_beamline = acceptance = centroid = bpm_centroid = sigma = final = output = rootname = losses =
-	    parameters = NULL;
-	  combine_bunch_statistics = 0;
-	  random_number_seed = 987654321;
-	  wrap_around = 1;
-	  final_pass = 0;
-	  default_order = 2;
-	  concat_order = 0;
-	  tracking_updates = 1;
-	  show_element_timing = monitor_memory_usage = 0;
-	  concat_order = print_statistics = p_central = 0;
-	  run_setuped = run_controled = error_controled = correction_setuped = do_chromatic_correction =
-	    fl_do_tune_correction = do_closed_orbit = do_twiss_output = do_coupled_twiss_output = do_response_output = 
-	    ionEffectsSeed = 0;
+          do_fit_trace_data(&namelist_text, &run_conditions, beamline);
+          if (parameters) {
+            dumpLatticeParameters(parameters, &run_conditions, beamline, suppress_parameter_defaults);
+            finishLatticeParametersFile();
+          }
+          /* reassert defaults for namelist run_setup */
+          lattice = use_beamline = acceptance = centroid = bpm_centroid = sigma = final = output = rootname = losses =
+            parameters = NULL;
+          combine_bunch_statistics = 0;
+          random_number_seed = 987654321;
+          wrap_around = 1;
+          final_pass = 0;
+          default_order = 2;
+          concat_order = 0;
+          tracking_updates = 1;
+          show_element_timing = monitor_memory_usage = 0;
+          concat_order = print_statistics = p_central = 0;
+          run_setuped = run_controled = error_controled = correction_setuped = do_chromatic_correction =
+            fl_do_tune_correction = do_closed_orbit = do_twiss_output = do_coupled_twiss_output = do_response_output = 
+            ionEffectsSeed = 0;
 #endif
           break;
         case SASEFEL_AT_END:
@@ -2167,13 +2162,11 @@ char **argv;
   free(macroTag);
   free(macroValue);
   free(starting_coord);
-#if defined(__linux__) || defined(_WIN32) || defined(__APPLE__)
-#  if USE_MPI
+#if USE_MPI
   printf("Terminating run with %d total processors\n", n_processors);
-#  endif
+#endif
   report_stats(stdout, "statistics: ");
   fflush(stdout);
-#endif
   log_exit("main");
   printFarewell(stdout);
   if (load_hash)
@@ -2221,7 +2214,7 @@ double find_beam_p_central(char *input) {
   long i, rows;
 #if SDDS_MPI_IO
   /* All the processes will read the wake file, but not in parallel.
-   Zero the Memory when call  SDDS_InitializeInput */
+     Zero the Memory when call  SDDS_InitializeInput */
   SDDSin.parallel_io = 0;
 #endif
 
@@ -2655,7 +2648,7 @@ void do_semaphore_setup(char **semaphoreFile, char *rootname, long run_setuped, 
     if (run_setuped)
       bombElegant("You must give the semaphores command before run_setup except if using only the immediate parameter", NULL);
   }
-  
+
   semaphoreFile[0] = semaphoreFile[1] = semaphoreFile[2] = NULL;
   if (writePermitted) {
     if (started)
@@ -2728,8 +2721,7 @@ void processApertureInput(NAMELIST_TEXT *nltext, RUN *run) {
   printf("\n** %ld points of aperture data read from file\n\n", run->apertureData.points);
 }
 
-void readApertureInput(APERTURE_DATA *apData, char *input, short zmode)
-{
+void readApertureInput(APERTURE_DATA *apData, char *input, short zmode) {
   SDDS_DATASET SDDSin;
   char s[16384];
   long i;
@@ -2750,11 +2742,11 @@ void readApertureInput(APERTURE_DATA *apData, char *input, short zmode)
     fflush(stdout);
     exitElegant(1);
   }
-  
+
   if ((!zmode && !check_sdds_column(&SDDSin, "s", "m")) ||
       (zmode && !check_sdds_column(&SDDSin, "z", "m"))) {
     printf("Necessary data quantity %s has wrong units or not present in %s\n",
-           zmode?"z":"s", input);
+           zmode ? "z" : "s", input);
     printf("Note that units must be \"m\" on all quantities\n");
     fflush(stdout);
     exitElegant(1);
@@ -2774,7 +2766,7 @@ void readApertureInput(APERTURE_DATA *apData, char *input, short zmode)
     printWarning(buffer, NULL);
   }
 
-  if (!(apData->sz = SDDS_GetColumnInDoubles(&SDDSin, zmode?"z":"s")) ||
+  if (!(apData->sz = SDDS_GetColumnInDoubles(&SDDSin, zmode ? "z" : "s")) ||
       !(apData->xMax = SDDS_GetColumnInDoubles(&SDDSin, "xHalfAperture")) ||
       !(apData->yMax = SDDS_GetColumnInDoubles(&SDDSin, "yHalfAperture")) ||
       !(apData->dx = SDDS_GetColumnInDoubles(&SDDSin, "xCenter")) ||
@@ -2784,12 +2776,12 @@ void readApertureInput(APERTURE_DATA *apData, char *input, short zmode)
     SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
   }
   if (apData->sz[0] != 0) {
-    printf("The first value of %s in %s is not zero.\n", input, zmode?"z":"s");
+    printf("The first value of %s in %s is not zero.\n", input, zmode ? "z" : "s");
     exitElegant(1);
   }
   for (i = 0; i < apData->points; i++) {
     if (i && apData->sz[i] < apData->sz[i - 1]) {
-      printf("%s values in %s are not monotonically increasing.\n", zmode?"z":"s", input);
+      printf("%s values in %s are not monotonically increasing.\n", zmode ? "z" : "s", input);
       exitElegant(1);
     }
     if (apData->xMax[i] < 0 || apData->yMax[i] < 0) {
@@ -3001,10 +2993,10 @@ void process_particle_command(NAMELIST_TEXT *nltext) {
     particleMassMV = particleMass * sqr(c_mks) / fabs(particleCharge) / 1e6;
     particleRadius = sqr(particleCharge) / (4 * PI * epsilon_o * particleMass * sqr(c_mks));
   }
-  /* 
+  /*
     printf("particleMass = %e, particleRadius = %e, particleCharge = %e, particleMassMV = %e, particleRelSign = %e\n",
     particleMass, particleRadius, particleCharge, particleMassMV, particleRelSign);
-    */
+  */
   printWarning("Changing the particle type is not a fully tested feature",
                ". Please be alert for and report results that don't make sense.");
 }
@@ -3194,7 +3186,7 @@ void runFiducialParticle(RUN *run, VARY *control, double *startCoord, LINE_LIST 
                            NULL, NULL, NULL, NULL, run, control->i_step,
                            (control->fiducial_flag &
                             (LINEAR_CHROMATIC_MATRIX + LONGITUDINAL_RING_ONLY + FIRST_BEAM_IS_FIDUCIAL + SILENT_RUNNING + FIDUCIAL_BEAM_SEEN + RESTRICT_FIDUCIALIZATION + PRECORRECTION_BEAM + IBS_ONLY_TRACKING + RESET_RF_FOR_EACH_STEP)) |
-                             ALLOW_MPI_ABORT_TRACKING | INHIBIT_FILE_OUTPUT,
+                           ALLOW_MPI_ABORT_TRACKING | INHIBIT_FILE_OUTPUT,
                            1, 0, NULL, NULL, NULL, NULL, NULL))) {
     if (mustSurvive) {
       printf("Fiducial particle lost. Don't know what to do.\n");

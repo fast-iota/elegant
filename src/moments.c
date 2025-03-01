@@ -1,10 +1,10 @@
 /*************************************************************************\
-* Copyright (c) 2007 The University of Chicago, as Operator of Argonne
-* National Laboratory.
-* Copyright (c) 2007 The Regents of the University of California, as
-* Operator of Los Alamos National Laboratory.
-* This file is distributed subject to a Software License Agreement found
-* in the file LICENSE that is included with this distribution. 
+ * Copyright (c) 2007 The University of Chicago, as Operator of Argonne
+ * National Laboratory.
+ * Copyright (c) 2007 The Regents of the University of California, as
+ * Operator of Los Alamos National Laboratory.
+ * This file is distributed subject to a Software License Agreement found
+ * in the file LICENSE that is included with this distribution.
 \*************************************************************************/
 
 /* file: moments.c
@@ -109,79 +109,77 @@ static double savedFinalCentroid[6];
 static SDDS_DATASET SDDSmatrix;
 static short matrixOutputInitialized = 0;
 
-void setUpMomentsMatrixOutput(RUN *run, char *outputFilename) 
-{
+void setUpMomentsMatrixOutput(RUN *run, char *outputFilename) {
   char buffer[1024], t[1024];
   long i, j;
   static char *unit[6] = {"m", "rad", "m", "rad", "m", "1"};
 #if USE_MPI
-  if (myid==0) {
+  if (myid == 0) {
 #endif
-  if (!SDDS_InitializeOutputElegant(&SDDSmatrix, SDDS_BINARY, 0, "transfer and diffusion matrix from moments calculation",
-                                    NULL, outputFilename)) 
-    bombElegant("problem setting up output file for transfer and diffusion matrix", NULL);
+    if (!SDDS_InitializeOutputElegant(&SDDSmatrix, SDDS_BINARY, 0, "transfer and diffusion matrix from moments calculation",
+                                      NULL, outputFilename))
+      bombElegant("problem setting up output file for transfer and diffusion matrix", NULL);
 
-  for (i = 0; i < 6; i++) {
-    sprintf(buffer, "&column name=C%ld, symbol=\"C$b%ld$n\", type=double ", i + 1, i + 1);
-    if (SDDS_StringIsBlank(unit[i]))
-      strcpy_ss(t, " &end");
-    else
-      sprintf(t, "units=%s &end", unit[i]);
-    strcat(buffer, t);
-    if (!SDDS_ProcessColumnString(&SDDSmatrix, buffer, 0)) {
-      SDDS_SetError("Problem defining SDDS matrix output Rij columns (setUpMomentsMatrixOutput)");
+    for (i = 0; i < 6; i++) {
+      sprintf(buffer, "&column name=C%ld, symbol=\"C$b%ld$n\", type=double ", i + 1, i + 1);
+      if (SDDS_StringIsBlank(unit[i]))
+        strcpy_ss(t, " &end");
+      else
+        sprintf(t, "units=%s &end", unit[i]);
+      strcat(buffer, t);
+      if (!SDDS_ProcessColumnString(&SDDSmatrix, buffer, 0)) {
+        SDDS_SetError("Problem defining SDDS matrix output Rij columns (setUpMomentsMatrixOutput)");
+        SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+      }
+    }
+    for (i = 0; i < 6; i++) {
+      for (j = 0; j < 6; j++) {
+        sprintf(buffer, "&column name=R%ld%ld, symbol=\"R$b%ld%ld$n\", type=double ", i + 1, j + 1, i + 1, j + 1);
+        if (i == j)
+          strcpy_ss(t, " &end");
+        else
+          sprintf(t, "units=%s/%s &end", unit[i], unit[j]);
+        strcat(buffer, t);
+        if (!SDDS_ProcessColumnString(&SDDSmatrix, buffer, 0)) {
+          SDDS_SetError("Problem defining SDDS matrix output Rij columns (setUpMatrixOutput)");
+          SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+        }
+      }
+    }
+    for (i = 0; i < 6; i++) {
+      for (j = 0; j < 6; j++) {
+        sprintf(buffer, "&column name=D%ld%ld, symbol=\"D$b%ld%ld$n\", type=double ", i + 1, j + 1, i + 1, j + 1);
+        if (i == j)
+          strcpy_ss(t, " &end");
+        else
+          sprintf(t, "units=%s/%s &end", unit[i], unit[j]);
+        strcat(buffer, t);
+        if (!SDDS_ProcessColumnString(&SDDSmatrix, buffer, 0)) {
+          SDDS_SetError("Problem defining SDDS matrix output Dij columns (setUpMatrixOutput)");
+          SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+        }
+      }
+    }
+    if (!SDDS_WriteLayout(&SDDSmatrix)) {
+      SDDS_SetError("Problem writing SDDS layout (setUpMatrixOutput)");
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
     }
-  }
-  for (i = 0; i < 6; i++) {
-    for (j = 0; j < 6; j++) {
-      sprintf(buffer, "&column name=R%ld%ld, symbol=\"R$b%ld%ld$n\", type=double ", i + 1, j + 1, i + 1, j + 1);
-      if (i == j)
-        strcpy_ss(t, " &end");
-      else
-        sprintf(t, "units=%s/%s &end", unit[i], unit[j]);
-      strcat(buffer, t);
-      if (!SDDS_ProcessColumnString(&SDDSmatrix, buffer, 0)) {
-        SDDS_SetError("Problem defining SDDS matrix output Rij columns (setUpMatrixOutput)");
-        SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
-      }
-    }
-  }
-  for (i=0; i<6; i++) {
-    for (j=0; j<6; j++) {
-      sprintf(buffer, "&column name=D%ld%ld, symbol=\"D$b%ld%ld$n\", type=double ", i + 1, j + 1, i + 1, j + 1);
-      if (i == j)
-        strcpy_ss(t, " &end");
-      else
-        sprintf(t, "units=%s/%s &end", unit[i], unit[j]);
-      strcat(buffer, t);
-      if (!SDDS_ProcessColumnString(&SDDSmatrix, buffer, 0)) {
-        SDDS_SetError("Problem defining SDDS matrix output Dij columns (setUpMatrixOutput)");
-        SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
-      }
-    }
-  }
-  if (!SDDS_WriteLayout(&SDDSmatrix)) {
-    SDDS_SetError("Problem writing SDDS layout (setUpMatrixOutput)");
-    SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
-  }
-  matrixOutputInitialized = 1;
+    matrixOutputInitialized = 1;
 #if USE_MPI
   }
 #endif
 }
 
-void outputMomentsMatrices(VMATRIX *M, double *D) 
-{
+void outputMomentsMatrices(VMATRIX *M, double *D) {
   long i, j, index;
 #if USE_MPI
-  if (myid==0) {
+  if (myid == 0) {
 #endif
     if (!SDDS_StartPage(&SDDSmatrix, 1))
       bombElegant("problem starting page in output file for transfer and diffusion matrix", NULL);
     index = 0;
     for (i = 0; i < 6; i++) {
-      if (!SDDS_SetRowValues(&SDDSmatrix, SDDS_SET_BY_INDEX|SDDS_PASS_BY_VALUE, 0,
+      if (!SDDS_SetRowValues(&SDDSmatrix, SDDS_SET_BY_INDEX | SDDS_PASS_BY_VALUE, 0,
                              index++, M->C[i], -1)) {
         SDDS_SetError("Problem setting SDDS matrix output Ci columns (outputMomentsMatrices)");
         SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
@@ -189,16 +187,16 @@ void outputMomentsMatrices(VMATRIX *M, double *D)
     }
     for (i = 0; i < 6; i++) {
       for (j = 0; j < 6; j++) {
-        if (!SDDS_SetRowValues(&SDDSmatrix, SDDS_SET_BY_INDEX|SDDS_PASS_BY_VALUE, 0,
+        if (!SDDS_SetRowValues(&SDDSmatrix, SDDS_SET_BY_INDEX | SDDS_PASS_BY_VALUE, 0,
                                index++, M->R[i][j], -1)) {
           SDDS_SetError("Problem setting SDDS matrix output Rij columns (outputMomentsMatrices)");
           SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
         }
       }
     }
-    for (i=0; i<6; i++) {
-      for (j=0; j<6; j++) {
-        if (!SDDS_SetRowValues(&SDDSmatrix, SDDS_SET_BY_INDEX|SDDS_PASS_BY_VALUE, 0,
+    for (i = 0; i < 6; i++) {
+      for (j = 0; j < 6; j++) {
+        if (!SDDS_SetRowValues(&SDDSmatrix, SDDS_SET_BY_INDEX | SDDS_PASS_BY_VALUE, 0,
                                index++, D[sigmaIndex3[i][j]], -1)) {
           SDDS_SetError("Problem setting SDDS matrix output Sij columns (outputMomentsMatrices)");
           SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
@@ -215,12 +213,12 @@ void outputMomentsMatrices(VMATRIX *M, double *D)
 }
 
 void dumpBeamMoments(
-  LINE_LIST *beamline,
-  long n_elem,
-  long final_values_only,
-  long tune_corrected,
-  RUN *run,
-  double *eNatural) {
+                     LINE_LIST *beamline,
+                     long n_elem,
+                     long final_values_only,
+                     long tune_corrected,
+                     RUN *run,
+                     double *eNatural) {
   double data[N_COLUMNS];
   /* double *emit; */
   long j, row_count, elemCheck;
@@ -383,9 +381,8 @@ void setupMomentsOutput(NAMELIST_TEXT *nltext, RUN *run, LINE_LIST *beamline, lo
   } else
     SDDSMomentsInitialized = 0;
   momentsInitialized = 1;
-  if (matrix_output) 
+  if (matrix_output)
     setUpMomentsMatrixOutput(run, matrix_output);
-    
 }
 
 void finishMomentsOutput(void) {
@@ -400,7 +397,6 @@ void finishMomentsOutput(void) {
   }
   matrixOutputInitialized = 0;
 }
-
 
 long runMomentsOutput(RUN *run, LINE_LIST *beamline, double *startingCoord, long tune_corrected, long writeToFile) {
   ELEMENT_LIST *eptr, *elast;
@@ -419,7 +415,7 @@ long runMomentsOutput(RUN *run, LINE_LIST *beamline, double *startingCoord, long
     return 1;
 
   /* Computations will start at the beginning of the beamline, or at the
-   * first recirculation element 
+   * first recirculation element
    */
   eptr = beamline->elem_twiss = beamline->elem;
   n_elem = last_n_elem = beamline->n_elems;
@@ -657,10 +653,10 @@ void propagateBeamMoments(RUN *run, LINE_LIST *beamline, double *traj) {
 }
 
 void determineEquilibriumMoments(
-  double **R,                /* revolution matrix (input) */
-  double *D,                 /* diffusion matrix (input) */
-  SIGMA_MATRIX *sigmaMatrix0 /* sigma matrix (output) */
-) {
+                                 double **R,                /* revolution matrix (input) */
+                                 double *D,                 /* diffusion matrix (input) */
+                                 SIGMA_MATRIX *sigmaMatrix0 /* sigma matrix (output) */
+                                 ) {
   MATRIX *Ms, *Md, *M1, *M2, *M3;
   long i;
 
@@ -753,35 +749,35 @@ void storeFitpointMomentsParameters(ELEMENT_LIST *elem) {
     bombElegant("Counting issue (2) for moments-related RPN variables", NULL);
 
   /*
-  printf("*********************\n");
-  offset = 0;
-  for (i=0; i<21; i++) {
-    sprintf(s, "%s#%ld.s%ld%ldm", name, occurence, 
-            sigmaIndex1[i]+1, sigmaIndex2[i]+1);
+    printf("*********************\n");
+    offset = 0;
+    for (i=0; i<21; i++) {
+    sprintf(s, "%s#%ld.s%ld%ldm", name, occurence,
+    sigmaIndex1[i]+1, sigmaIndex2[i]+1);
     printf("%s#%ld.s%ld%ldm = %le = %le = %le\n", name, occurence, sigmaIndex1[i]+1, sigmaIndex2[i]+1, sigma0->sigma[i],
-           rpn_recall(rpn_create_mem(s, 0)), rpn_recall(mark->moments_mem[offset++]));
-  }
-  for (i=c=0; i<4; i++) {
-    for (j=i; j<4; j++, c++) {
-      sprintf(s, "%s#%ld.s%ld%ldbetam", name, occurence, i+1, j+1);
-      printf("%s#%ld.s%ld%ldbetam = %le = %le = %le\n", name, occurence, i+1, j+1, 
-             i==j?sqr(data[IC_SBETA+c]):data[IC_SBETA+c],
-             rpn_recall(rpn_create_mem(s, 0)), 
-             rpn_recall(mark->moments_mem[offset++]));
+    rpn_recall(rpn_create_mem(s, 0)), rpn_recall(mark->moments_mem[offset++]));
     }
-  }
-  for (i=0; i<6; i++) {
-    sprintf(s, "%s#%ld.c%ldm", name, occurence, i+1);    
-    printf("%s#%ld.c%ld = %le = %le = %le\n", 
-           name, occurence, i+1, centroid[i], 
-           rpn_recall(rpn_create_mem(s, 0)),
-           rpn_recall(mark->moments_mem[offset++]));
-  }
-  for (i=0; i<2; i++) {
+    for (i=c=0; i<4; i++) {
+    for (j=i; j<4; j++, c++) {
+    sprintf(s, "%s#%ld.s%ld%ldbetam", name, occurence, i+1, j+1);
+    printf("%s#%ld.s%ld%ldbetam = %le = %le = %le\n", name, occurence, i+1, j+1,
+    i==j?sqr(data[IC_SBETA+c]):data[IC_SBETA+c],
+    rpn_recall(rpn_create_mem(s, 0)),
+    rpn_recall(mark->moments_mem[offset++]));
+    }
+    }
+    for (i=0; i<6; i++) {
+    sprintf(s, "%s#%ld.c%ldm", name, occurence, i+1);
+    printf("%s#%ld.c%ld = %le = %le = %le\n",
+    name, occurence, i+1, centroid[i],
+    rpn_recall(rpn_create_mem(s, 0)),
+    rpn_recall(mark->moments_mem[offset++]));
+    }
+    for (i=0; i<2; i++) {
     sprintf(s, "%s#%ld.e%cbetam", name, occurence, plane[i]);
-    printf("%s#%ld.e%cbetam = %le = %le = %le\n", name, occurence, plane[i], 
-           data[IC_EMITBETA+i], rpn_recall(rpn_create_mem(s, 0)), rpn_recall(mark->moments_mem[offset++]));
-  }
+    printf("%s#%ld.e%cbetam = %le = %le = %le\n", name, occurence, plane[i],
+    data[IC_EMITBETA+i], rpn_recall(rpn_create_mem(s, 0)), rpn_recall(mark->moments_mem[offset++]));
+    }
   */
 }
 
@@ -805,7 +801,7 @@ void prepareMomentsArray(double *data, ELEMENT_LIST *elem, double *sigma) {
   emit = data + IC_EMITTANCE;
   for (plane = 0; plane < 3; plane++) {
     emit[plane] = sigma[sigmaIndex3[0 + plane * 2][0 + plane * 2]] * sigma[sigmaIndex3[1 + plane * 2][1 + plane * 2]] -
-                  sqr(sigma[sigmaIndex3[0 + plane * 2][1 + plane * 2]]);
+      sqr(sigma[sigmaIndex3[0 + plane * 2][1 + plane * 2]]);
     if (emit[plane] > 0)
       emit[plane] = sqrt(emit[plane]);
     else
@@ -816,7 +812,7 @@ void prepareMomentsArray(double *data, ELEMENT_LIST *elem, double *sigma) {
   for (i = l = 0; i < 4; i++)
     for (j = i; j < 4; j++, l++) {
       data[IC_SBETA + l] = sigma[sigmaIndex3[i][j]] -
-                           sigma[sigmaIndex3[i][5]] * sigma[sigmaIndex3[j][5]] / sigma[sigmaIndex3[5][5]];
+        sigma[sigmaIndex3[i][5]] * sigma[sigmaIndex3[j][5]] / sigma[sigmaIndex3[5][5]];
       sBeta[i][j] = sBeta[j][i] = data[IC_SBETA + l];
       if (i == j) {
         if (data[IC_SBETA + l] > 0)
@@ -829,7 +825,7 @@ void prepareMomentsArray(double *data, ELEMENT_LIST *elem, double *sigma) {
   emit = data + IC_EMITBETA;
   for (plane = 0; plane < 2; plane++) {
     emit[plane] = sBeta[2 * plane][2 * plane] * sBeta[2 * plane + 1][2 * plane + 1] -
-                  sqr(sBeta[2 * plane][2 * plane + 1]);
+      sqr(sBeta[2 * plane][2 * plane + 1]);
     if (emit[plane] > 0)
       emit[plane] = sqrt(emit[plane]);
     else
@@ -837,7 +833,7 @@ void prepareMomentsArray(double *data, ELEMENT_LIST *elem, double *sigma) {
   }
 }
 
-/* Following code is from V. Sajaev's calculateEnvelopes.c program, adapted to 
+/* Following code is from V. Sajaev's calculateEnvelopes.c program, adapted to
  * elegant by M. Borland and V. Sajaev.
  */
 
@@ -878,7 +874,7 @@ void computeNaturalEmittances(VMATRIX *Mld, double *sigmaMatrix, double *emittan
   /* VR is right-hand side eigenvectors such that: VR^transp * M = lamdba * VR^transp
      VR[0 to 5] are real components of vector 1, VR[6 to 11] are imagenary components of vector 1 and so on.
      see description of procedure on the web */
-#if defined(SUNPERF) || defined(LAPACK) || defined(CLAPACK) || defined(ESSL) || defined(MKL)
+#if defined(LAPACK) || defined(CLAPACK) || defined(MKL)
   JOBVL = 'N';
   JOBVR = 'V';
   N = LDA = LDVR = MATDIM;

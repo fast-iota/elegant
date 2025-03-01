@@ -1,8 +1,8 @@
 /*************************************************************************\
-* Copyright (c) 2017 The University of Chicago, as Operator of Argonne
-* National Laboratory.
-* This file is distributed subject to a Software License Agreement found
-* in the file LICENSE that is included with this distribution. 
+ * Copyright (c) 2017 The University of Chicago, as Operator of Argonne
+ * National Laboratory.
+ * This file is distributed subject to a Software License Agreement found
+ * in the file LICENSE that is included with this distribution.
 \*************************************************************************/
 
 /* file: ionEffects.c
@@ -10,9 +10,6 @@
  *
  * Joe Calvey, Michael Borland 2017
  */
-#if defined(SOLARIS) && !defined(__GNUC__)
-#  include <sunmath.h>
-#endif
 
 #include "mdb.h"
 #include "track.h"
@@ -22,7 +19,7 @@
 
 void readGasPressureData(char *filename, PRESSURE_DATA *pressureData, double factor) {
   /* Assumed file structure:
-   * Parameters: 
+   * Parameters:
    * Gasses --- SDDS_STRING giving comma- or space-separated list of gas species, e.g., "H2O H2 N2 O2 CO2 CO CH4"
    * Temperature --- SDDS_FLOAT or SDDS_DOUBLE giving temperature in degrees K. Defaults to 293.
    * Columns:

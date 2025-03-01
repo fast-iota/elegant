@@ -1,77 +1,15 @@
 /*************************************************************************\
-* Copyright (c) 2002 The University of Chicago, as Operator of Argonne
-* National Laboratory.
-* Copyright (c) 2002 The Regents of the University of California, as
-* Operator of Los Alamos National Laboratory.
-* This file is distributed subject to a Software License Agreement found
-* in the file LICENSE that is included with this distribution. 
+ * Copyright (c) 2002 The University of Chicago, as Operator of Argonne
+ * National Laboratory.
+ * Copyright (c) 2002 The Regents of the University of California, as
+ * Operator of Los Alamos National Laboratory.
+ * This file is distributed subject to a Software License Agreement found
+ * in the file LICENSE that is included with this distribution.
 \*************************************************************************/
 
-/*
- * $Log: not supported by cvs2svn $
- * Revision 1.14  2010/02/05 17:48:50  soliday
- * Fixed minor issues related to compiler warnings.
- *
- * Revision 1.13  2010/02/04 15:17:27  borland
- * No longer use the bomb() routine.  Instead, use bombElegant(), which allows
- * better control of what happens when exiting.  Added "failed" semaphore option.
- * Switched from process_namelist() to processNamelist() for better response
- * to errors.
- * Includes Y. Wang's changes to parallelize shell and line beam types.
- *
- * Revision 1.12  2009/09/10 21:57:50  xiaoam
- * Add slice analysis to IBS simulation.
- *
- * Revision 1.11  2009/02/12 22:55:41  borland
- * Added ability to turn off echoing of namelists.
- *
- * Revision 1.10  2006/05/31 16:02:54  ywang25
- * The first release of Pelegant. It has passed a regression test of 100 cases.
- *
- * Revision 1.9  2005/01/27 17:39:39  borland
- * Updated calls to rpn routines.
- *
- * Revision 1.8  2002/08/14 20:23:49  soliday
- * Added Open License
- *
- * Revision 1.7  2002/07/01 16:16:02  borland
- * Slice beam properties at end of system now go into rpn for use
- * in optimization.
- *
- * Revision 1.6  2002/01/22 04:33:59  borland
- * Added alpha and beta computation to slice analysis.
- *
- * Revision 1.5  2002/01/07 20:38:25  borland
- * Trapazoid rule integratino is now optional for CSRCSBEND and CSRDRIFT.
- *
- * Revision 1.4  2002/01/07 03:42:14  borland
- * Removed purify and no-optimization from Makefile.
- * Slice analysis now uses the eta values computed from the whole beam rather
- * than the slice.  Slice analysis includes output of the eta's and the number
- * of particles in each slice.
- *
- * Revision 1.3  2002/01/04 21:38:39  borland
- * Added computation and output of the number of waists in x and y twiss parameters.
- * This is available for optimization as well.
- * CSR wake is now computed more accurately using trapazoid rule with an analytical
- * resulted use for the "divergent" term.
- *
- * Revision 1.2  2002/01/02 18:28:58  borland
- * Added slice analysis inside CSRCSBEND and CSRDRIFT elements.
- * Emittance units for tracked beam are now "m" instead of some
- * complicated sequence.
- *
- * Revision 1.1  2002/01/02 14:17:07  borland
- * First version of slice analysis code.
- *
- *
- */
 #include "mdb.h"
 #include "track.h"
 #include "sliceAnalysis.h"
-#if defined(__BORLANDC__)
-#  include <fdlibm.h>
-#endif
 
 static double tmp_safe_sqrt;
 #define SAFE_SQRT(x) ((tmp_safe_sqrt = (x)) < 0 ? 0.0 : sqrt(tmp_safe_sqrt))
@@ -323,7 +261,7 @@ void setupSliceAnalysis(NAMELIST_TEXT *nltext, RUN *run,
   } else {
     long slice;
     /* slice 0 is the nominal (no slicing)
-     * slice N+1 is the average over the slices 
+     * slice N+1 is the average over the slices
      */
     for (slice = 0; slice <= n_slices + 1; slice++) {
       if (!defineSliceParameters(sliceOutput, slice)) {
@@ -358,95 +296,95 @@ long defineSliceParameters(SLICE_OUTPUT *sliceOutput, long slice) {
 
   sprintf(buffer, "enx%s", sliceNumString);
   if ((sliceOutput->enxIndex[slice] =
-         SDDS_DefineColumn(SDDSout, buffer, NULL, "m", NULL, NULL, SDDS_DOUBLE, 0)) < 0)
+       SDDS_DefineColumn(SDDSout, buffer, NULL, "m", NULL, NULL, SDDS_DOUBLE, 0)) < 0)
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   sliceOutput->enxMemNum[slice] = rpn_create_mem(buffer, 0);
   sprintf(buffer, "eny%s", sliceNumString);
   if ((sliceOutput->enyIndex[slice] =
-         SDDS_DefineColumn(SDDSout, buffer, NULL, "m", NULL, NULL, SDDS_DOUBLE, 0)) < 0)
+       SDDS_DefineColumn(SDDSout, buffer, NULL, "m", NULL, NULL, SDDS_DOUBLE, 0)) < 0)
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   sliceOutput->enyMemNum[slice] = rpn_create_mem(buffer, 0);
   sprintf(buffer, "ecnx%s", sliceNumString);
   if ((sliceOutput->ecnxIndex[slice] =
-         SDDS_DefineColumn(SDDSout, buffer, NULL, "m", NULL, NULL, SDDS_DOUBLE, 0)) < 0)
+       SDDS_DefineColumn(SDDSout, buffer, NULL, "m", NULL, NULL, SDDS_DOUBLE, 0)) < 0)
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   sliceOutput->ecnxMemNum[slice] = rpn_create_mem(buffer, 0);
   sprintf(buffer, "ecny%s", sliceNumString);
   if ((sliceOutput->ecnyIndex[slice] =
-         SDDS_DefineColumn(SDDSout, buffer, NULL, "m", NULL, NULL, SDDS_DOUBLE, 0)) < 0)
+       SDDS_DefineColumn(SDDSout, buffer, NULL, "m", NULL, NULL, SDDS_DOUBLE, 0)) < 0)
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   sliceOutput->ecnyMemNum[slice] = rpn_create_mem(buffer, 0);
 
   sprintf(buffer, "betacx%s", sliceNumString);
   if ((sliceOutput->betacxIndex[slice] =
-         SDDS_DefineColumn(SDDSout, buffer, NULL, "m", NULL, NULL, SDDS_DOUBLE, 0)) < 0)
+       SDDS_DefineColumn(SDDSout, buffer, NULL, "m", NULL, NULL, SDDS_DOUBLE, 0)) < 0)
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   sliceOutput->betacxMemNum[slice] = rpn_create_mem(buffer, 0);
   sprintf(buffer, "betacy%s", sliceNumString);
   if ((sliceOutput->betacyIndex[slice] =
-         SDDS_DefineColumn(SDDSout, buffer, NULL, "m", NULL, NULL, SDDS_DOUBLE, 0)) < 0)
+       SDDS_DefineColumn(SDDSout, buffer, NULL, "m", NULL, NULL, SDDS_DOUBLE, 0)) < 0)
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   sliceOutput->betacyMemNum[slice] = rpn_create_mem(buffer, 0);
   sprintf(buffer, "alphacx%s", sliceNumString);
   if ((sliceOutput->alphacxIndex[slice] =
-         SDDS_DefineColumn(SDDSout, buffer, NULL, "", NULL, NULL, SDDS_DOUBLE, 0)) < 0)
+       SDDS_DefineColumn(SDDSout, buffer, NULL, "", NULL, NULL, SDDS_DOUBLE, 0)) < 0)
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   sliceOutput->alphacxMemNum[slice] = rpn_create_mem(buffer, 0);
   sprintf(buffer, "alphacy%s", sliceNumString);
   if ((sliceOutput->alphacyIndex[slice] =
-         SDDS_DefineColumn(SDDSout, buffer, NULL, "", NULL, NULL, SDDS_DOUBLE, 0)) < 0)
+       SDDS_DefineColumn(SDDSout, buffer, NULL, "", NULL, NULL, SDDS_DOUBLE, 0)) < 0)
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   sliceOutput->alphacyMemNum[slice] = rpn_create_mem(buffer, 0);
 
   sprintf(buffer, "charge%s", sliceNumString);
   if ((sliceOutput->chargeIndex[slice] =
-         SDDS_DefineColumn(SDDSout, buffer, NULL, "C", NULL, NULL, SDDS_DOUBLE, 0)) < 0)
+       SDDS_DefineColumn(SDDSout, buffer, NULL, "C", NULL, NULL, SDDS_DOUBLE, 0)) < 0)
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   sliceOutput->chargeMemNum[slice] = rpn_create_mem(buffer, 0);
   sprintf(buffer, "particles%s", sliceNumString);
   if ((sliceOutput->particlesIndex[slice] =
-         SDDS_DefineColumn(SDDSout, buffer, NULL, NULL, NULL, NULL, SDDS_DOUBLE, 0)) < 0)
+       SDDS_DefineColumn(SDDSout, buffer, NULL, NULL, NULL, NULL, SDDS_DOUBLE, 0)) < 0)
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   sliceOutput->particlesMemNum[slice] = rpn_create_mem(buffer, 0);
   sprintf(buffer, "duration%s", sliceNumString);
   if ((sliceOutput->durationIndex[slice] =
-         SDDS_DefineColumn(SDDSout, buffer, NULL, "s", NULL, NULL, SDDS_DOUBLE, 0)) < 0)
+       SDDS_DefineColumn(SDDSout, buffer, NULL, "s", NULL, NULL, SDDS_DOUBLE, 0)) < 0)
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   sliceOutput->durationMemNum[slice] = rpn_create_mem(buffer, 0);
   sprintf(buffer, "Sdelta%s", sliceNumString);
   if ((sliceOutput->SdeltaIndex[slice] =
-         SDDS_DefineColumn(SDDSout, buffer, NULL, NULL, NULL, NULL, SDDS_DOUBLE, 0)) < 0)
+       SDDS_DefineColumn(SDDSout, buffer, NULL, NULL, NULL, NULL, SDDS_DOUBLE, 0)) < 0)
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   sliceOutput->SdeltaMemNum[slice] = rpn_create_mem(buffer, 0);
 
   sprintf(buffer, "Cx%s", sliceNumString);
   if ((sliceOutput->CxIndex[slice] =
-         SDDS_DefineColumn(SDDSout, buffer, NULL, "m", NULL, NULL, SDDS_DOUBLE, 0)) < 0)
+       SDDS_DefineColumn(SDDSout, buffer, NULL, "m", NULL, NULL, SDDS_DOUBLE, 0)) < 0)
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   sliceOutput->CxMemNum[slice] = rpn_create_mem(buffer, 0);
   sprintf(buffer, "Cy%s", sliceNumString);
   if ((sliceOutput->CyIndex[slice] =
-         SDDS_DefineColumn(SDDSout, buffer, NULL, "m", NULL, NULL, SDDS_DOUBLE, 0)) < 0)
+       SDDS_DefineColumn(SDDSout, buffer, NULL, "m", NULL, NULL, SDDS_DOUBLE, 0)) < 0)
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   sliceOutput->CyMemNum[slice] = rpn_create_mem(buffer, 0);
   sprintf(buffer, "Cxp%s", sliceNumString);
   if ((sliceOutput->CxpIndex[slice] =
-         SDDS_DefineColumn(SDDSout, buffer, NULL, "m", NULL, NULL, SDDS_DOUBLE, 0)) < 0)
+       SDDS_DefineColumn(SDDSout, buffer, NULL, "m", NULL, NULL, SDDS_DOUBLE, 0)) < 0)
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   sliceOutput->CxpMemNum[slice] = rpn_create_mem(buffer, 0);
   sprintf(buffer, "Cyp%s", sliceNumString);
   if ((sliceOutput->CypIndex[slice] =
-         SDDS_DefineColumn(SDDSout, buffer, NULL, "m", NULL, NULL, SDDS_DOUBLE, 0)) < 0)
+       SDDS_DefineColumn(SDDSout, buffer, NULL, "m", NULL, NULL, SDDS_DOUBLE, 0)) < 0)
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   sliceOutput->CypMemNum[slice] = rpn_create_mem(buffer, 0);
   sprintf(buffer, "Cdelta%s", sliceNumString);
   if ((sliceOutput->CdeltaIndex[slice] =
-         SDDS_DefineColumn(SDDSout, buffer, NULL, NULL, NULL, NULL, SDDS_DOUBLE, 0)) < 0)
+       SDDS_DefineColumn(SDDSout, buffer, NULL, NULL, NULL, NULL, SDDS_DOUBLE, 0)) < 0)
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   sliceOutput->CdeltaMemNum[slice] = rpn_create_mem(buffer, 0);
   sprintf(buffer, "Ct%s", sliceNumString);
   if ((sliceOutput->CtIndex[slice] =
-         SDDS_DefineColumn(SDDSout, buffer, NULL, "s", NULL, NULL, SDDS_DOUBLE, 0)) < 0)
+       SDDS_DefineColumn(SDDSout, buffer, NULL, "s", NULL, NULL, SDDS_DOUBLE, 0)) < 0)
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   sliceOutput->CtMemNum[slice] = rpn_create_mem(buffer, 0);
 
@@ -564,13 +502,13 @@ void performSliceAnalysis(SLICE_OUTPUT *sliceOutput, double **particle, long par
     for (slice = 0; slice < sliceOutput->nSlices + 1; slice++) {
       sliceOutput->enx[slice] = sliceOutput->eny[slice] =
         sliceOutput->ecnx[slice] = sliceOutput->ecny[slice] =
-          sliceOutput->betacx[slice] = sliceOutput->betacy[slice] =
-            sliceOutput->alphacx[slice] = sliceOutput->alphacy[slice] =
-              sliceOutput->Cx[slice] = sliceOutput->Cy[slice] =
-                sliceOutput->Cxp[slice] = sliceOutput->Cyp[slice] =
-                  sliceOutput->Cdelta[slice] = sliceOutput->duration[slice] =
-                    sliceOutput->Sdelta[slice] = sliceOutput->charge[slice] =
-                      sliceOutput->particles[slice] = DBL_MAX;
+        sliceOutput->betacx[slice] = sliceOutput->betacy[slice] =
+        sliceOutput->alphacx[slice] = sliceOutput->alphacy[slice] =
+        sliceOutput->Cx[slice] = sliceOutput->Cy[slice] =
+        sliceOutput->Cxp[slice] = sliceOutput->Cyp[slice] =
+        sliceOutput->Cdelta[slice] = sliceOutput->duration[slice] =
+        sliceOutput->Sdelta[slice] = sliceOutput->charge[slice] =
+        sliceOutput->particles[slice] = DBL_MAX;
     }
     return;
   }
@@ -730,7 +668,7 @@ double correctedEmittance(double S[6][6], double eta[4], long i1, long i2,
     if (ec2)
       *alpha = -(S[i1][i2] + eta[i1] * eta[i2] * S[5][5] -
                  eta[i1] * S[i2][5] - eta[i2] * S[i1][5]) /
-               sqrt(ec2);
+        sqrt(ec2);
     else
       *alpha = DBL_MAX;
   }

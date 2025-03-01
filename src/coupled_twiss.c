@@ -1,10 +1,10 @@
 /*************************************************************************\
-* Copyright (c) 2006 The University of Chicago, as Operator of Argonne
-* National Laboratory.
-* Copyright (c) 2006 The Regents of the University of California, as
-* Operator of Los Alamos National Laboratory.
-* This file is distributed subject to a Software License Agreement found
-* in the file LICENSE that is included with this distribution. 
+ * Copyright (c) 2006 The University of Chicago, as Operator of Argonne
+ * National Laboratory.
+ * Copyright (c) 2006 The Regents of the University of California, as
+ * Operator of Los Alamos National Laboratory.
+ * This file is distributed subject to a Software License Agreement found
+ * in the file LICENSE that is included with this distribution.
 \*************************************************************************/
 
 /* file: coupled_twiss.c
@@ -35,8 +35,8 @@ void MatrixPrintout(double *AA, int *NA, int *MA, int dim);
 void MatrixProduct(int *N1, int *M1, double *T1, int *N2, int *M2, double *T2, double *T3);
 
 void setup_coupled_twiss_output(
-  NAMELIST_TEXT *nltext, RUN *run, LINE_LIST *beamline, long *do_coupled_twiss_output,
-  long default_order) {
+                                NAMELIST_TEXT *nltext, RUN *run, LINE_LIST *beamline, long *do_coupled_twiss_output,
+                                long default_order) {
   /* process namelist input */
   set_namelist_processing_flags(STICKY_NAMELIST_DEFAULTS);
   set_print_namelist_flags(0);
@@ -249,7 +249,7 @@ int run_coupled_twiss_output(RUN *run, LINE_LIST *beamline, double *starting_coo
   LDVL = 1;
   LDVR = matDim;
   lwork = 204;
-#if defined(SUNPERF) || defined(LAPACK) || defined(CLAPACK) || defined(ESSL) || defined(MKL)
+#if defined(LAPACK) || defined(CLAPACK) || defined(MKL)
   dgeev_((char *)&JOBVL, (char *)&JOBVR, (int *)&N, (double *)&A,
          (int *)&LDA, (double *)&WR, (double *)&WI, (double *)&VL,
          (int *)&LDVL, (double *)&VR, (int *)&LDVR, (double *)&work,
@@ -482,9 +482,9 @@ void SortEigenvalues(double *WR, double *WI, double *VR, int matDim, int eigenMo
   double **VV;
   int *MaxIndex;
   N = eigenModesNumber;
-  if (N<2)
+  if (N < 2)
     return;
-  
+
   MaxIndex = malloc(sizeof(*MaxIndex) * N);
   VV = malloc(sizeof(*VV) * N);
   for (i = 0; i < N; i++)
@@ -494,13 +494,13 @@ void SortEigenvalues(double *WR, double *WI, double *VR, int matDim, int eigenMo
   for (i = 0; i < N; i++) {
     for (j = 0; j < N; j++) {
       VV[i][j] = pow(VR[i * 2 * matDim + j * 2], 2) + pow(VR[i * 2 * matDim + j * 2 + 1], 2) +
-                 pow(VR[(i * 2 + 1) * matDim + j * 2], 2) + pow(VR[(i * 2 + 1) * matDim + j * 2 + 1], 2);
+        pow(VR[(i * 2 + 1) * matDim + j * 2], 2) + pow(VR[(i * 2 + 1) * matDim + j * 2 + 1], 2);
     }
   }
   /*
-  for (i=0; i<N; i++) {
+    for (i=0; i<N; i++) {
     MaxIndex[i]=GetMaxIndex(VV[i], N);
-  }
+    }
   */
   MaxIndex[0] = GetMaxIndex(VV[0], N);
   VV[1][MaxIndex[0]] = -1.0;

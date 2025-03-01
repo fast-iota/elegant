@@ -1,114 +1,15 @@
 /*************************************************************************\
-* Copyright (c) 2002 The University of Chicago, as Operator of Argonne
-* National Laboratory.
-* Copyright (c) 2002 The Regents of the University of California, as
-* Operator of Los Alamos National Laboratory.
-* This file is distributed subject to a Software License Agreement found
-* in the file LICENSE that is included with this distribution. 
+ * Copyright (c) 2002 The University of Chicago, as Operator of Argonne
+ * National Laboratory.
+ * Copyright (c) 2002 The Regents of the University of California, as
+ * Operator of Los Alamos National Laboratory.
+ * This file is distributed subject to a Software License Agreement found
+ * in the file LICENSE that is included with this distribution.
 \*************************************************************************/
 
-/*
- * $Log: not supported by cvs2svn $
- * Revision 1.27  2009/04/14 01:34:44  ywang25
- * Updated for Pelegant with parallel I/O
- *
- * Revision 1.26  2009/02/12 22:54:58  borland
- * Added ability to turn off echoing of namelists.
- *
- * Revision 1.25  2008/10/22 18:30:51  borland
- * Added global_settings command and means to inhibit file sync calls.
- *
- * Revision 1.24  2006/05/31 16:02:53  ywang25
- * The first release of Pelegant. It has passed a regression test of 100 cases.
- *
- * Revision 1.23  2005/01/27 17:39:39  borland
- * Updated calls to rpn routines.
- *
- * Revision 1.22  2003/07/24 01:42:52  borland
- * Added Ct and Cdelta output for SASE FEL computations.
- *
- * Revision 1.21  2003/05/07 14:48:34  soliday
- * Removed fsync warning message.
- *
- * Revision 1.20  2003/02/15 22:57:49  borland
- * Added SDDS_DoFSync() calls to make sure output files get updated on
- * file server.
- *
- * Revision 1.19  2002/08/14 20:23:46  soliday
- * Added Open License
- *
- * Revision 1.18  2001/10/15 20:37:05  soliday
- * Cleaned up for Linux.
- *
- * Revision 1.17  2001/10/15 15:42:32  soliday
- * Cleaned up for WIN32.
- *
- * Revision 1.16  2001/06/12 00:25:51  borland
- * Added beamsize_mode control to sasefel command.
- *
- * Revision 1.15  2001/05/26 23:28:42  borland
- * Added longitudinal twiss parameter input for bunched_beam namelist.
- * Fixed problems with R&S focusing model in rf cavity elements.
- * Added dsKick parameter to CSR wake output.
- *
- * Revision 1.14  2000/06/21 22:01:18  borland
- * Fixed a bug in data storage to file for 0 slices.
- *
- * Revision 1.13  2000/05/31 15:38:16  borland
- * Added transverse centroids to sase fel output.
- *
- * Revision 1.12  2000/05/15 19:52:21  borland
- * Added CSRDRIFT reset routine (for multipass tracking with CSRDRIFTS upstream
- * of CSR bends).
- * Fixed computation of alpha's for whole beam in SASE FEL.
- *
- * Revision 1.11  2000/05/13 04:06:04  borland
- * Fixed bugs in evaluation for whole beam.
- *
- * Revision 1.10  2000/05/13 03:09:22  borland
- * Fixed error in computing beam betax and betay.
- *
- * Revision 1.9  2000/05/13 02:44:34  borland
- * Added betax, alphax, and enx (plus y) for SASE slices.
- *
- * Revision 1.8  2000/05/11 17:04:12  borland
- * Added some debugging code for stray-field matrices.
- * Fixed bug in SASE FEL calculations (the rms bunch length was being
- * recorded incorrectly in the file.).
- *
- * Revision 1.7  2000/05/10 01:52:15  borland
- * Now correctly compute matrices for alpha magnet and stray field in the presence
- * of changes in central momentum.
- * SASE FEL now gives slice average plus non-slice computation when slices are
- * requested.
- *
- * Revision 1.6  2000/04/21 20:52:47  soliday
- * Added include fdlibm.h for Bessel function with Borland C.
- *
- * Revision 1.5  2000/04/20 20:22:35  borland
- * Added ability to do computations for slices.
- *
- * Revision 1.4  2000/01/25 19:49:16  borland
- * Removed unnecessary array and inserted free statement for another.
- * Now uses average momentum rather than central momentum.
- *
- * Revision 1.3  1999/10/12 21:50:00  borland
- * All printouts now go to the stdout rather than stderr.  fflush statements,
- * some unnecessary, were added in a mostly automated fashion.
- *
- * Revision 1.2  1999/08/05 15:40:23  soliday
- * Added WIN32 and Linux support
- *
- * Revision 1.1  1999/07/01 19:19:57  borland
- * First versions in repository.
- *
- */
 #include "mdb.h"
 #include "track.h"
 #include "sasefel.h"
-#if defined(__BORLANDC__)
-#  include <fdlibm.h>
-#endif
 
 #define BEAMSIZE_GEOMETRIC_MEAN 0
 #define BEAMSIZE_ARITHMETIC_MEAN 1
@@ -335,8 +236,8 @@ void setupSASEFELAtEnd(NAMELIST_TEXT *nltext, RUN *run, OUTPUT_FILES *output_dat
       } else {
         long slice;
         /* slice 0 is the nominal (no slicing)
-       * slice N+1 is the average over the slices 
-       */
+         * slice N+1 is the average over the slices
+         */
         for (slice = 0; slice <= n_slices + 1; slice++) {
           if (!DefineSASEParameters(sasefelOutput, slice)) {
             printf("Unable define SDDS parameters for file %s\n", sasefelOutput->filename);
@@ -368,115 +269,115 @@ long DefineSASEParameters(SASEFEL_OUTPUT *sasefelOutput, long slice) {
 
   sprintf(buffer, "betaBeam%s", sliceNumString);
   if ((sasefelOutput->betaToUseIndex[slice] =
-         SDDS_DefineParameter(SDDSout, buffer, NULL, "m", NULL, NULL, SDDS_DOUBLE, NULL)) < 0)
+       SDDS_DefineParameter(SDDSout, buffer, NULL, "m", NULL, NULL, SDDS_DOUBLE, NULL)) < 0)
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
 
   sprintf(buffer, "Cx%s", sliceNumString);
   if ((sasefelOutput->CxIndex[slice] =
-         SDDS_DefineParameter(SDDSout, buffer, NULL, "m", NULL, NULL, SDDS_DOUBLE, NULL)) < 0)
+       SDDS_DefineParameter(SDDSout, buffer, NULL, "m", NULL, NULL, SDDS_DOUBLE, NULL)) < 0)
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   sprintf(buffer, "Cy%s", sliceNumString);
   if ((sasefelOutput->CyIndex[slice] =
-         SDDS_DefineParameter(SDDSout, buffer, NULL, "m", NULL, NULL, SDDS_DOUBLE, NULL)) < 0)
+       SDDS_DefineParameter(SDDSout, buffer, NULL, "m", NULL, NULL, SDDS_DOUBLE, NULL)) < 0)
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   sprintf(buffer, "Cxp%s", sliceNumString);
   if ((sasefelOutput->CxpIndex[slice] =
-         SDDS_DefineParameter(SDDSout, buffer, NULL, "m", NULL, NULL, SDDS_DOUBLE, NULL)) < 0)
+       SDDS_DefineParameter(SDDSout, buffer, NULL, "m", NULL, NULL, SDDS_DOUBLE, NULL)) < 0)
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   sprintf(buffer, "Cyp%s", sliceNumString);
   if ((sasefelOutput->CypIndex[slice] =
-         SDDS_DefineParameter(SDDSout, buffer, NULL, "m", NULL, NULL, SDDS_DOUBLE, NULL)) < 0)
+       SDDS_DefineParameter(SDDSout, buffer, NULL, "m", NULL, NULL, SDDS_DOUBLE, NULL)) < 0)
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   sprintf(buffer, "Ct%s", sliceNumString);
   if ((sasefelOutput->CtIndex[slice] =
-         SDDS_DefineParameter(SDDSout, buffer, NULL, "s", NULL, NULL, SDDS_DOUBLE, NULL)) < 0)
+       SDDS_DefineParameter(SDDSout, buffer, NULL, "s", NULL, NULL, SDDS_DOUBLE, NULL)) < 0)
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   sprintf(buffer, "Cdelta%s", sliceNumString);
   if ((sasefelOutput->CdeltaIndex[slice] =
-         SDDS_DefineParameter(SDDSout, buffer, NULL, NULL, NULL, NULL, SDDS_DOUBLE, NULL)) < 0)
+       SDDS_DefineParameter(SDDSout, buffer, NULL, NULL, NULL, NULL, SDDS_DOUBLE, NULL)) < 0)
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
 
   sprintf(buffer, "betaxBeam%s", sliceNumString);
   if ((sasefelOutput->betaxBeamIndex[slice] =
-         SDDS_DefineParameter(SDDSout, buffer, NULL, "m", NULL, NULL, SDDS_DOUBLE, NULL)) < 0)
+       SDDS_DefineParameter(SDDSout, buffer, NULL, "m", NULL, NULL, SDDS_DOUBLE, NULL)) < 0)
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   sprintf(buffer, "alphaxBeam%s", sliceNumString);
   if ((sasefelOutput->alphaxBeamIndex[slice] =
-         SDDS_DefineParameter(SDDSout, buffer, NULL, NULL, NULL, NULL, SDDS_DOUBLE, NULL)) < 0)
+       SDDS_DefineParameter(SDDSout, buffer, NULL, NULL, NULL, NULL, SDDS_DOUBLE, NULL)) < 0)
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   sprintf(buffer, "betayBeam%s", sliceNumString);
   if ((sasefelOutput->betayBeamIndex[slice] =
-         SDDS_DefineParameter(SDDSout, buffer, NULL, "m", NULL, NULL, SDDS_DOUBLE, NULL)) < 0)
+       SDDS_DefineParameter(SDDSout, buffer, NULL, "m", NULL, NULL, SDDS_DOUBLE, NULL)) < 0)
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   sprintf(buffer, "alphayBeam%s", sliceNumString);
   if ((sasefelOutput->alphayBeamIndex[slice] =
-         SDDS_DefineParameter(SDDSout, buffer, NULL, NULL, NULL, NULL, SDDS_DOUBLE, NULL)) < 0)
+       SDDS_DefineParameter(SDDSout, buffer, NULL, NULL, NULL, NULL, SDDS_DOUBLE, NULL)) < 0)
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
 
   sprintf(buffer, "enx%s", sliceNumString);
   if ((sasefelOutput->enxIndex[slice] =
-         SDDS_DefineParameter(SDDSout, buffer, NULL, "m", NULL, NULL, SDDS_DOUBLE, NULL)) < 0)
+       SDDS_DefineParameter(SDDSout, buffer, NULL, "m", NULL, NULL, SDDS_DOUBLE, NULL)) < 0)
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   sprintf(buffer, "eny%s", sliceNumString);
   if ((sasefelOutput->enyIndex[slice] =
-         SDDS_DefineParameter(SDDSout, buffer, NULL, "m", NULL, NULL, SDDS_DOUBLE, NULL)) < 0)
+       SDDS_DefineParameter(SDDSout, buffer, NULL, "m", NULL, NULL, SDDS_DOUBLE, NULL)) < 0)
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
 
   sprintf(buffer, "charge%s", sliceNumString);
   if ((sasefelOutput->chargeIndex[slice] =
-         SDDS_DefineParameter(SDDSout, buffer, NULL, "C", NULL, NULL, SDDS_DOUBLE, NULL)) < 0)
+       SDDS_DefineParameter(SDDSout, buffer, NULL, "C", NULL, NULL, SDDS_DOUBLE, NULL)) < 0)
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   sprintf(buffer, "rmsBunchLength%s", sliceNumString);
   if ((sasefelOutput->rmsBunchLengthIndex[slice] =
-         SDDS_DefineParameter(SDDSout, buffer, NULL, "s", NULL, NULL, SDDS_DOUBLE, NULL)) < 0)
+       SDDS_DefineParameter(SDDSout, buffer, NULL, "s", NULL, NULL, SDDS_DOUBLE, NULL)) < 0)
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   sprintf(buffer, "Sdelta%s", sliceNumString);
   if ((sasefelOutput->SdeltaIndex[slice] =
-         SDDS_DefineParameter(SDDSout, buffer, NULL, NULL, NULL, NULL, SDDS_DOUBLE, NULL)) < 0)
+       SDDS_DefineParameter(SDDSout, buffer, NULL, NULL, NULL, NULL, SDDS_DOUBLE, NULL)) < 0)
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   sprintf(buffer, "emit%s", sliceNumString);
   if ((sasefelOutput->emitIndex[slice] =
-         SDDS_DefineParameter(SDDSout, buffer, NULL, "m", NULL, NULL, SDDS_DOUBLE, NULL)) < 0)
+       SDDS_DefineParameter(SDDSout, buffer, NULL, "m", NULL, NULL, SDDS_DOUBLE, NULL)) < 0)
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   sprintf(buffer, "pCentral%s", sliceNumString);
   if ((sasefelOutput->pCentralIndex[slice] =
-         SDDS_DefineParameter(SDDSout, buffer, NULL, "m$be$nc", NULL, NULL, SDDS_DOUBLE, NULL)) < 0)
+       SDDS_DefineParameter(SDDSout, buffer, NULL, "m$be$nc", NULL, NULL, SDDS_DOUBLE, NULL)) < 0)
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   sprintf(buffer, "lightWavelength%s", sliceNumString);
   if ((sasefelOutput->lightWavelengthIndex[slice] =
-         SDDS_DefineParameter(SDDSout, buffer, NULL, "m", NULL, NULL, SDDS_DOUBLE, NULL)) < 0)
+       SDDS_DefineParameter(SDDSout, buffer, NULL, "m", NULL, NULL, SDDS_DOUBLE, NULL)) < 0)
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   sprintf(buffer, "gainLength%s", sliceNumString);
   if ((sasefelOutput->gainLengthIndex[slice] =
-         SDDS_DefineParameter(SDDSout, buffer, NULL, "m", NULL, NULL, SDDS_DOUBLE, NULL)) < 0)
+       SDDS_DefineParameter(SDDSout, buffer, NULL, "m", NULL, NULL, SDDS_DOUBLE, NULL)) < 0)
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   sprintf(buffer, "noisePower%s", sliceNumString);
   if ((sasefelOutput->noisePowerIndex[slice] =
-         SDDS_DefineParameter(SDDSout, buffer, NULL, "W", NULL, NULL, SDDS_DOUBLE, NULL)) < 0)
+       SDDS_DefineParameter(SDDSout, buffer, NULL, "W", NULL, NULL, SDDS_DOUBLE, NULL)) < 0)
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   sprintf(buffer, "saturationPower%s", sliceNumString);
   if ((sasefelOutput->saturationPowerIndex[slice] =
-         SDDS_DefineParameter(SDDSout, buffer, NULL, "W", NULL, NULL, SDDS_DOUBLE, NULL)) < 0)
+       SDDS_DefineParameter(SDDSout, buffer, NULL, "W", NULL, NULL, SDDS_DOUBLE, NULL)) < 0)
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   sprintf(buffer, "saturationLength%s", sliceNumString);
   if ((sasefelOutput->saturationLengthIndex[slice] =
-         SDDS_DefineParameter(SDDSout, buffer, NULL, "m", NULL, NULL, SDDS_DOUBLE, NULL)) < 0)
+       SDDS_DefineParameter(SDDSout, buffer, NULL, "m", NULL, NULL, SDDS_DOUBLE, NULL)) < 0)
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   sprintf(buffer, "PierceParameter%s", sliceNumString);
   if ((sasefelOutput->PierceParameterIndex[slice] =
-         SDDS_DefineParameter(SDDSout, buffer, NULL, NULL, NULL, NULL, SDDS_DOUBLE, NULL)) < 0)
+       SDDS_DefineParameter(SDDSout, buffer, NULL, NULL, NULL, NULL, SDDS_DOUBLE, NULL)) < 0)
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   sprintf(buffer, "etaDiffraction%s", sliceNumString);
   if ((sasefelOutput->etaDiffractionIndex[slice] =
-         SDDS_DefineParameter(SDDSout, buffer, NULL, NULL, NULL, NULL, SDDS_DOUBLE, NULL)) < 0)
+       SDDS_DefineParameter(SDDSout, buffer, NULL, NULL, NULL, NULL, SDDS_DOUBLE, NULL)) < 0)
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   sprintf(buffer, "etaEmittance%s", sliceNumString);
   if ((sasefelOutput->etaEmittanceIndex[slice] =
-         SDDS_DefineParameter(SDDSout, buffer, NULL, NULL, NULL, NULL, SDDS_DOUBLE, NULL)) < 0)
+       SDDS_DefineParameter(SDDSout, buffer, NULL, NULL, NULL, NULL, SDDS_DOUBLE, NULL)) < 0)
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   sprintf(buffer, "etaEnergySpread%s", sliceNumString);
   if ((sasefelOutput->etaEnergySpreadIndex[slice] =
-         SDDS_DefineParameter(SDDSout, buffer, NULL, NULL, NULL, NULL, SDDS_DOUBLE, NULL)) < 0)
+       SDDS_DefineParameter(SDDSout, buffer, NULL, NULL, NULL, NULL, SDDS_DOUBLE, NULL)) < 0)
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   return 1;
 }
@@ -707,7 +608,7 @@ void computeSASEFELAtEnd(SASEFEL_OUTPUT *sasefelOutput, double **particle, long 
       if (percentLevel[1] > 100)
         percentLevel[1] = 100;
 
-        /* compute rms-equivalent time value so that Q/(sqrt(2*PI)*tRMS) is
+      /* compute rms-equivalent time value so that Q/(sqrt(2*PI)*tRMS) is
        * the average current in the slice
        */
 #if SDDS_MPI_IO

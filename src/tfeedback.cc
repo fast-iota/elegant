@@ -1,19 +1,16 @@
 /*************************************************************************\
-* Copyright (c) 2003 The University of Chicago, as Operator of Argonne
-* National Laboratory.
-* Copyright (c) 2003 The Regents of the University of California, as
-* Operator of Los Alamos National Laboratory.
-* This file is distributed subject to a Software License Agreement found
-* in the file LICENSE that is included with this distribution. 
+ * Copyright (c) 2003 The University of Chicago, as Operator of Argonne
+ * National Laboratory.
+ * Copyright (c) 2003 The Regents of the University of California, as
+ * Operator of Los Alamos National Laboratory.
+ * This file is distributed subject to a Software License Agreement found
+ * in the file LICENSE that is included with this distribution.
 \*************************************************************************/
 
 /* file: tfeedback.c
  *
  * Michael Borland, 2003
  */
-#if defined(SOLARIS) && !defined(__GNUC__)
-#  include <sunmath.h>
-#endif
 
 #include <complex>
 #include "mdb.h"

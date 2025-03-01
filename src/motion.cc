@@ -1,14 +1,14 @@
 /*************************************************************************\
-* Copyright (c) 2002 The University of Chicago, as Operator of Argonne
-* National Laboratory.
-* Copyright (c) 2002 The Regents of the University of California, as
-* Operator of Los Alamos National Laboratory.
-* This file is distributed subject to a Software License Agreement found
-* in the file LICENSE that is included with this distribution. 
+ * Copyright (c) 2002 The University of Chicago, as Operator of Argonne
+ * National Laboratory.
+ * Copyright (c) 2002 The Regents of the University of California, as
+ * Operator of Los Alamos National Laboratory.
+ * This file is distributed subject to a Software License Agreement found
+ * in the file LICENSE that is included with this distribution.
 \*************************************************************************/
 
 /* routine: motion()
- * purpose: integrate equations of motion for a particle in a 
+ * purpose: integrate equations of motion for a particle in a
  *          static or time-dependent field.  This module is appropriate
  *          for elements with no coordinate system curvature.  lorentzX.c
  *          is better if there is coordinate system curvature.
@@ -23,7 +23,7 @@
  *     X  =  P /gamma
  *      i     i
  *
- *       _   ____        _     _ 
+ *       _   ____        _     _
  * where P = beta.gamma, X = k.x, and derivatives are with respect to
  * tau=omega.time.   E has units of V/m and B has units of T.
  *
@@ -40,7 +40,7 @@
 #  endif
 #endif
 #include <complex>
-#if defined(darwin) || (_MINGW)
+#if defined(__APPLE__)
 #  include <cmath>
 #  define isinf(x) std::isinf(x)
 #  define isnan(x) std::isnan(x)
@@ -50,43 +50,39 @@
 #include "track.h"
 #include "matlib.h"
 
-#if defined(SOLARIS) || defined(_MINGW)
-#  define isinf(x) ((x == x) && !finite(x))
-#endif
-
 void (*set_up_derivatives(void *field, long field_type, double *kscale,
                           double z_start, double *Z_end, double *tau_start, double **part, long n_part,
                           double Po, double *X_limit, double *Y_limit, double *accuracy,
                           long *n_steps))(double *, double *, double);
 void (*set_up_stochastic_effects(long field_type))(double *, double, double);
 void derivatives_tmcf_mode(
-  double *qp, /* derivatives w.r.t. tau */
-  double *q,  /* X,Y,Z,Px,Py,Pz */
-  double tau);
+                           double *qp, /* derivatives w.r.t. tau */
+                           double *q,  /* X,Y,Z,Px,Py,Pz */
+                           double tau);
 void derivatives_rftmEz0(
-  double *qp, /* derivatives w.r.t. tau */
-  double *q,  /* X,Y,Z,Px,Py,Pz */
-  double tau);
+                         double *qp, /* derivatives w.r.t. tau */
+                         double *q,  /* X,Y,Z,Px,Py,Pz */
+                         double tau);
 void derivatives_ce_plates(
-  double *qp, /* derivatives w.r.t. tau */
-  double *q,  /* X,Y,Z,Px,Py,Pz */
-  double tau);
+                           double *qp, /* derivatives w.r.t. tau */
+                           double *q,  /* X,Y,Z,Px,Py,Pz */
+                           double tau);
 void derivatives_tw_plates(
-  double *qp, /* derivatives w.r.t. tau */
-  double *q,  /* X,Y,Z,Px,Py,Pz */
-  double tau);
+                           double *qp, /* derivatives w.r.t. tau */
+                           double *q,  /* X,Y,Z,Px,Py,Pz */
+                           double tau);
 void derivatives_tw_linac(
-  double *qp, /* derivatives w.r.t. tau */
-  double *q,  /* X,Y,Z,Px,Py,Pz */
-  double tau);
+                          double *qp, /* derivatives w.r.t. tau */
+                          double *q,  /* X,Y,Z,Px,Py,Pz */
+                          double tau);
 void derivatives_twmta(
-  double *qp, /* derivatives w.r.t. tau */
-  double *q,  /* X,Y,Z,Px,Py,Pz */
-  double tau);
+                       double *qp, /* derivatives w.r.t. tau */
+                       double *q,  /* X,Y,Z,Px,Py,Pz */
+                       double tau);
 void derivatives_mapSolenoid(
-  double *qp, /* derivatives w.r.t. tau */
-  double *q,  /* X,Y,Z,Px,Py,Pz */
-  double tau);
+                             double *qp, /* derivatives w.r.t. tau */
+                             double *q,  /* X,Y,Z,Px,Py,Pz */
+                             double tau);
 void derivatives_laserModulator(double *qp, double *q, double tau);
 void stochastic_laserModulator(double *q, double tau, double h);
 
@@ -180,15 +176,15 @@ double HermitePolynomialDeriv(double x, long n);
 double HermitePolynomial2ndDeriv(double x, long n);
 
 long motion(
-  double **part,
-  long n_part,
-  void *field,
-  long field_type,
-  double *pCentral,
-  double *dgamma,
-  double *dP,
-  double **accepted,
-  double z_start) {
+            double **part,
+            long n_part,
+            void *field,
+            long field_type,
+            double *pCentral,
+            double *dgamma,
+            double *dP,
+            double **accepted,
+            double z_start) {
   double tau, tau_limit;
   double tau_start;
   long n_eq = 6;
@@ -201,7 +197,7 @@ long motion(
   double kscale, *P, Po, gamma;
   static double gamma0, P0[3];
   long n_steps;
-  //double tol_factor;
+  // double tol_factor;
   double end_factor;
   double X = 0.0, Y = 0.0;
 
@@ -245,7 +241,7 @@ long motion(
     xMotionCenterVar = rpn_create_mem((char *)"xMotionCenter", 0);
 
   for (i_part = 0; i_part <= i_top; i_part++) {
-    //tol_factor = 1;
+    // tol_factor = 1;
     end_factor = 1.5;
     coord = part[i_part];
     q[0] = coord[0] * kscale;
@@ -271,7 +267,7 @@ long motion(
       P0[1] = P[1] = coord[3] * P[2];
       X_out = Y_out = Z_out = 0;
       tau_limit = end_factor * Z_end * gamma / P[2] +
-                  (tau = tau_start + coord[4] * kscale * gamma / Po);
+        (tau = tau_start + coord[4] * kscale * gamma / Po);
       hmax = (tau_limit - tau) / n_steps;
       if (integratorCode == NA_RUNGE_KUTTA || integratorCode == MODIFIED_MIDPOINT)
         hrec = (tau_limit - tau) / n_steps;
@@ -310,16 +306,16 @@ long motion(
       case DIFFEQ_EXIT_COND_FAILED:
         printf((char *)"Integration failure: %s\n", diffeq_result_description(rk_return));
         fflush(stdout);
-        /*                    for (i=0; i<6; i++) 
-                        printf((char*)"%11.4e  ", coord[i]);
-                        fflush(stdout);
-                    printf((char*)"\ngamma = %.4e,  P=(%.4e, %.4e, %.4e)\n",
-                        gamma0, P0[0], P0[1], P0[2]);
-                    fflush(stdout);
-                    printf((char*)"tolerance = %e     end_factor = %e\n",
-                        tolerance, end_factor);
-                    fflush(stdout);
-*/
+        /*                    for (i=0; i<6; i++)
+                              printf((char*)"%11.4e  ", coord[i]);
+                              fflush(stdout);
+                              printf((char*)"\ngamma = %.4e,  P=(%.4e, %.4e, %.4e)\n",
+                              gamma0, P0[0], P0[1], P0[2]);
+                              fflush(stdout);
+                              printf((char*)"tolerance = %e     end_factor = %e\n",
+                              tolerance, end_factor);
+                              fflush(stdout);
+        */
         swapParticles(part[i_part], part[i_top]);
         part[i_top][4] = z_start;
         part[i_top][5] = sqrt(sqr(P_central * (1 + part[i_top][5])) + 1);
@@ -411,19 +407,19 @@ long motion(
 void *field_global;
 
 void (*set_up_derivatives(
-  void *field,
-  long field_type,
-  double *kscale,
-  double z_start,
-  double *Z_end_inner_scope,
-  double *tau_start,
-  double **part,
-  long n_part,
-  double P_central_inner_scope,
-  double *X_limit_inner_scope,
-  double *Y_limit_inner_scope,
-  double *accuracy,
-  long *n_steps))(double *, double *, double) {
+                          void *field,
+                          long field_type,
+                          double *kscale,
+                          double z_start,
+                          double *Z_end_inner_scope,
+                          double *tau_start,
+                          double **part,
+                          long n_part,
+                          double P_central_inner_scope,
+                          double *X_limit_inner_scope,
+                          double *Y_limit_inner_scope,
+                          double *accuracy,
+                          long *n_steps))(double *, double *, double) {
 
   TMCF_MODE *tmcf;
   CE_PLATES *cep;
@@ -500,7 +496,7 @@ void (*set_up_derivatives(
     if (lsrMdltr->laserM < 0 || lsrMdltr->laserN < 0)
       bombElegant((char *)"M and N must be non-negative for LSRMDLTR", NULL);
     lsrMdltr->Ef0Laser = 2 / lsrMdltr->laserW0 *
-                         sqrt(lsrMdltr->laserPeakPower / (ipow(2, lsrMdltr->laserM + lsrMdltr->laserN) * PI * factorial(lsrMdltr->laserM) * factorial(lsrMdltr->laserN) * epsilon_o * c_mks));
+      sqrt(lsrMdltr->laserPeakPower / (ipow(2, lsrMdltr->laserM + lsrMdltr->laserN) * PI * factorial(lsrMdltr->laserM) * factorial(lsrMdltr->laserN) * epsilon_o * c_mks));
     X_offset = 0;
     X_aperture_center = X_center = 0;
     Y_aperture_center = Y_center = 0;
@@ -539,8 +535,8 @@ void (*set_up_derivatives(
       setupRftmEz0SolenoidFromFile(rftmEz0, rftmEz0->length, *kscale);
     }
     if (!rftmEz0->fiducial_part) {
-      /* This is the fiducial particle--the phase offset is set so 
-       * that its phase when it reaches the cavity center will be 
+      /* This is the fiducial particle--the phase offset is set so
+       * that its phase when it reaches the cavity center will be
        * approximately rftmEz0->phase + omega*rftmEz0->time_offset.
        * Several other quantities are calculated here also.
        */
@@ -562,7 +558,7 @@ void (*set_up_derivatives(
       }
     }
     *tau_start = rftmEz0->phase + PIx2 * rftmEz0->frequency * rftmEz0->time_offset +
-                 rftmEz0->phase0;
+      rftmEz0->phase0;
     *Z_end_inner_scope = rftmEz0->length * (*kscale);
     X_center = X_aperture_center = rftmEz0->k * rftmEz0->dx;
     Y_center = Y_aperture_center = rftmEz0->k * rftmEz0->dy;
@@ -591,8 +587,8 @@ void (*set_up_derivatives(
     tmcf = (TMCF_MODE *)field;
     *kscale = (omega = PIx2 * tmcf->frequency) / c_mks;
     if (!tmcf->fiducial_part) {
-      /* This is the fiducial particle--the phase offset is set so 
-       * that its phase when it reaches the cavity center will be 
+      /* This is the fiducial particle--the phase offset is set so
+       * that its phase when it reaches the cavity center will be
        * approximately tmcf->phase + omega*tmcf->time_offset.
        * Several other quantities are calculated here also.
        */
@@ -618,7 +614,7 @@ void (*set_up_derivatives(
       tmcf->Bphi *= particleCharge / (particleMass * omega);
     }
     *tau_start = tmcf->phase + PIx2 * tmcf->frequency * tmcf->time_offset +
-                 tmcf->phase0;
+      tmcf->phase0;
     *Z_end_inner_scope = tmcf->length * (*kscale);
     X_offset = tmcf->k * tmcf->radial_offset * cos(tmcf->tilt);
     Y_offset = tmcf->k * tmcf->radial_offset * sin(tmcf->tilt);
@@ -634,9 +630,9 @@ void (*set_up_derivatives(
     cep = (CE_PLATES *)field;
     *kscale = 1. / (c_mks * cep->ramp_time);
     if (!cep->fiducial_part) {
-      /* This is the fiducial particle--the tau offset tau0 is set 
-       * so that its tau when it reaches the cavity center will be 
-       * approximately 0. Several other quantities are calculated 
+      /* This is the fiducial particle--the tau offset tau0 is set
+       * so that its tau when it reaches the cavity center will be
+       * approximately 0. Several other quantities are calculated
        * here also.
        */
       *kscale = cep->k = 1. / (c_mks * cep->ramp_time);
@@ -655,9 +651,9 @@ void (*set_up_derivatives(
       }
     }
     cep->E_scaled = particleCharge * cep->voltage * cep->ramp_time /
-                    (cep->gap * particleMass * c_mks);
+      (cep->gap * particleMass * c_mks);
     cep->E_static = particleCharge * cep->static_voltage * cep->ramp_time /
-                    (cep->gap * particleMass * c_mks);
+      (cep->gap * particleMass * c_mks);
     cep->cos_tilt = cos(cep->tilt);
     cep->sin_tilt = sin(cep->tilt);
     *tau_start = cep->time_offset / cep->ramp_time + cep->tau0;
@@ -675,9 +671,9 @@ void (*set_up_derivatives(
     twp = (TW_PLATES *)field;
     *kscale = 1. / (c_mks * twp->ramp_time);
     if (!twp->fiducial_part) {
-      /* This is the fiducial particle--the tau offset tau0 is set 
-       * so that its tau when it reaches the cavity center will be 
-       * approximately omega*time_offset. Several other quantities are calculated 
+      /* This is the fiducial particle--the tau offset tau0 is set
+       * so that its tau when it reaches the cavity center will be
+       * approximately omega*time_offset. Several other quantities are calculated
        * here also.
        */
       *kscale = twp->k = 1. / (c_mks * twp->ramp_time);
@@ -696,9 +692,9 @@ void (*set_up_derivatives(
       }
     }
     twp->E_scaled = particleCharge * twp->voltage * twp->ramp_time /
-                    (twp->gap * particleMass * c_mks);
+      (twp->gap * particleMass * c_mks);
     twp->E_static = particleCharge * twp->static_voltage * twp->ramp_time /
-                    (twp->gap * particleMass * c_mks);
+      (twp->gap * particleMass * c_mks);
     twp->cos_tilt = cos(twp->tilt);
     twp->sin_tilt = sin(twp->tilt);
     *tau_start = twp->time_offset / twp->ramp_time + twp->tau0;
@@ -732,9 +728,9 @@ void (*set_up_derivatives(
       change_p0 = 1;
     gamma = sqrt(1 + sqr(P_central_inner_scope));
     if (!twla->fiducial_part) {
-      /* This is the fiducial particle--the phase offset phase0 is 
-       * set so that its initial phase will be twla->phase + 
-       * omega*twla->time_offset. Several other quantities are 
+      /* This is the fiducial particle--the phase offset phase0 is
+       * set so that its initial phase will be twla->phase +
+       * omega*twla->time_offset. Several other quantities are
        * calculated here also.
        */
       twla->kz = *kscale / twla->beta_wave;
@@ -761,8 +757,8 @@ void (*set_up_derivatives(
     twla->FrP = 4 * sqr(particleCharge * twla->Ez / (omega * particleMass * c_mks)) / gamma * twla->sum_bn2;
     if (twla->sum_bn2 != 0 && fabs(particleCharge * twla->Ez * PI / (2 * twla->kz * me_mks * sqr(c_mks)) / P_central_inner_scope) > 0.1)
       printWarning((char *)"TWLA does not satisfy requirements for validity of Hartman-Rosenzweig ponderomotive transverse focusing treatment.", NULL);
-    /* calculate initial tau value, less omega*t: 
-     *    tau_start = omega*(t_offset-t_fid)+phase 
+    /* calculate initial tau value, less omega*t:
+     *    tau_start = omega*(t_offset-t_fid)+phase
      *              = omega*t_offset + phase + phase0
      */
     *tau_start = twla->phase + omega * twla->time_offset + twla->phase0;
@@ -784,9 +780,9 @@ void (*set_up_derivatives(
     *kscale = (omega = twmta->frequency * PIx2) / c_mks;
     twmta->alphaS = twmta->alpha / (*kscale);
     if (!twmta->fiducial_part) {
-      /* This is the fiducial particle--the phase offset phase0 is 
-       * set so that its initial phase will be twmta->phase + 
-       * omega*twmta->time_offset. Several other quantities are 
+      /* This is the fiducial particle--the phase offset phase0 is
+       * set so that its initial phase will be twmta->phase +
+       * omega*twmta->time_offset. Several other quantities are
        * calculated here also.
        */
       twmta->kz = (*kscale) / twmta->beta_wave;
@@ -802,7 +798,7 @@ void (*set_up_derivatives(
         fflush(stdout);
         printf((char*)"      Bx, By, Bz = %e, %e\n", twmta->BxS, twmta->ByS);
         fflush(stdout);
-        */
+      */
       twmta->fiducial_part = fiducial = select_fiducial(part, n_part, twmta->fiducial);
       if (fiducial) {
         /* find the phase offset, phase0 = -omega*t_fiducial , or else equivalent value
@@ -823,11 +819,11 @@ void (*set_up_derivatives(
     twmta->ExS = twmta->EzS * twmta->kx * twmta->kz / (sqr(twmta->ky) - sqr(twmta->kx));
     twmta->EyS = -twmta->ExS * twmta->ky / twmta->kx;
     twmta->BxS = twmta->Ez / omega * Bscale * twmta->ky *
-                 (sqr(twmta->kx) - sqr(twmta->ky) + sqr(twmta->kz)) / (sqr(twmta->ky) - sqr(twmta->kx));
+      (sqr(twmta->kx) - sqr(twmta->ky) + sqr(twmta->kz)) / (sqr(twmta->ky) - sqr(twmta->kx));
     twmta->ByS = twmta->BxS * twmta->kx / twmta->ky;
     twmta->BsolS = twmta->Bsol * Bscale;
-    /* calculate initial tau value, less omega*t: 
-     *    tau_start = omega*(-t_fid)+phase 
+    /* calculate initial tau value, less omega*t:
+     *    tau_start = omega*(-t_fid)+phase
      *              = phase + phase0
      */
     *tau_start = twmta->phase + twmta->phase0;
@@ -861,9 +857,9 @@ void (*set_up_stochastic_effects(long field_type))(double *, double, double) {
 }
 
 void derivatives_rftmEz0(
-  double *qp, /* derivatives w.r.t. phase */
-  double *q,  /* X,Y,Z,Px,Py,Pz */
-  double tau) {
+                         double *qp, /* derivatives w.r.t. phase */
+                         double *q,  /* X,Y,Z,Px,Py,Pz */
+                         double tau) {
   double gamma, *P, *Pp;
   double E[3], BOverGamma[3], BOverGammaDC[3];
   long i;
@@ -926,7 +922,7 @@ void computeFields_rftmEz0(double *E, double *BOverGamma, double *BOverGammaDC,
     if (rftmEz0->radial_order) {
       ErOverR = -(rftmEz0->dEzdZ[iz] +
                   (rftmEz0->dEzdZ[iz + 1] - rftmEz0->dEzdZ[iz]) / rftmEz0->dZ * Zoffset) /
-                2 * sinPhase * rftmEz0->Ez_peak;
+        2 * sinPhase * rftmEz0->Ez_peak;
       E[0] = ErOverR * X;
       E[1] = ErOverR * Y;
       BphiOverRG = E[2] / 2 / gamma * cosPhase;
@@ -942,7 +938,7 @@ void computeFields_rftmEz0(double *E, double *BOverGamma, double *BOverGammaDC,
 
   /* E and BOverGama contain field components in the element frame for
    * the present particle position (which was expressed in the element frame
-   * also).  Rotate these components back to the lab frame. 
+   * also).  Rotate these components back to the lab frame.
    */
   rotate3(E, fieldRot);
   rotate3(BOverGamma, fieldRot);
@@ -976,7 +972,7 @@ void computeFields_rftmEz0(double *E, double *BOverGamma, double *BOverGammaDC,
         /* do off-axis expansion */
         BOverGammaDC[2] = (rftmEz0->BzSol[0][iz] +
                            (rftmEz0->BzSol[0][iz + 1] - rftmEz0->BzSol[0][iz]) / rftmEz0->dZSol * Zoffset) /
-                          gamma * rftmEz0->solenoidFactor;
+          gamma * rftmEz0->solenoidFactor;
         BrOverRG = -0.5 * (rftmEz0->dBzdZSol[iz] + (rftmEz0->dBzdZSol[iz + 1] - rftmEz0->dBzdZSol[iz]) / rftmEz0->dZSol * Zoffset) / gamma * rftmEz0->solenoidFactor;
         /* compute x and y components */
         BOverGammaDC[0] = X * BrOverRG;
@@ -986,9 +982,9 @@ void computeFields_rftmEz0(double *E, double *BOverGamma, double *BOverGammaDC,
         if (R > 0) {
           /* compute Br/R */
           B1 = rftmEz0->BrSol[ir][iz] +
-               (rftmEz0->BrSol[ir + 1][iz] - rftmEz0->BrSol[ir][iz]) / rftmEz0->dRSol * (R - ir * rftmEz0->dRSol);
+            (rftmEz0->BrSol[ir + 1][iz] - rftmEz0->BrSol[ir][iz]) / rftmEz0->dRSol * (R - ir * rftmEz0->dRSol);
           B2 = rftmEz0->BrSol[ir][iz + 1] +
-               (rftmEz0->BrSol[ir + 1][iz + 1] - rftmEz0->BrSol[ir][iz + 1]) / rftmEz0->dRSol * (R - ir * rftmEz0->dRSol);
+            (rftmEz0->BrSol[ir + 1][iz + 1] - rftmEz0->BrSol[ir][iz + 1]) / rftmEz0->dRSol * (R - ir * rftmEz0->dRSol);
           BrOverRG = (B1 + (B2 - B1) * Zoffset / rftmEz0->dZSol) / gamma / R * rftmEz0->solenoidFactor;
           /* compute x and y components */
           BOverGammaDC[0] = X * BrOverRG;
@@ -996,9 +992,9 @@ void computeFields_rftmEz0(double *E, double *BOverGamma, double *BOverGammaDC,
         }
         /* compute Bz/Gamma */
         B1 = rftmEz0->BzSol[ir][iz] +
-             (rftmEz0->BzSol[ir + 1][iz] - rftmEz0->BzSol[ir][iz]) / rftmEz0->dRSol * (R - ir * rftmEz0->dRSol);
+          (rftmEz0->BzSol[ir + 1][iz] - rftmEz0->BzSol[ir][iz]) / rftmEz0->dRSol * (R - ir * rftmEz0->dRSol);
         B2 = rftmEz0->BzSol[ir][iz + 1] +
-             (rftmEz0->BzSol[ir + 1][iz + 1] - rftmEz0->BzSol[ir][iz + 1]) / rftmEz0->dRSol * (R - ir * rftmEz0->dRSol);
+          (rftmEz0->BzSol[ir + 1][iz + 1] - rftmEz0->BzSol[ir][iz + 1]) / rftmEz0->dRSol * (R - ir * rftmEz0->dRSol);
         BOverGammaDC[2] =
           (B1 + (B2 - B1) * Zoffset / rftmEz0->dZSol) / gamma * rftmEz0->solenoidFactor;
       }
@@ -1010,9 +1006,9 @@ void computeFields_rftmEz0(double *E, double *BOverGamma, double *BOverGammaDC,
 }
 
 void derivatives_mapSolenoid(
-  double *qp, /* derivatives w.r.t. phase */
-  double *q,  /* X,Y,Z,Px,Py,Pz */
-  double tau) {
+                             double *qp, /* derivatives w.r.t. phase */
+                             double *q,  /* X,Y,Z,Px,Py,Pz */
+                             double tau) {
   double gamma, *P, *Pp;
   double BOverGamma[3];
   double XYZ[3];
@@ -1057,18 +1053,18 @@ void derivatives_mapSolenoid(
     if (R > 0) {
       /* compute Br/R */
       B1 = mapSol->Br[ir][iz] +
-           (mapSol->Br[ir + 1][iz] - mapSol->Br[ir][iz]) / mapSol->dr * (R - ir * mapSol->dr);
+        (mapSol->Br[ir + 1][iz] - mapSol->Br[ir][iz]) / mapSol->dr * (R - ir * mapSol->dr);
       B2 = mapSol->Br[ir][iz + 1] +
-           (mapSol->Br[ir + 1][iz + 1] - mapSol->Br[ir][iz + 1]) / mapSol->dr * (R - ir * mapSol->dr);
+        (mapSol->Br[ir + 1][iz + 1] - mapSol->Br[ir][iz + 1]) / mapSol->dr * (R - ir * mapSol->dr);
       BrOverRG = (B1 + (B2 - B1) * Zoffset / mapSol->dz) / gamma / R * mapSol->factor;
       BOverGamma[0] += X * BrOverRG;
       BOverGamma[1] += Y * BrOverRG;
     }
     /* compute Bz/Gamma */
     B1 = mapSol->Bz[ir][iz] +
-         (mapSol->Bz[ir + 1][iz] - mapSol->Bz[ir][iz]) / mapSol->dr * (R - ir * mapSol->dr);
+      (mapSol->Bz[ir + 1][iz] - mapSol->Bz[ir][iz]) / mapSol->dr * (R - ir * mapSol->dr);
     B2 = mapSol->Bz[ir][iz + 1] +
-         (mapSol->Bz[ir + 1][iz + 1] - mapSol->Bz[ir][iz + 1]) / mapSol->dr * (R - ir * mapSol->dr);
+      (mapSol->Bz[ir + 1][iz + 1] - mapSol->Bz[ir][iz + 1]) / mapSol->dr * (R - ir * mapSol->dr);
     BOverGamma[2] = (B1 + (B2 - B1) * Zoffset / mapSol->dz) / gamma * mapSol->factor;
   }
 
@@ -1080,7 +1076,7 @@ void derivatives_mapSolenoid(
   }
   /* BOverGama contains field components in the element frame for
    * the present particle position (which was expressed in the element frame
-   * also).  Rotate these components back to the lab frame. 
+   * also).  Rotate these components back to the lab frame.
    */
   rotate3(BOverGamma, fieldRot);
 
@@ -1089,15 +1085,15 @@ void derivatives_mapSolenoid(
   Pp[0] = -(P[1] * BOverGamma[2] - P[2] * BOverGamma[1]);
   Pp[1] = -(P[2] * BOverGamma[0] - P[0] * BOverGamma[2]);
   Pp[2] = -(P[0] * BOverGamma[1] - P[1] * BOverGamma[0]);
-  /* Since the field components and momenta are in the lab frame, 
-   * I don't need to perform a rotation of the forces. 
+  /* Since the field components and momenta are in the lab frame,
+   * I don't need to perform a rotation of the forces.
    */
 }
 
 void derivatives_tmcf_mode(
-  double *qp, /* derivatives w.r.t. tau */
-  double *q,  /* X,Y,Z,Px,Py,Pz */
-  double tau) {
+                           double *qp, /* derivatives w.r.t. tau */
+                           double *q,  /* X,Y,Z,Px,Py,Pz */
+                           double tau) {
   double gamma, *P, *Pp;
   double phase, sin_phase, cos_phase;
   double sin_tilt, cos_tilt;
@@ -1121,9 +1117,9 @@ void derivatives_tmcf_mode(
   tmcf = (TMCF_MODE *)field_global;
   if ((Z = q[2]) <= Z_end && Z >= 0) {
     /* The electric fields are multiplied by sin(w.t) and the
-         * magnetic field by cos(w.t).  This is consistent with the
-         * data dumped by SF02 and SHY. 
-         */
+     * magnetic field by cos(w.t).  This is consistent with the
+     * data dumped by SF02 and SHY.
+     */
     E[2] = tmcf->Ez * (sin_phase = sin(phase = (tau)));
     Y = q[1] + Y_offset;
     X = q[0] + X_offset;
@@ -1145,9 +1141,9 @@ void derivatives_tmcf_mode(
 }
 
 void derivatives_ce_plates(
-  double *qp, /* derivatives w.r.t. tau */
-  double *q,  /* X,Y,Z,Px,Py,Pz */
-  double tau) {
+                           double *qp, /* derivatives w.r.t. tau */
+                           double *q,  /* X,Y,Z,Px,Py,Pz */
+                           double tau) {
   double gamma, *P, *Pp, t_ramp;
   double E, z;
   CE_PLATES *cep;
@@ -1168,8 +1164,8 @@ void derivatives_ce_plates(
   cep = (CE_PLATES *)field_global;
   if ((z = q[2]) <= Z_end && z >= 0) {
     /* Electrons are deflected to positive coordinates by a negative
-         * electric field.
-         */
+     * electric field.
+     */
     if ((t_ramp = tau) < 1 && t_ramp > 0)
       E = cep->E_scaled * t_ramp;
     else if (t_ramp <= 0)
@@ -1187,9 +1183,9 @@ void derivatives_ce_plates(
 }
 
 void derivatives_tw_plates(
-  double *qp, /* derivatives w.r.t. tau */
-  double *q,  /* X,Y,Z,Px,Py,Pz */
-  double tau) {
+                           double *qp, /* derivatives w.r.t. tau */
+                           double *q,  /* X,Y,Z,Px,Py,Pz */
+                           double tau) {
   double gamma, *P, *Pp, t_ramp;
   double E, z, B;
   TW_PLATES *twp;
@@ -1210,8 +1206,8 @@ void derivatives_tw_plates(
   twp = (TW_PLATES *)field_global;
   if ((z = q[2]) <= Z_end && z >= 0) {
     /* Electrons are deflected to positive coordinates by a negative
-         * electric field.  The magnetic field deflects in the same direction.
-         */
+     * electric field.  The magnetic field deflects in the same direction.
+     */
     if ((t_ramp = tau + z - Z_end) < 1 && t_ramp > 0)
       E = twp->E_scaled * t_ramp;
     else if (t_ramp < 0)
@@ -1228,9 +1224,9 @@ void derivatives_tw_plates(
 }
 
 void derivatives_tw_linac(
-  double *qp, /* derivatives w.r.t. tau */
-  double *q,  /* X,Y,Z,Px,Py,Pz */
-  double tau) {
+                          double *qp, /* derivatives w.r.t. tau */
+                          double *q,  /* X,Y,Z,Px,Py,Pz */
+                          double tau) {
   double gamma, *P, *Pp;
   static double E[3], B[3], FrP[2];
   double phase, X, Y, Z, cos_phase, sin_phase, droop;
@@ -1255,7 +1251,7 @@ void derivatives_tw_linac(
   if ((Z = q[2]) <= Z_end && Z >= 0) {
     if (twla->alphaS)
       droop = exp(-twla->alphaS * Z);
-    E[2] = twla->EzS * (sin_phase = sin(phase = Z / twla->beta_wave - tau))*droop;
+    E[2] = twla->EzS * (sin_phase = sin(phase = Z / twla->beta_wave - tau)) * droop;
 #if defined(DEBUG)
     if (starting_integration) {
       starting_integration = 0;
@@ -1265,7 +1261,7 @@ void derivatives_tw_linac(
 #endif
     Y = q[1] + Y_offset;
     X = q[0] + X_offset;
-    E[0] = twla->ErS * (cos_phase = cos(phase))*droop;
+    E[0] = twla->ErS * (cos_phase = cos(phase)) * droop;
     E[1] = E[0] * Y;
     E[0] *= X;
     /* B is scaled by gamma here */
@@ -1328,9 +1324,9 @@ void output_impulse_tw_linac(double *P, double *q) {
 }
 
 void derivatives_twmta(
-  double *qp, /* derivatives w.r.t. tau */
-  double *q,  /* X,Y,Z,Px,Py,Pz */
-  double tau) {
+                       double *qp, /* derivatives w.r.t. tau */
+                       double *q,  /* X,Y,Z,Px,Py,Pz */
+                       double tau) {
   double gamma, *P, *Pp;
   static double E[3], B[3];
   double phase, X, Y, Z, droop;
@@ -1426,9 +1422,9 @@ void output_impulse_twmta(double *P, double *q) {
 }
 
 double exit_function(
-  double *qp,
-  double *q,
-  double phase) {
+                     double *qp,
+                     double *q,
+                     double phase) {
   double X = 0.0, Y = 0.0, dZ;
 
   if ((dZ = Z_end - q[2]) >= 0 && !limit_hit) {
@@ -1923,7 +1919,7 @@ void setupRftmEz0SolenoidFromFile(RFTMEZ0 *rftmEz0, double length, double k) {
       if (!(rftmEz0->BrSol = (double **)SDDS_Realloc(rftmEz0->BrSol, sizeof(*rftmEz0->BrSol) * page)))
         SDDS_Bomb((char *)"memory allocation failure (setupRftmEz0SolenoidFromFile)");
       if (!(rftmEz0->BrSol[page - 1] =
-              SDDS_GetColumnInDoubles(&SDDSin, rftmEz0->solenoidBrColumn))) {
+            SDDS_GetColumnInDoubles(&SDDSin, rftmEz0->solenoidBrColumn))) {
         fprintf(stderr, (char *)"Error: problem getting field data from RFTMEZ0 solenoid file %s\n",
                 rftmEz0->solenoidFile);
         exitElegant(1);
@@ -1933,7 +1929,7 @@ void setupRftmEz0SolenoidFromFile(RFTMEZ0 *rftmEz0, double length, double k) {
     if (!(rftmEz0->BzSol = (double **)SDDS_Realloc(rftmEz0->BzSol, sizeof(*rftmEz0->BzSol) * page)))
       SDDS_Bomb((char *)"memory allocation failure (setupRftmEz0SolenoidFromFile)");
     if (!(rftmEz0->BzSol[page - 1] =
-            SDDS_GetColumnInDoubles(&SDDSin, rftmEz0->solenoidBzColumn))) {
+          SDDS_GetColumnInDoubles(&SDDSin, rftmEz0->solenoidBzColumn))) {
       fprintf(stderr, (char *)"Error: problem getting field data from RFTMEZ0 solenoid file %s\n",
               rftmEz0->solenoidFile);
       exitElegant(1);
@@ -2118,9 +2114,9 @@ void setupMapSolenoidFromFile(MAP_SOLENOID *mapSol, double length) {
         !(mapSol->Br = (double **)SDDS_Realloc(mapSol->Br, sizeof(*mapSol->Br) * page)))
       SDDS_Bomb((char *)"memory allocation failure (setupmapSolSolenoidFromFile)");
     if (!(mapSol->Bz[page - 1] =
-            SDDS_GetColumnInDoubles(&SDDSin, mapSol->BzColumn)) ||
+          SDDS_GetColumnInDoubles(&SDDSin, mapSol->BzColumn)) ||
         !(mapSol->Br[page - 1] =
-            SDDS_GetColumnInDoubles(&SDDSin, mapSol->BrColumn))) {
+          SDDS_GetColumnInDoubles(&SDDSin, mapSol->BrColumn))) {
       fprintf(stderr, (char *)"Error: problem getting field data from MAPSOLENOID file %s\n",
               mapSol->inputFile);
       exitElegant(1);
@@ -2283,32 +2279,32 @@ void derivatives_laserModulator(double *qp, double *q, double tau) {
   kuy = lsrMdltr->ku * y;
   kux = lsrMdltr->ku * x;
   /*
-  if (lsrMdltr->helical==0) {
+    if (lsrMdltr->helical==0) {
     if (lsrMdltr->fieldCode==LSRMDLTR_IDEAL) {
-      BOverGamma[1] = Bfactor*cos(kuz);
-      BOverGamma[2] = 0;
+    BOverGamma[1] = Bfactor*cos(kuz);
+    BOverGamma[2] = 0;
     } else if (lsrMdltr->fieldCode==LSRMDLTR_EXACT) {
-      BOverGamma[1] = Bfactor*cos(kuz)*cosh(kuy);
-      BOverGamma[2] = -Bfactor*sin(kuz)*sinh(kuy);
+    BOverGamma[1] = Bfactor*cos(kuz)*cosh(kuy);
+    BOverGamma[2] = -Bfactor*sin(kuz)*sinh(kuy);
     } else {
-      BOverGamma[1] = Bfactor*cos(kuz)*(1+sqr(kuy)/2);
-      BOverGamma[2] = -Bfactor*sin(kuz)*kuy;
+    BOverGamma[1] = Bfactor*cos(kuz)*(1+sqr(kuy)/2);
+    BOverGamma[2] = -Bfactor*sin(kuz)*kuy;
     }
-  } else {
+    } else {
     if (lsrMdltr->fieldCode==LSRMDLTR_IDEAL) {
-      BOverGamma[0] = -Bfactor*sin(kuz);
-      BOverGamma[1] = Bfactor*cos(kuz);
-      BOverGamma[2] = 0;
+    BOverGamma[0] = -Bfactor*sin(kuz);
+    BOverGamma[1] = Bfactor*cos(kuz);
+    BOverGamma[2] = 0;
     } else if (lsrMdltr->fieldCode==LSRMDLTR_EXACT) {
-      BOverGamma[0] = -Bfactor*sin(kuz)*cosh(kux);
-      BOverGamma[1] = Bfactor*cos(kuz)*cosh(kuy);
-      BOverGamma[2] = -Bfactor*sin(kuz)*sinh(kuy) -Bfactor*cos(kuz)*sinh(kux);
+    BOverGamma[0] = -Bfactor*sin(kuz)*cosh(kux);
+    BOverGamma[1] = Bfactor*cos(kuz)*cosh(kuy);
+    BOverGamma[2] = -Bfactor*sin(kuz)*sinh(kuy) -Bfactor*cos(kuz)*sinh(kux);
     } else {
-      BOverGamma[0] = -Bfactor*sin(kuz)*(1+sqr(kux)/2);
-      BOverGamma[1] = Bfactor*cos(kuz)*(1+sqr(kuy)/2);
-      BOverGamma[2] = -Bfactor*sin(kuz)*kuy -Bfactor*cos(kuz)*kux;
+    BOverGamma[0] = -Bfactor*sin(kuz)*(1+sqr(kux)/2);
+    BOverGamma[1] = Bfactor*cos(kuz)*(1+sqr(kuy)/2);
+    BOverGamma[2] = -Bfactor*sin(kuz)*kuy -Bfactor*cos(kuz)*kux;
     }
-  }
+    }
   */
   laserModulatorUndulatorField(BOverGamma, Bfactor, kux, kuy, kuz, lsrMdltr->tguGradient, lsrMdltr->ku, x,
                                lsrMdltr->tguCompFactor);
@@ -2379,16 +2375,16 @@ void stochastic_laserModulator(double *q, double tau, double h) {
   kuy = lsrMdltr->ku * y;
   kux = lsrMdltr->ku * x;
   /*
-  if (lsrMdltr->fieldCode==LSRMDLTR_IDEAL) {
+    if (lsrMdltr->fieldCode==LSRMDLTR_IDEAL) {
     B[0] = Bfactor*cos(kuz);
     B[1] = 0;
-  } else if (lsrMdltr->fieldCode==LSRMDLTR_EXACT) {
+    } else if (lsrMdltr->fieldCode==LSRMDLTR_EXACT) {
     B[0] = Bfactor*cos(kuz)*cosh(kuy);
     B[1] = Bfactor*sin(kuz)*sinh(kuy);
-  } else {
+    } else {
     B[0] = Bfactor*cos(kuz)*(1+sqr(kuy)/2);
     B[1] = Bfactor*sin(kuz)*kuy;
-  } */
+    } */
   laserModulatorUndulatorField(B, Bfactor, kux, kuy, kuz, lsrMdltr->tguGradient, lsrMdltr->ku, x,
                                lsrMdltr->tguCompFactor);
 
@@ -2535,8 +2531,8 @@ void computeLaserField(double *Ef, double *Bf, double phase, double Ef0, double 
   Q = 1.0 / std::complex<double>(dz, -ZR);
   w = w0 * sqrt(1 + sqr(dz / ZR));
   Ec = std::complex<double>(0, phase) -
-       std::complex<double>(0, (m + n + 1) * atan(dz / ZR)) +
-       std::complex<double>(0, 1) * std::complex<double>(k * Q / 2.0 * (x * x + y * y));
+    std::complex<double>(0, (m + n + 1) * atan(dz / ZR)) +
+    std::complex<double>(0, 1) * std::complex<double>(k * Q / 2.0 * (x * x + y * y));
   Ec = amplitude * Ef0 * w0 / w * exp(Ec);
   Hm = HermitePolynomial(sqrt(2.0) * x / w, m);
   Hn = HermitePolynomial(sqrt(2.0) * y / w, n);

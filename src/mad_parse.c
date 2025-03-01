@@ -1638,7 +1638,7 @@ void readLGBendConfiguration(LGBEND *lgbend, ELEMENT_LIST *eptr) {
     for (iRow = 0; iRow < rows; iRow++) {
       if ((index = match_string(parameterName[iRow], knownParameterName, NLGBEND, EXACT_MATCH)) < 0) {
         if ((index = match_string(parameterName[iRow], globalParameterName, 8, EXACT_MATCH)) < 0) {
-          fprintf(stdout, "Error: unrecognized parameter name \"%s\" in LGBEND configuration file %s (page %ld, row %ld)\n",
+          fprintf(stdout, "Error: unrecognized parameter name \"%s\" in LGBEND configuration file %s (page %ld, row %" PRIu64 ")\n",
                   parameterName[iRow], lgbend->configurationFile,
                   readCode, iRow);
           exitElegant(1);

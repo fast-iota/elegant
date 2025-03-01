@@ -24,7 +24,8 @@ void set_up_mkicker(MKICKER *kicker);
 void track_through_kicker(
   double **part, long np, KICKER *kicker, double p_central, long pass, long default_order) {
   long i, n, ip;
-  double time, time_offset, angle, t0, *coord, sum_amp, amplitude, ds;
+  double time, time_offset, angle, t0, *coord, amplitude, ds;
+  //double sum_amp;
   double x, xp, y, yp, dp, s, curv, dx;
   double theta_i, alpha_i, alpha_f;
   double xpFactor, ypFactor;
@@ -100,7 +101,7 @@ void track_through_kicker(
   if (kicker->tilt)
     rotateBeamCoordinatesForMisalignment(part, np, kicker->tilt);
 
-  sum_amp = 0;
+  //sum_amp = 0;
   for (ip = 0; ip < np; ip++) {
     angle = kicker->angle;
     time = part[ip][4] / (c_mks * beta_from_delta(p_central, part[ip][5])) - time_offset;
@@ -132,7 +133,7 @@ void track_through_kicker(
       angle *= (amplitude = INTERPOLATE(kicker->amp_wf[i], kicker->amp_wf[i + 1],
                                         kicker->t_wf[i], kicker->t_wf[i + 1], time));
     }
-    sum_amp += amplitude;
+    //sum_amp += amplitude;
 
     coord = part[ip];
 

@@ -3715,7 +3715,7 @@ long sync_correctors_one_plane(CORMON_DATA *CM, RUN *run, STEERING_LIST *SL) {
     paramOffset = SL->param_offset[slIndex];
     elem = CM->ucorr[i];
     if (last_optimize_function_call)
-      MPI_Bcast(elem->p_elem + paramOffset, 1, MPI_DOUBLE, min_value_location, MPI_COMM_WORLD);
+      MPI_Bcast(elem->p_elem + paramOffset, 1, MPI_CHAR, min_value_location, MPI_COMM_WORLD);
     if (elem->matrix) {
       free_matrices(elem->matrix);
       tfree(elem->matrix);

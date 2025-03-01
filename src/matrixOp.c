@@ -344,8 +344,13 @@ MAT *matrix_mult(MAT *mat1, MAT *mat2) {
   double alpha = 1.0, beta = 0.0;
 #endif
 #if defined(CLAPACK) || defined(MKL)
+#if defined(ACCELERATE_NEW_LAPACK)
+__LAPACK_int lda, kk, ldb;
+double alpha = 1.0, beta = 0.0;
+#else
   long lda, kk, ldb;
   double alpha = 1.0, beta = 0.0;
+#endif
 #endif
 #if defined(LAPACK) || defined(ESSL)
   integer lda, kk, ldb;
@@ -505,7 +510,7 @@ MAT *matrix_invert
   dtrans('I', 1.0, U->base, U->m, U->n, NULL);
   dtrans('I', 1.0, Vt->base, Vt->m, Vt->n, NULL);
 #  endif
-#  if defined(CLAPACK)
+#  if defined(CLAPACK) && !defined(ACCELERATE_NEW_LAPACK)
   work = (double *)malloc(sizeof(double) * 1);
   lwork = -1;
   lda = MAX(1, A->m);
@@ -527,6 +532,30 @@ MAT *matrix_invert
           (double *)Vt->base, (long *)&A->n,
           (double *)work, (long *)&lwork,
           (long *)&info);
+  free(work);
+#  endif
+#  if defined(CLAPACK) && defined(ACCELERATE_NEW_LAPACK)
+  work = (double *)malloc(sizeof(double) * 1);
+  lwork = -1;
+  lda = MAX(1, A->m);
+  dgesvd_((char *)&calcMode, (char *)&calcMode, (__LAPACK_int *)&A->m, (__LAPACK_int *)&A->n,
+          (double *)A->base, (__LAPACK_int *)&lda,
+          (double *)SValue->ve,
+          (double *)U->base, (__LAPACK_int *)&A->m,
+          (double *)Vt->base, (__LAPACK_int *)&A->n,
+          (double *)work, (__LAPACK_int *)&lwork,
+          (__LAPACK_int *)&info);
+
+  lwork = work[0];
+  work = (double *)realloc(work, sizeof(double) * lwork);
+
+  dgesvd_((char *)&calcMode, (char *)&calcMode, (__LAPACK_int *)&A->m, (__LAPACK_int *)&A->n,
+          (double *)A->base, (__LAPACK_int *)&lda,
+          (double *)SValue->ve,
+          (double *)U->base, (__LAPACK_int *)&A->m,
+          (double *)Vt->base, (__LAPACK_int *)&A->n,
+          (double *)work, (__LAPACK_int *)&lwork,
+          (__LAPACK_int *)&info);
   free(work);
 #  endif
 #  if defined(MKL)
@@ -829,7 +858,11 @@ double matrix_det(MAT *A) {
   int i, lda, n, m, *ipvt, info;
 #endif
 #if defined(CLAPACK) || defined(MKL)
+#if defined(ACCELERATE_NEW_LAPACK)
+  __LAPACK_int i, lda, n, m, *ipvt, info;
+#else
   long i, lda, n, m, *ipvt, info;
+#endif
 #endif
 #if defined(LAPACK) || defined(ESSL)
   integer i, lda, n, m, *ipvt, info;

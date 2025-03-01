@@ -33,11 +33,14 @@ void track_through_frfmode(
   long iBucket, nBuckets, np;
 
   double *VPrevious = NULL, *phasePrevious = NULL, tPrevious;
-  long ip, ib, firstBin, lastBin, n_binned;
+  long ip, ib, firstBin, lastBin;
+#ifdef DEBUG
+  long n_binned;
+#endif
   double tmin, tmax, last_tmax, tmean, dt;
   double Vb, V, omega, phase, t, k, damping_factor, tau;
-  double V_sum, Vr_sum, phase_sum;
-  double Vc, Vcr, dgamma;
+  //double V_sum, Vr_sum, phase_sum, Vc, Vcr;
+  double dgamma;
   /* long max_hist, nb2, n_occupied; */
   long imode;
   double Qrp, VbImagFactor, Q;
@@ -140,7 +143,10 @@ void track_through_frfmode(
     last_tmax = -DBL_MAX;
     dt = 0;
 
-    n_binned = lastBin = 0;
+#ifdef DEBUG
+    n_binned = 0;
+#endif
+    lastBin = 0;
     firstBin = rfmode->n_bins;
 
     if (isSlave || !notSinglePart) {
@@ -257,7 +263,9 @@ void track_through_frfmode(
             lastBin = ib;
           if (ib < firstBin)
             firstBin = ib;
-          n_binned++;
+#ifdef DEBUG
+            n_binned++;
+#endif
         }
 #ifdef DEBUG
         printf("Binned %ld particles\n", n_binned);
@@ -282,10 +290,10 @@ void track_through_frfmode(
       firstBin = firstBin_global;
       lastBin = lastBin_global;
       if (isSlave || !notSinglePart) {
-        double *buffer;
-        buffer = (double *)calloc(lastBin - firstBin + 1, sizeof(double));
+        long *buffer;
+        buffer = (long *)calloc(lastBin - firstBin + 1, sizeof(long));
         MPI_Allreduce(&Ihist[firstBin], buffer, lastBin - firstBin + 1, MPI_LONG, MPI_SUM, workers);
-        memcpy(Ihist + firstBin, buffer, sizeof(double) * (lastBin - firstBin + 1));
+        memcpy(Ihist + firstBin, buffer, sizeof(long) * (lastBin - firstBin + 1));
         free(buffer);
       }
 #  ifdef DEBUG
@@ -313,7 +321,7 @@ void track_through_frfmode(
           if (rfmode->cutoffFrequency > 0 && (rfmode->omega[imode] > PIx2 * rfmode->cutoffFrequency))
             continue;
 
-          V_sum = Vr_sum = phase_sum = Vc = Vcr = 0;
+          //V_sum = Vr_sum = phase_sum = Vc = Vcr = 0;
           /* max_hist = n_occupied = 0; */
           /* n_occupied = 0; */
           /* nb2 = rfmode->n_bins/2; */
@@ -350,9 +358,9 @@ void track_through_frfmode(
           rfmode->last_phase[imode] = atan2(rfmode->Vi[imode], rfmode->Vr[imode]);
           rfmode->V[imode] = sqrt(sqr(rfmode->Vr[imode]) + sqr(rfmode->Vi[imode]));
 
-          V_sum += Ihist[ib] * rfmode->V[imode];
-          Vr_sum += Ihist[ib] * rfmode->Vr[imode];
-          phase_sum += Ihist[ib] * rfmode->last_phase[imode];
+          //V_sum += Ihist[ib] * rfmode->V[imode];
+          //Vr_sum += Ihist[ib] * rfmode->Vr[imode];
+          //phase_sum += Ihist[ib] * rfmode->last_phase[imode];
 
 #if (USE_MPI)
           if (myid == 1) { /* We let the first slave to dump the parameter */

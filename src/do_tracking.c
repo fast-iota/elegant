@@ -351,7 +351,7 @@ long do_tracking
   printMessageAndTime(stdout, "do_tracking checkpoint 0.1\n");
 #endif
 
-#if defined(__unix__) || defined(_WIN32)
+#if defined(__linux__) || defined(_WIN32) || (__APPLE__)
   if (is_ansi_term == -1) {
     char *ptr;
     is_ansi_term = 1;
@@ -669,7 +669,7 @@ long do_tracking
       et1 = et2;
 #  endif
 #endif
-#if defined(__unix__) || defined(_WIN32)
+#if defined(__linux__) || defined(_WIN32) || (__APPLE__)
 #  if !SDDS_MPI_IO
       if ((et2 = delapsed_time()) - et1 > 2.0) {
         sprintf(s, "%ld particles present after pass %ld        ",
@@ -5119,7 +5119,7 @@ void gatherParticles(double ***coord, long *nToTrack, long *nLost, double ***acc
 
   /* collect information for the lost particles and gather the accepted array */
 
-  MPI_Bcast(&current_nLost, 1, MPI_INT, root, MPI_COMM_WORLD);
+  MPI_Bcast(&current_nLost, 1, MPI_LONG, root, MPI_COMM_WORLD);
 
   if (myid == 0) {
     /* set up the displacement array and the number of elements that are received from each processor */

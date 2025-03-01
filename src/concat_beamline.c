@@ -24,9 +24,11 @@ void concatenate_beamline(LINE_LIST *beamline, RUN *run) {
   ELEMENT_LIST *lastelem, *elem, *ecat;
   VMATRIX *M1, *M2, *tmp;
   long new_seq, n_seqs, in_seq;
-  long n_matrices, n_nonmatrices;
+  //long n_matrices;
+  //long n_nonmatrices;
   char s[100];
-  double z, z_begin, z_end;
+  //double z;
+  double z_begin, z_end;
   ELEMENT_LIST *pred, *succ;
 
   log_entry("concatenate_beamline");
@@ -56,8 +58,9 @@ void concatenate_beamline(LINE_LIST *beamline, RUN *run) {
 
   new_seq = 1;
   n_seqs = in_seq = 0;
-  n_matrices = n_nonmatrices = 0;
-  z = elem->beg_pos;
+  //n_matrices = 0;
+  //n_nonmatrices = 0;
+  //z = elem->beg_pos;
   z_begin = elem->beg_pos;
   z_end = elem->end_pos;
   beamline->ncat_elems = 0;
@@ -69,10 +72,12 @@ void concatenate_beamline(LINE_LIST *beamline, RUN *run) {
     if (entity_description[elem->type].flags & HAS_MATRIX && elem->matrix == NULL) {
       compute_matrix(elem, run, NULL);
     }
+    /*
     if (entity_description[elem->type].flags & HAS_LENGTH)
       z += ((DRIFT *)elem->p_elem)->length;
     else
       z += elem->end_pos - elem->beg_pos;
+      */
     if (entity_description[elem->type].flags & HAS_MATRIX && elem->matrix->order <= run->concat_order &&
         !(entity_description[elem->type].flags & DONT_CONCAT)) {
 #if DEBUG
@@ -120,7 +125,7 @@ void concatenate_beamline(LINE_LIST *beamline, RUN *run) {
 #endif
         extend_elem_list(&ecat);
         in_seq = 0;
-        n_matrices++;
+        //n_matrices++;
         beamline->ncat_elems++;
       }
       /* non-matrix element--just copy everything and extend the list */
@@ -139,13 +144,13 @@ void concatenate_beamline(LINE_LIST *beamline, RUN *run) {
       if (entity_description[ecat->type].flags & HAS_MATRIX) {
         ecat->matrix = tmalloc(sizeof(*(ecat->matrix)));
         copy_matrices(ecat->matrix, elem->matrix);
-        if (entity_description[ecat->type].flags & DONT_CONCAT)
-          n_nonmatrices++;
-        else
-          n_matrices++;
+        //if (entity_description[ecat->type].flags & DONT_CONCAT)
+          //n_nonmatrices++;
+        //else
+          //n_matrices++;
       } else {
         ecat->matrix = NULL;
-        n_nonmatrices++;
+        //n_nonmatrices++;
       }
       beamline->ncat_elems++;
       extend_elem_list(&ecat);
@@ -179,7 +184,7 @@ void concatenate_beamline(LINE_LIST *beamline, RUN *run) {
         ecat->name = NULL;
       }
     }
-    n_matrices++;
+    //n_matrices++;
     beamline->ncat_elems++;
     ecat->succ = NULL;
   } else

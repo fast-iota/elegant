@@ -14,9 +14,6 @@
 #include "mdb.h"
 #include "track.h"
 #include "SDDS.h"
-#if defined(__BORLANDC__)
-#  define DBL_MAX 1.7976931348623158e+308 /* max value */
-#endif
 
 #include "optimize.h"
 #include "match_string.h"
@@ -891,7 +888,7 @@ static long optimRecords = 0, nextOptimRecordSlot = 0, balanceTerms = 0, ignoreO
 static OPTIM_RECORD optimRecord[MAX_OPTIM_RECORDS];
 static double bestResult = DBL_MAX;
 
-#if defined(__unix__)
+#if defined(__linux__) || (__APPLE__)
 #  include <signal.h>
 void traceback_handler(int signal);
 
@@ -1143,7 +1140,7 @@ void do_optimize(NAMELIST_TEXT *nltext, RUN *run1, VARY *control1, ERRORVAL *err
 #if USE_MPI
   hybrid_simplex_tolerance_counter = 0;
 #endif
-#if defined(__unix__)
+#if defined(__linux__) || defined(__APPLE__)
   if (optimization_data->method != OPTIM_METHOD_POWELL)
     signal(SIGINT, optimizationInterruptHandler);
 #endif
@@ -1660,7 +1657,7 @@ void do_optimize(NAMELIST_TEXT *nltext, RUN *run1, VARY *control1, ERRORVAL *err
 #endif
   }
 
-#if defined(__unix__)
+#if defined(__linux__) || (__APPLE__)
   if (optimization_data->method != OPTIM_METHOD_POWELL)
     signal(SIGINT, traceback_handler);
 #endif
@@ -2892,7 +2889,7 @@ double optimization_function(double *value, long *invalid) {
 #if USE_MPI
 void checkTarget(double myResult, long invalid) {
   MPI_Status status;
-  static int *targetBuffer = NULL;
+  static short *targetBuffer = NULL;
   int targetTag = 1;
   if (hybrid_simplex_comparison_interval <= 0)
     return;

@@ -889,7 +889,7 @@ long do_aperture_search_sp(
     tmp[1] = n_stable;
     tmp[2] = n_left;
     tmp[3] = n_right;
-    MPI_Reduce(tmp, &total, 4, MPI_LONG, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(tmp, (long*)&total, 4, MPI_LONG, MPI_SUM, 0, MPI_COMM_WORLD);
 
     if (isMaster) {
       effort_total = total[0];

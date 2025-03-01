@@ -70,7 +70,7 @@ void track_through_ztransverse(double **part0, long np0, ZTRANSVERSE *ztransvers
   /* long n_binned; */
   double factor, tmin, tmax, dt, userFactor[2], rampFactor = 1;
   //double tmean;
-  static long not_first_call = -1;
+  //static long not_first_call = -1;
   long ip, i_pass0;
 #if defined(DEBUG)
   FILE *fp;
@@ -90,7 +90,7 @@ void track_through_ztransverse(double **part0, long np0, ZTRANSVERSE *ztransvers
   else
     rampFactor = (i_pass + 1.0) / ztransverse->rampPasses;
 
-  not_first_call += 1;
+  //not_first_call += 1;
 
   if (isSlave || !notSinglePart) {
     index_bunch_assignments(part0, np0, (charge && ztransverse->bunchedBeamMode) ? charge->idSlotsPerBunch : 0, Po, &time0, &ibParticle, &ipBucket, &npBucket, &nBuckets, -1);

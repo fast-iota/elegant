@@ -21,7 +21,8 @@ int makeInitialParticleEnsemble(
 ) {
   int i, j, k, l, i_vector;
   int J, K, L;
-  int n_points_total, n_duplicates;
+  int n_points_total;
+  //int n_duplicates;
 
   /* count up the number of vectors to be integrated */
   /* the unit vectors are e_J, e_K, e_L */
@@ -76,7 +77,7 @@ int makeInitialParticleEnsemble(
   }
 
   /* check for duplicates */
-  n_duplicates = 0;
+  //n_duplicates = 0;
   for (i = 0; i < n_points_total; i++) {
     for (j = i + 1; j < n_points_total; j++) {
       if ((*initial)[i][0] == (*initial)[j][0] &&
@@ -89,7 +90,7 @@ int makeInitialParticleEnsemble(
           memcpy((*initial)[j], (*initial)[n_points_total - 1], totalPropertiesPerParticle * sizeof(double));
         j -= 1;
         n_points_total -= 1;
-        n_duplicates += 1;
+        //n_duplicates += 1;
       }
     }
   }

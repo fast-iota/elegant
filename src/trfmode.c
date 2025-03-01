@@ -52,6 +52,7 @@ void track_through_trfmode(
 #endif
 #if USE_MPI
   double *buffer, t_total;
+  unsigned long *ulbuffer;
   long np_total, binned_total;
   MPI_Status mpiStatus;
 #endif
@@ -318,13 +319,15 @@ void track_through_trfmode(
       firstBin = firstBin_global;
 
       buffer = malloc(sizeof(double) * (lastBin - firstBin + 1));
+      ulbuffer = malloc(sizeof(unsigned long) * (lastBin - firstBin + 1));
       MPI_Allreduce(xsum + firstBin, buffer, lastBin - firstBin + 1, MPI_DOUBLE, MPI_SUM, workers);
       memcpy(xsum + firstBin, buffer, sizeof(double) * (lastBin - firstBin + 1));
       MPI_Allreduce(ysum + firstBin, buffer, lastBin - firstBin + 1, MPI_DOUBLE, MPI_SUM, workers);
       memcpy(ysum + firstBin, buffer, sizeof(double) * (lastBin - firstBin + 1));
-      MPI_Allreduce(count + firstBin, buffer, lastBin - firstBin + 1, MPI_LONG, MPI_SUM, workers);
-      memcpy(count + firstBin, buffer, sizeof(unsigned long) * (lastBin - firstBin + 1));
+      MPI_Allreduce(count + firstBin, ulbuffer, lastBin - firstBin + 1, MPI_UNSIGNED_LONG, MPI_SUM, workers);
+      memcpy(count + firstBin, ulbuffer, sizeof(unsigned long) * (lastBin - firstBin + 1));
       free(buffer);
+      free(ulbuffer);
     }
 #else
     if (n_binned != np) {

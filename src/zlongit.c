@@ -71,8 +71,8 @@ void track_through_zlongit(double **part0, long np0, ZLONGIT *zlongit, double Po
   double factor, tmin, tmax, tmean, dt, dt1, dgam, rampFactor;
   long i_pass0;
   long iBucket, nBuckets;
-  static long not_first_call = -1;
 #if USE_MPI
+  static long not_first_call = -1;
   double *buffer = NULL;
   double tmin_part, tmax_part; /* record the actual tmin and tmax for particles to reduce communications */
   long offset = 0, length = 0;
@@ -115,7 +115,9 @@ void track_through_zlongit(double **part0, long np0, ZLONGIT *zlongit, double Po
   else
     rampFactor = (i_pass + 1.0) / zlongit->rampPasses;
 
-  not_first_call += 1;
+#if USE_MPI
+    not_first_call += 1;
+#endif
 
 #if defined(DEBUG) && USE_MPI
   printf("ZLONGIT, myid = %d\n", myid);

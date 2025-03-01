@@ -754,10 +754,10 @@ void track_through_rfmode(
       }
 #  endif
       if (isSlave || !notSinglePart) {
-        double *buffer;
-        buffer = (double *)calloc(lastBin - firstBin + 1, sizeof(double));
+        long *buffer;
+        buffer = (long *)calloc(lastBin - firstBin + 1, sizeof(long));
         MPI_Allreduce(&Ihist[firstBin], buffer, lastBin - firstBin + 1, MPI_LONG, MPI_SUM, workers);
-        memcpy(Ihist + firstBin, buffer, sizeof(double) * (lastBin - firstBin + 1));
+        memcpy(Ihist + firstBin, buffer, sizeof(long) * (lastBin - firstBin + 1));
         free(buffer);
       }
 #  ifdef DEBUG

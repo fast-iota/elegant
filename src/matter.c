@@ -39,7 +39,8 @@ long track_through_matter(
   double z1, z2, dx, dy, ds, t = 0.0, dGammaFactor;
   double K1, K2 = 0.0, sigmaTotal, probScatter = 0.0, dgamma;
   double Xo, probBSScatter = 0, probERScatter = 0, rho;
-  long nScatters = 0, i_top, isLost;
+  //long nScatters = 0;
+  long i_top, isLost;
   /* long sections; */
   long sections0 = 1, impulseMode;
   double L1, prob, probBS, probER;
@@ -196,7 +197,7 @@ long track_through_matter(
         /* sections = sections0; */
         for (is = 0; is < sections0 && !isLost; is++) {
           if (random_2(1) < prob) {
-            nScatters++;
+            //nScatters++;
             /* single-scattering computation */
             /* scatter occurs at location 0<=zs<=L */
             zs = L1 * random_2(1);

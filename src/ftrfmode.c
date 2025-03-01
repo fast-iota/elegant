@@ -341,7 +341,7 @@ void track_through_ftrfmode(
       fflush(stdout);
 #  endif
       lbuffer = (unsigned long *)calloc(lastBin - firstBin + 1, sizeof(unsigned long));
-      MPI_Allreduce(&count[firstBin], lbuffer, lastBin - firstBin + 1, MPI_LONG, MPI_SUM, workers);
+      MPI_Allreduce(&count[firstBin], lbuffer, lastBin - firstBin + 1, MPI_UNSIGNED_LONG, MPI_SUM, workers);
       memcpy(count + firstBin, lbuffer, sizeof(unsigned long) * (lastBin - firstBin + 1));
       free(lbuffer);
 #  ifdef DEBUG

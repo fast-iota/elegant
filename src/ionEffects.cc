@@ -1114,14 +1114,14 @@ void make2dIonHistogram(IONEFFECTS *ionEffects) {
   long iSpecies, iBin[2], iPlane;
   long iIon, ix, iy;
   double qTotal = 0;
-  long nIons = 0;
   double delta[2];
+  #if USE_MPI
+  long nIons = 0;
+  long nIonsTotal;
 
-  for (iSpecies = qTotal = 0; iSpecies < ionProperties.nSpecies; iSpecies++)
+  for (iSpecies = 0; iSpecies < ionProperties.nSpecies; iSpecies++)
     nIons += ionEffects->nIons[iSpecies];
 
-#if USE_MPI
-  long nIonsTotal;
   MPI_Allreduce(&nIons, &nIonsTotal, 1, MPI_LONG, MPI_SUM, MPI_COMM_WORLD);
   nIons = nIonsTotal;
 #endif
@@ -1175,7 +1175,10 @@ void make2dIonHistogram(IONEFFECTS *ionEffects) {
 double findIonBinningRange(IONEFFECTS *ionEffects, long iPlane, long nSpecies) {
   double *histogram;
   double min, max, hrange, delta;
-  long i, quickBins = 0, nIons, nIonsMissed;
+  long i, quickBins = 0, nIons;
+  #if USE_MPI
+  long nIonsMissed;
+  #endif
 
   max = -(min = DBL_MAX);
   nIons = 0;
@@ -1223,15 +1226,20 @@ double findIonBinningRange(IONEFFECTS *ionEffects, long iPlane, long nSpecies) {
   histogram = (double *)calloc(quickBins, sizeof(*histogram));
 
   /* make charge-weighted histogram */
+  #if USE_MPI
   nIonsMissed = 0;
+  #endif
   for (long iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     for (long iIon = 0; iIon < ionEffects->nIons[iSpecies]; iIon++) {
       long iBin;
       iBin = floor((ionEffects->coordinate[iSpecies][iIon][2 * iPlane] + hrange) / delta);
       if (iBin >= 0 && iBin < quickBins)
         histogram[iBin] += 1; /* ionEffects->coordinate[iSpecies][iIon][4]; */
-      else
+      else {
+        #if USE_MPI
         nIonsMissed += 1;
+        #endif
+      }
     }
   }
 
@@ -1425,7 +1433,7 @@ void gaussianBeamKick(
 ) {
   // calculate beam kick on ion, assuming Gaussian beam
   double sx, sy, x, y, sd, Fx, Fy, C1, C2, C3, ay;
-  std::complex<double> Fc, w1, w2, Fc0, erf1, erf2;
+  std::complex<double> Fc, w1, w2, erf1, erf2;
 #if !TURBO_FADDEEVA
   long flag, flag2;
 #endif
@@ -2233,12 +2241,12 @@ double multiLorentzianFunction(double *param, long *invalid) {
 #if USE_MPI
 void checkTargetIonFitting(double myResult, long invalid) {
   MPI_Status status;
-  static int *targetBuffer = NULL;
+  static short *targetBuffer = NULL;
   int targetTag = 1;
   if (hybrid_simplex_comparison_interval <= 0)
     return;
   if (!targetBuffer)
-    targetBuffer = (int *)tmalloc(sizeof(*targetBuffer) * n_processors);
+    targetBuffer = (short *)tmalloc(sizeof(*targetBuffer) * n_processors);
   if (targetReached) {
     simplexMinAbort(1);
     return;
@@ -2630,7 +2638,7 @@ void generateIons(IONEFFECTS *ionEffects, long iPass, long iBunch, long nBunches
 
 void applyElectronBunchKicksToIons(IONEFFECTS *ionEffects, long iPass, double qBunch, double bunchCentroid[4], double bunchSigma[4],
                                    double dpSum[3]) {
-  long localCount;
+  //long localCount;
   double ionMass, ionCharge, *coord, kick[2];
   double tempkick[2], maxkick[2], tempart[4];
   long iSpecies, iIon;
@@ -2645,7 +2653,7 @@ void applyElectronBunchKicksToIons(IONEFFECTS *ionEffects, long iPass, double qB
   if (isSlave || !notSinglePart) {
     if (iPass >= freeze_ions_until_pass) {
       /*** Determine and apply kicks from beam to ions */
-      localCount = 0;
+      //localCount = 0;
       for (iSpecies = 0; iSpecies < ionProperties.nSpecies; iSpecies++) {
         kick[0] = kick[1] = 0;
 
@@ -2674,7 +2682,7 @@ void applyElectronBunchKicksToIons(IONEFFECTS *ionEffects, long iPass, double qB
         gaussianBeamKick(tempart, bunchCentroid, bunchSigma, 1, tempkick, qBunch, ionMass, ionCharge);
         maxkick[1] = 2 * abs(tempkick[1]);
 
-        localCount += ionEffects->nIons[iSpecies];
+        //localCount += ionEffects->nIons[iSpecies];
         for (iIon = 0; iIon < ionEffects->nIons[iSpecies]; iIon++) {
           coord = ionEffects->coordinate[iSpecies][iIon];
           kick[0] = kick[1] = 0;
@@ -3375,7 +3383,7 @@ void applyIonKicksToElectronBunch(
     if (verbosity) {
 #if USE_MPI
       long circuitBreakerGlobal[9];
-      MPI_Allreduce(&circuitBreaker, &circuitBreakerGlobal, 9, MPI_LONG, MPI_SUM, MPI_COMM_WORLD);
+      MPI_Allreduce((long*)&circuitBreaker, (long*)&circuitBreakerGlobal, 9, MPI_LONG, MPI_SUM, MPI_COMM_WORLD);
       memcpy(circuitBreaker, circuitBreakerGlobal, sizeof(*circuitBreaker) * 9);
 #endif
       int count = 0;
@@ -3601,7 +3609,7 @@ void ellipsoidalBeamKick(
       ELx = 4 * charge / (a + b) * (x / a) / (4 * PI * epsilon_o);
       ELy = 4 * charge / (a + b) * (y / b) / (4 * PI * epsilon_o);
     } else {
-      std::complex<double> EL, xi, wbar, zbar, c1, c2;
+      std::complex<double> EL, xi, wbar, zbar;
       if (x < 0)
         x *= (xsign = -1);
       if (y < 0)

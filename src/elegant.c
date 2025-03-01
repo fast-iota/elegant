@@ -21,10 +21,8 @@
 #include "match_string.h"
 #include <signal.h>
 #include <time.h>
-#if defined(__unix__) || defined(_WIN32)
-#  if !defined(__APPLE__)
+#if defined(__linux__) || defined(_WIN32)
 #    include <malloc.h>
-#  endif
 #endif
 #if defined(_WIN32)
 #  include <fcntl.h>
@@ -571,7 +569,7 @@ char **argv;
   macroTag[0] = "INPUTFILENAME";
   macroValue[0] = NULL; /* will fill in later */
 
-#if defined(VAX_VMS) || defined(__unix__) || defined(_WIN32)
+#if defined(__linux__) || defined(_WIN32) || defined(__APPLE__)
   init_stats();
 #endif
 
@@ -779,7 +777,7 @@ char **argv;
 #if DEBUG
         fprintf(stderr, "%s\n", s);
 #endif
-#if defined(VAX_VMS) || defined(__unix__) || defined(_WIN32)
+#if defined(__linux__) || defined(_WIN32) || defined(__APPLE__)
         report_stats(stdout, "statistics: ");
         fflush(stdout);
 #endif
@@ -2169,7 +2167,7 @@ char **argv;
   free(macroTag);
   free(macroValue);
   free(starting_coord);
-#if defined(VAX_VMS) || defined(__unix__) || defined(_WIN32)
+#if defined(__linux__) || defined(_WIN32) || defined(__APPLE__)
 #  if USE_MPI
   printf("Terminating run with %d total processors\n", n_processors);
 #  endif

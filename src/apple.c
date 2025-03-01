@@ -156,7 +156,8 @@ void f_ijk(double *X, long End_Pole, double step,
   double f101, f101x, f101y;
   double f011, f011x, f011y;
   double f002, f002x, f002y, pn;
-  double f003, f003x, f003y;
+  //double f003;
+  double f003x, f003y;
   double Cxxx, Cxxy, Cxyx, Cxyy;
   double Dxxx, Dxxy, Dxyx, Dxyy;
   double Cyxx, Cyxy, Cyyx, Cyyy;
@@ -176,7 +177,8 @@ void f_ijk(double *X, long End_Pole, double step,
   f101 = f101x = f101y = 0;
   f011 = f011x = f011y = 0;
   f002 = f002x = f002y = 0;
-  f003 = f003x = f003y = 0;
+  //f003 = 0;
+  f003x = f003y = 0;
   pn = 1.;
   for (j = 0; j < apple->NzHarm; j++) {
     Cx = Dx = Cy = Dy = 0;
@@ -268,8 +270,8 @@ void f_ijk(double *X, long End_Pole, double step,
         Ay3x = Cxyx * Dx + Cxx * Dxy + Cyyx * Dy + Cyx * Dyy + Cxy * Dxx + Cx * Dxyx + Cyy * Dyx + Cy * Dyyx;
         Ay3y = Cxyy * Dx + Cxy * Dxy + Cyyy * Dy + Cyy * Dyy + Cxy * Dxy + Cx * Dxyy + Cyy * Dyy + Cy * Dyyy;
 
-        f003 += 0.5 / sqr(apple->kz[j]) * (Cx * (4. * Ax3 / 3. + apple->lz * apple->kz[j] * Ax1) - 2. * Dx * (Ax1 - Ax2 / 3.));
-        f003 += 0.5 / sqr(apple->kz[j]) * (Cy * (4. * Ay3 / 3. + apple->lz * apple->kz[j] * Ay1) - 2. * Dy * (Ay1 - Ay2 / 3.));
+        //f003 += 0.5 / sqr(apple->kz[j]) * (Cx * (4. * Ax3 / 3. + apple->lz * apple->kz[j] * Ax1) - 2. * Dx * (Ax1 - Ax2 / 3.));
+        //f003 += 0.5 / sqr(apple->kz[j]) * (Cy * (4. * Ay3 / 3. + apple->lz * apple->kz[j] * Ay1) - 2. * Dy * (Ay1 - Ay2 / 3.));
         f003x += 0.5 / sqr(apple->kz[j]) * (Cxx * (4. * Ax3 / 3. + apple->lz * apple->kz[j] * Ax1) - 2. * Dxx * (Ax1 - Ax2 / 3.));
         f003x += 0.5 / sqr(apple->kz[j]) * (Cx * (4. * Ax3x / 3. + apple->lz * apple->kz[j] * Ax1x) - 2. * Dx * (Ax1x - Ax2x / 3.));
         f003x += 0.5 / sqr(apple->kz[j]) * (Cyx * (4. * Ay3 / 3. + apple->lz * apple->kz[j] * Ay1) - 2. * Dyx * (Ay1 - Ay2 / 3.));
@@ -293,7 +295,7 @@ void f_ijk(double *X, long End_Pole, double step,
     f011x = 2 * factor * f011x;
     f011y = 2 * factor * f011y;
     pn = (1. - f101x) * (1. - f011y) - f101y * f011x;
-    f003 *= pow(factor, 3.0);
+    //f003 *= pow(factor, 3.0);
     f003x *= pow(factor, 3.0);
     f003y *= pow(factor, 3.0);
   }

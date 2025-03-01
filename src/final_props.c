@@ -771,7 +771,7 @@ long compute_final_properties(double *data, BEAM_SUMS *sums, long n_original, do
 
   /* run time statistics */
   i_data = F_STATS_OFFSET;
-#if defined(__unix__) || defined(VAX_VMS)
+#if defined(__linux__) || defined(__APPLE__)
   data[i_data++] = cpu_time() / 100.0;
   data[i_data++] = delapsed_time();
 #  if USE_MPI
@@ -1062,7 +1062,7 @@ double rms_longitudinal_emittance_p(double **coord, long n, double Po, long star
 
   tmp[0] = tc;
   tmp[1] = dpc;
-  MPI_Allreduce(&tmp, &tmp_total, 2, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  MPI_Allreduce((double*)&tmp, (double*)&tmp_total, 2, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
   tc = tmp_total[0] / npCount_total;
   dpc = tmp_total[1] / npCount_total;

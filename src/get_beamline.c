@@ -330,7 +330,7 @@ LINE_LIST *get_beamline(char *madfile, char *use_beamline, double p_central, lon
     }
     if (echo) {
       printf("finished reading from files\n");
-#if defined(VAX_VMS) || defined(__unix__) || defined(_WIN32)
+#if defined(__linux__) || defined(_WIN32) || defined(__APPLE__)
       report_stats(stdout, "statistics: ");
 #endif
       fflush(stdout);
@@ -568,7 +568,7 @@ LINE_LIST *get_beamline(char *madfile, char *use_beamline, double p_central, lon
 
   if (echo) {
     printf("Beginning organization of lattice input data.\n");
-#if defined(VAX_VMS) || defined(__unix__) || defined(_WIN32)
+#if defined(__linux__) || defined(_WIN32) || defined(__APPLE__)
     report_stats(stdout, "statistics: ");
 #endif
     fflush(stdout);
@@ -714,7 +714,7 @@ LINE_LIST *get_beamline(char *madfile, char *use_beamline, double p_central, lon
   if (echo) {
     printf("Created occurence hash table for %ld unique elements of %ld total elements\n",
            uniqueElements, totalElements);
-#if defined(VAX_VMS) || defined(__unix__) || defined(_WIN32)
+#if defined(__linux__) || defined(_WIN32) || defined(__APPLE__)
     report_stats(stdout, "statistics: ");
 #endif
     fflush(stdout);
@@ -749,7 +749,7 @@ LINE_LIST *get_beamline(char *madfile, char *use_beamline, double p_central, lon
 
   if (echo) {
     printf("Step 1 done.\n");
-#if defined(VAX_VMS) || defined(__unix__) || defined(_WIN32)
+#if defined(__linux__) || defined(_WIN32) || defined(__APPLE__)
     report_stats(stdout, "statistics: ");
 #endif
     fflush(stdout);
@@ -782,7 +782,7 @@ LINE_LIST *get_beamline(char *madfile, char *use_beamline, double p_central, lon
 
   if (echo) {
     printf("Step 2 done.\n");
-#if defined(VAX_VMS) || defined(__unix__) || defined(_WIN32)
+#if defined(__linux__) || defined(_WIN32) || defined(__APPLE__)
     report_stats(stdout, "statistics: ");
 #endif
     fflush(stdout);
@@ -792,7 +792,7 @@ LINE_LIST *get_beamline(char *madfile, char *use_beamline, double p_central, lon
 
   if (echo) {
     printf("Step 3 done.\n");
-#if defined(VAX_VMS) || defined(__unix__) || defined(_WIN32)
+#if defined(__linux__) || defined(_WIN32) || defined(__APPLE__)
     report_stats(stdout, "statistics: ");
 #endif
     fflush(stdout);
@@ -804,7 +804,7 @@ LINE_LIST *get_beamline(char *madfile, char *use_beamline, double p_central, lon
 
   if (echo) {
     printf("Step 4 done.\n");
-#if defined(VAX_VMS) || defined(__unix__) || defined(_WIN32)
+#if defined(__linux__) || defined(_WIN32) || defined(__APPLE__)
     report_stats(stdout, "statistics: ");
 #endif
     fflush(stdout);

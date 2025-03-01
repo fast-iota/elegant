@@ -378,7 +378,8 @@ void propagate_twiss_parameters(TWISS *twiss0, double *tune, long *waists,
   double *func, path[6], path0[6], detR[2], length, sTotal;
   double **R = NULL, C[2], S[2], Cp[2], Sp[2], D[2], Dp[2], sin_dphi, cos_dphi, dphi;
   double lastRI[6];
-  long n_mat_computed, i, j, plane, hasMatrix, hasPath;
+  //long n_mat_computed;
+  long i, j, plane, hasMatrix, hasPath;
   //long otherPlane;
   VMATRIX *M1, *M2;
   MATRIX *dispM, *dispOld, *dispNew;
@@ -450,7 +451,7 @@ void propagate_twiss_parameters(TWISS *twiss0, double *tune, long *waists,
     dispM1->C[5] = 1;
   }
 
-  n_mat_computed = 0;
+  //n_mat_computed = 0;
 
   /*
   printf("Twiss parameter computation on path %e, %e, %e, %e, %e, %e\n",
@@ -535,7 +536,7 @@ void propagate_twiss_parameters(TWISS *twiss0, double *tune, long *waists,
           }
           elem->matrix = compute_matrix(elem, run, NULL);
         }
-        n_mat_computed++;
+        //n_mat_computed++;
       }
       hasMatrix = 1;
       /* Use matrix concatenation to include effect of beam path. */
@@ -3420,7 +3421,8 @@ void computeTuneShiftWithAmplitude(double dnux_dA[N_TSWA][N_TSWA], double dnuy_d
   long ix, iy, tries, gridSize, nLost = 0;
   double upperLimit[2], lowerLimit[2];
   /*  MATRIX *AxAy, *Coef, *Nu, *AxAyTr, *Mf, *MfInv, *AxAyTrNu; */
-  long j, m, ix1, iy1;
+  long j, ix1, iy1;
+  //long m;
 
   tune1[0] = tune1[1] = -1; /* suppress a compiler warning */
 
@@ -3454,7 +3456,7 @@ void computeTuneShiftWithAmplitude(double dnux_dA[N_TSWA][N_TSWA], double dnuy_d
   upperLimit[0] = upperLimit[1] = 1;
   lowerLimit[0] = lowerLimit[1] = 0;
   while (tries--) {
-    m = 0; /* number of tune points */
+    //m = 0; /* number of tune points */
     tuneLowerLimit[0] = tuneLowerLimit[1] = 0;
     tuneUpperLimit[0] = tuneUpperLimit[1] = 0;
     nLost = 0;
@@ -3473,7 +3475,7 @@ void computeTuneShiftWithAmplitude(double dnux_dA[N_TSWA][N_TSWA], double dnuy_d
             (tune_shift_with_amplitude_struct.lines_only &&
              !(ix == 0 || iy == 0)))
           continue;
-        m++;
+        //m++;
         y0[iy] =
           y = sqrt(iy *
                      sqr((tune_shift_with_amplitude_struct.y1 - tune_shift_with_amplitude_struct.y0)) / (gridSize - 1) +
@@ -4182,11 +4184,11 @@ void store_fitpoint_twiss_parameters(MARK *fpt, char *name, long occurence, TWIS
     fpt->twiss_mem = (long *)tmalloc(sizeof(*(fpt->twiss_mem)) * 20);
     fpt->init_flags |= 1;
     for (i = 0; i < 14; i++) {
-      sprintf(s, (char *)"%s#%ld.%s", name, occurence, twiss_name_suffix[i]);
+      snprintf(s, 200, (char *)"%s#%ld.%s", name, occurence, twiss_name_suffix[i]);
       fpt->twiss_mem[i] = rpn_create_mem(s, 0);
     }
     for (j = 0; j < 6; j++, i++) {
-      sprintf(s, (char *)"%s#%ld.I%ld", name, occurence, j + 1);
+      snprintf(s, 200, (char *)"%s#%ld.I%ld", name, occurence, j + 1);
       fpt->twiss_mem[i] = rpn_create_mem(s, 0);
     }
   }
@@ -4295,7 +4297,7 @@ void processTwissAnalysisRequests(ELEMENT_LIST *elem) {
     for (iq = 0; iq < TWISS_ANALYSIS_QUANTITIES; iq++) {
       for (is = 0; is < TWISS_ANALYSIS_STATS; is++)
         if (!twissAnalysisRequest[i].initialized) {
-          sprintf(buffer, (char *)"%s.%s.%s", twissAnalysisRequest[i].tag,
+          snprintf(buffer, 1024, (char *)"%s.%s.%s", twissAnalysisRequest[i].tag,
                   twissAnalysisStatName[is], twissAnalysisQuantityName[iq]);
           twissAnalysisRequest[i].twissMem[is][iq] = rpn_create_mem(buffer, 0);
         }
@@ -4764,7 +4766,8 @@ void computeDrivingTerms(DRIVING_TERMS *d, ELEMENT_LIST *elem, TWISS *twiss0, do
   std::complex<double> h21000, h30000, h10110, h10020, h10200;
   std::complex<double> h22000, h11110, h00220, h31000, h40000;
   std::complex<double> h20110, h11200, h20020, h20200, h00310, h00400;
-  std::complex<double> t1, t2, t3, t4;
+  std::complex<double> t1, t2;
+  //std::complex<double>  t3, t4;
   std::complex<double> ii;
   std::complex<double> periodicFactor[9][9];
 #define PF(i, j) (periodicFactor[4 + i][4 + j])

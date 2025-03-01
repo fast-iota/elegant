@@ -22,11 +22,6 @@
 #include <ctype.h>
 #if defined(_WIN32)
 #  include <stdlib.h>
-#else
-#  if defined(__unix__) && defined(GNU_C)
-long toupper(char c);
-long tolower(char c);
-#  endif
 #endif
 
 void delete_spaces(char *s);

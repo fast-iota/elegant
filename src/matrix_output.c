@@ -291,7 +291,8 @@ void run_matrix_output(
   VARY *control,
   LINE_LIST *beamline) {
   ELEMENT_LIST *member, *first_member;
-  long i, n_elem_no_matrix, n_elements, sfo;
+  long i, n_elem_no_matrix, sfo;
+  //long n_elements;
   long i_SDDS_output, n_SDDS_output = 0;
   long i_output, output_order;
   VMATRIX *M1, *M2, *tmp;
@@ -315,7 +316,8 @@ void run_matrix_output(
     for (i = 0; i < 6; i++)
       M1->R[i][i] = 1;
 
-    n_elements = n_elem_no_matrix = 0;
+    //n_elements = 0;
+    n_elem_no_matrix = 0;
     first_member = member = beamline->elem;
     /* z0 = 0; */
     sfo = start_occurence[i_output];
@@ -353,7 +355,7 @@ void run_matrix_output(
 #endif
       if (!member->matrix)
         compute_matrix(member, run, NULL);
-      n_elements++;
+      //n_elements++;
       member = member->succ;
     }
     if (SDDS_matrix_initialized[i_output]) {

@@ -374,7 +374,6 @@ void track_particles(double **final, VMATRIX *M, double **initial,
       // This halves runtime
       for (i = 5; i >= 0; i--) {
         sum = C[i];
-        #pragma GCC unroll 6
         for (j = 5; j >= 0; j--) {
           sum1 = R[i][j];
           for (k = j; k >= 0; k--)

@@ -231,9 +231,9 @@ int main(
   MATRIX *Rx, *Ry, *s2x, *s2y;
   MATRIX *Sx, *Sy, *sSx, *sSy, *Kx, *Ky;
   double S11_sum, S11_sum2, S12_sum, S12_sum2, S22_sum, S22_sum2;
-  double S66_sum, S66_sum2, S16_sum, S16_sum2, S26_sum, S26_sum2;
+  double S66_sum, S66_sum2/*, S16_sum, S16_sum2, S26_sum, S26_sum2*/;
   double S33_sum, S33_sum2, S34_sum, S34_sum2, S44_sum, S44_sum2;
-  double S36_sum, S46_sum, S36_sum2, S46_sum2;
+  //double S36_sum, S46_sum, S36_sum2, S46_sum2;
   double betax, alphax, betax_sum, betax_sum2, alphax_sum, alphax_sum2;
   double betay, alphay, betay_sum, betay_sum2, alphay_sum, alphay_sum2;
   long i_variable;
@@ -663,8 +663,8 @@ int main(
       emity_max = -(emity_min = DBL_MAX);
       S11_sum = S11_sum2 = S12_sum = S12_sum2 = S22_sum = S22_sum2 = 0;
       S33_sum = S33_sum2 = S34_sum = S34_sum2 = S44_sum = S44_sum2 = 0;
-      S16_sum = S16_sum2 = S26_sum = S26_sum2 = 0;
-      S36_sum = S36_sum2 = S46_sum = S46_sum2 = 0;
+      //S16_sum = S16_sum2 = S26_sum = S26_sum2 = 0;
+      //S36_sum = S36_sum2 = S46_sum = S46_sum2 = 0;
       S66_sum = S66_sum2 = 0;
       betax_sum = betax_sum2 = alphax_sum = alphax_sum2 = 0;
       betay_sum = betay_sum2 = alphay_sum = alphay_sum2 = 0;
@@ -742,8 +742,8 @@ int main(
                 }
                 if (includeDispersion==1) {
                   S66_sum += Sx->a[3][0]; S66_sum2 += sqr(Sx->a[3][0]);
-                  S16_sum += Sx->a[4][0]; S16_sum2 += sqr(Sx->a[4][0]);
-                  S26_sum += Sx->a[5][0]; S26_sum2 += sqr(Sx->a[5][0]);
+                  //S16_sum += Sx->a[4][0]; S16_sum2 += sqr(Sx->a[4][0]);
+                  //S26_sum += Sx->a[5][0]; S26_sum2 += sqr(Sx->a[5][0]);
                 }
                 betax = Sx->a[0][0]/emitx; 
                 betax_sum += betax;  betax_sum2  += sqr(betax);
@@ -786,8 +786,8 @@ int main(
                 }
                 if (includeDispersion==2) {
                   S66_sum += Sy->a[3][0]; S66_sum2 += sqr(Sy->a[3][0]);
-                  S36_sum += Sy->a[4][0]; S36_sum2 += sqr(Sy->a[4][0]);
-                  S46_sum += Sy->a[5][0]; S46_sum2 += sqr(Sy->a[5][0]);
+                  //S36_sum += Sy->a[4][0]; S36_sum2 += sqr(Sy->a[4][0]);
+                  //S46_sum += Sy->a[5][0]; S46_sum2 += sqr(Sy->a[5][0]);
                 }
                 betay = Sy->a[0][0]/emity; 
                 betay_sum += betay;  betay_sum2  += sqr(betay);

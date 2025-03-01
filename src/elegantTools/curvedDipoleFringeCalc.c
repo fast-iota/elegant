@@ -874,7 +874,7 @@ int readTrajectoryFile(char *filename, double *xTraj, REFERENCE_DATA *refData)
     fprintf(stderr, "Error:Problem reading column x from trajectory file\n");
     return(0);
   }
-  if( (nz == storedBGGExpData.nz) ) // comes from nonsymplectic tracking
+  if (nz == storedBGGExpData.nz)  // comes from nonsymplectic tracking
     for(iz=0; iz<nz; iz++)
       xTraj[iz] = x[iz];
   else {                            // comes from symplectic tracking

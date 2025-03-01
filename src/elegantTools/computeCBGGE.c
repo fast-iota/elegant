@@ -1316,7 +1316,7 @@ double BesIn(double x, long order)
     if (x>0)
       result = gsl_sf_bessel_In(order, x);
     else {
-      if (((long)fabs(order))%2)
+      if (((long)labs(order))%2)
         result = -gsl_sf_bessel_In(order, -x);
       else
         result = gsl_sf_bessel_In(order, -x);

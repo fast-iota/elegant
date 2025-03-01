@@ -22,9 +22,8 @@
 
 char *option[N_OPTIONS] =
   {
-   "ggeFile", "trajectoryFile", "output", "angles", "elementName", "driftNames", "verbose",
-   "bggexpOutput"
-  };
+    "ggeFile", "trajectoryFile", "output", "angles", "elementName", "driftNames", "verbose",
+    "bggexpOutput"};
 
 #define USAGE "curvedDipoleFringeCalc -ggeFile=<filename> -trajectoryFile=<filename>\n\
     -angles={auto|full=<radians>}{,type={sector|rectangular} | [,e1=<radians>][,e2=<radians>]}\n\
@@ -50,12 +49,12 @@ char *option[N_OPTIONS] =
 curvedDipoleFringeCalc version 2.0 (R. Lindberg, M. Borland, August 2023).\n"
 
 typedef struct {
-  long nz;                 /* number of z points */
-  double dz;               /* z spacing */
-  double zMin, zMax;       /* minimum and maximum z values */
-  long nm;                 /* number of values of m (angular harmonic) */
-  long *m;                 /* value of m */
-  long nGradients;	   /* number of gradient functions per m */
+  long nz;           /* number of z points */
+  double dz;         /* z spacing */
+  double zMin, zMax; /* minimum and maximum z values */
+  long nm;           /* number of values of m (angular harmonic) */
+  long *m;           /* value of m */
+  long nGradients;   /* number of gradient functions per m */
   /* See M. Venturini and A. Dragt, NIM A 427 (1999) 387-392, Eq. 9. */
   double ***Cmn;     /* generalized gradient: Cnms[im][in][iz] */
   double ***dCmn_dz; /* z derivative of generalized gradient */
@@ -78,16 +77,16 @@ int readInNormGGEs(char *filename);
 int readTrajectoryFile(char *filename, double *xTraj, REFERENCE_DATA *refData);
 
 void writeCSBENDparameters(double bendAngle, double arcLength, double K1, double K2, double E1, double E2,
-			   double *entryIntK, double *exitIntK, char *elementName,
+                           double *entryIntK, double *exitIntK, char *elementName,
                            char **driftName, double *driftValue, char *output);
 
 void computeFringeQuant(double *bend, double *foc, double *curv, double strength,
-			STORED_BGGEXP_DATA storedBGGExpData, double *hs, double *x, double y);
+                        STORED_BGGEXP_DATA storedBGGExpData, double *hs, double *x, double y);
 
 double integrateTrap(double *integrand, double *s, int startPt, int endPt);
 
 void setStepFunction(double *heaviside, double *s, double max, int z1, int z2, double checkInt, int Nz);
-//void setStepFunction(double *heaviside, double *maxD, int *zMaxInt, int *zEdgeInt, int edgeNum, double checkInt, double dz);
+// void setStepFunction(double *heaviside, double *maxD, int *zMaxInt, int *zEdgeInt, int edgeNum, double checkInt, double dz);
 
 long factorialI(int n);
 
@@ -99,8 +98,8 @@ double intPower(double x, int n);
 char *magnetTypeOption[MAGNET_TYPE_OPTIONS] = {"sector", "rectangular"};
 
 #define ANGLE_FULL 0x01UL
-#define ANGLE_E1   0x02UL
-#define ANGLE_E2   0x04UL
+#define ANGLE_E1 0x02UL
+#define ANGLE_E2 0x04UL
 #define ANGLE_TYPE 0x08UL
 #define ANGLE_AUTO 0x10UL
 
@@ -108,8 +107,7 @@ char *magnetTypeOption[MAGNET_TYPE_OPTIONS] = {"sector", "rectangular"};
 
 int verbose = 0;
 
-int main(int argc, char **argv)
-{
+int main(int argc, char **argv) {
   SCANNED_ARG *scanned;
   double *a10, *a11, *a12;
   unsigned long angleFlags = 0, bggexpOutputFlags = 0;
@@ -137,14 +135,14 @@ int main(int argc, char **argv)
   char *elementName = NULL, *outputName = NULL, *driftName[2] = {NULL, NULL};
   char *magnetType = NULL;
   char *bggexpOutput = NULL, *bggexpName = NULL;
-  
+
   int i_arg;
-  int iz, Nz, Npts1, Npts2, Nmid=0;
+  int iz, Nz, Npts1, Npts2, Nmid = 0;
   REFERENCE_DATA refData, newData;
   // FILE *inputFP, *outputFP;
 
   argc = scanargs(&scanned, argc, argv);
-  if (argc<6) {
+  if (argc < 6) {
     fprintf(stderr, "Too few arguments.\n%s\n", USAGE);
     exit(1);
   }
@@ -154,21 +152,21 @@ int main(int argc, char **argv)
       /* process options here */
       switch (match_string(scanned[i_arg].list[0], option, N_OPTIONS, 0)) {
       case SET_GGEFILE:
-	if (scanned[i_arg].n_items != 2) {
+        if (scanned[i_arg].n_items != 2) {
           fprintf(stderr, "invalid -ggeFile syntax\n%s\n", USAGE);
           exit(1);
         }
         filenameGGE = scanned[i_arg].list[1];
         break;
       case SET_TRAJFILE:
-	if (scanned[i_arg].n_items != 2) {
+        if (scanned[i_arg].n_items != 2) {
           fprintf(stderr, "invalid -trajFile syntax\n%s\n", USAGE);
           exit(1);
         }
         filenameTraj = scanned[i_arg].list[1];
         break;
       case SET_OUTPUT:
-	if (scanned[i_arg].n_items != 2) {
+        if (scanned[i_arg].n_items != 2) {
           fprintf(stderr, "invalid -output syntax\n%s\n", USAGE);
           exit(1);
         }
@@ -180,54 +178,54 @@ int main(int argc, char **argv)
         edge1angle = 0;
         edge2angle = 0;
         magnetType = NULL;
-	if (scanned[i_arg].n_items == 0 ||
-            !scanItemList(&angleFlags, scanned[i_arg].list+1, &scanned[i_arg].n_items, 0,
+        if (scanned[i_arg].n_items == 0 ||
+            !scanItemList(&angleFlags, scanned[i_arg].list + 1, &scanned[i_arg].n_items, 0,
                           "auto", -1, NULL, 0, ANGLE_AUTO,
-                          "full", SDDS_DOUBLE, &angle, 1, ANGLE_FULL, 
+                          "full", SDDS_DOUBLE, &angle, 1, ANGLE_FULL,
                           "e1", SDDS_DOUBLE, &edge1angle, 1, ANGLE_E1,
                           "e2", SDDS_DOUBLE, &edge2angle, 1, ANGLE_E2,
                           "type", SDDS_STRING, &magnetType, 1, ANGLE_TYPE,
                           NULL) ||
-            (angleFlags&ANGLE_FULL && angle==0)) {
+            (angleFlags & ANGLE_FULL && angle == 0)) {
           fprintf(stderr, "invalid -angle syntax\n%s\n", USAGE);
           exit(1);
         }
-        if (angleFlags&ANGLE_AUTO && angleFlags&ANGLE_FULL)
+        if (angleFlags & ANGLE_AUTO && angleFlags & ANGLE_FULL)
           bomb("give -angle=full=<value> or -angle=auto, not both", NULL);
-        if (!(angleFlags&ANGLE_AUTO) && !(angleFlags&ANGLE_FULL))
+        if (!(angleFlags & ANGLE_AUTO) && !(angleFlags & ANGLE_FULL))
           bomb("give one of -angle=full=<value> or -angle=auto", NULL);
-        if (angleFlags&ANGLE_TYPE && (angleFlags&ANGLE_E1 || angleFlags&ANGLE_E2)) {
+        if (angleFlags & ANGLE_TYPE && (angleFlags & ANGLE_E1 || angleFlags & ANGLE_E2)) {
           fprintf(stderr, "invalid -angle syntax: give type or (E1, E2), not both\n");
           return 0;
         }
-        if ((angleFlags&ANGLE_E1 && !(angleFlags&ANGLE_E2)) ||
-            (angleFlags&ANGLE_E2 && !(angleFlags&ANGLE_E1))) {
+        if ((angleFlags & ANGLE_E1 && !(angleFlags & ANGLE_E2)) ||
+            (angleFlags & ANGLE_E2 && !(angleFlags & ANGLE_E1))) {
           fprintf(stderr, "invalid -angle syntax: give both E1 and E2, not just one\n");
           exit(1);
         }
-	break;
+        break;
       case SET_ELEMENTNAME:
-        if (scanned[i_arg].n_items!=2)
+        if (scanned[i_arg].n_items != 2)
           bomb("invalid -elementName syntax", USAGE);
         elementName = scanned[i_arg].list[1];
         break;
       case SET_DRIFTNAMES:
-        if (scanned[i_arg].n_items!=3)
+        if (scanned[i_arg].n_items != 3)
           bomb("invalid -driftNames syntax", USAGE);
         driftName[0] = scanned[i_arg].list[1];
         driftName[1] = scanned[i_arg].list[2];
         break;
       case SET_BGGEXPOUTPUT:
-        if (scanned[i_arg].n_items<2)
+        if (scanned[i_arg].n_items < 2)
           bomb("invalid -bggexpOutput syntax", USAGE);
         scanned[i_arg].n_items -= 2;
         bggexpOutput = scanned[i_arg].list[1];
         bggexpName = NULL;
-	if (scanned[i_arg].n_items != 0) {
-          if (!scanItemList(&bggexpOutputFlags, scanned[i_arg].list+2, &scanned[i_arg].n_items, 0,
+        if (scanned[i_arg].n_items != 0) {
+          if (!scanItemList(&bggexpOutputFlags, scanned[i_arg].list + 2, &scanned[i_arg].n_items, 0,
                             "name", SDDS_STRING, &bggexpName, 1, BGGEXP_OUTPUT_NAME,
                             NULL) ||
-              (bggexpOutputFlags&BGGEXP_OUTPUT_NAME && (bggexpName==NULL || !strlen(bggexpName)))) {
+              (bggexpOutputFlags & BGGEXP_OUTPUT_NAME && (bggexpName == NULL || !strlen(bggexpName)))) {
             fprintf(stderr, "invalid -bggexpOutput syntax\n%s\n", USAGE);
             exit(1);
           }
@@ -260,18 +258,18 @@ int main(int argc, char **argv)
     exit(1);
   }
 
-  //snprintf(filenameGGE, 1024, "%s", "../../../../ggeQ8.txt");
-  if(!readInNormGGEs(filenameGGE)) {
+  // snprintf(filenameGGE, 1024, "%s", "../../../../ggeQ8.txt");
+  if (!readInNormGGEs(filenameGGE)) {
     fprintf(stderr, "Error: problem reading GGE file\n");
     exit(1);
   }
-  if((storedBGGExpData.m[0] != 1) || (storedBGGExpData.m[1] != 2)) {
+  if ((storedBGGExpData.m[0] != 1) || (storedBGGExpData.m[1] != 2)) {
     fprintf(stderr, "Error: we expect the 1st two gradients to be m=1 and m=2, but that's not in the GGE file\n");
     exit(1);
   }
   Nz = storedBGGExpData.nz;
 
-  //printf("GGEs ready!\n");
+  // printf("GGEs ready!\n");
 
   a10 = calloc(Nz, sizeof(double));
   a11 = calloc(Nz, sizeof(double));
@@ -291,7 +289,7 @@ int main(int argc, char **argv)
     exit(1);
   }
   pCentral = refData.pCentral;
-  if (pCentral<=0) {
+  if (pCentral <= 0) {
     fprintf(stderr, "Error: pCentral value (%le) is invalid\n", pCentral);
     exit(1);
   }
@@ -299,37 +297,37 @@ int main(int argc, char **argv)
   zVertex = refData.vertex[0];
   zExit = refData.exit[0];
   strength = refData.strength;
-  if (zEntry>=zVertex || zVertex>=zExit) {
+  if (zEntry >= zVertex || zVertex >= zExit) {
     fprintf(stderr, "Error: we expect zEntry (%le) < zVertex (%le) < zExit (%le)\n",
             zEntry, zVertex, zExit);
     exit(1);
   }
 
-  if (angleFlags&ANGLE_AUTO) {
+  if (angleFlags & ANGLE_AUTO) {
     /* compute the angle from the entrance, exit, and vertex point data */
     double dot, a, b, amag, bmag;
     long j;
     amag = bmag = 0;
     dot = 0;
-    for (j=0; j<2; j++) {
-      dot += (a=refData.vertex[j] - refData.entry[j])*(b=refData.exit[j] - refData.vertex[j]);
+    for (j = 0; j < 2; j++) {
+      dot += (a = refData.vertex[j] - refData.entry[j]) * (b = refData.exit[j] - refData.vertex[j]);
       amag += sqr(a);
       bmag += sqr(b);
     }
-    angle = acos(dot/sqrt(amag*bmag));
-    if (refData.entry[1]>refData.vertex[1])
+    angle = acos(dot / sqrt(amag * bmag));
+    if (refData.entry[1] > refData.vertex[1])
       angle *= -1;
     if (verbose)
       printf("Angle computed from trajectory file: %21.15le\n", angle);
   }
-  if (angle==0) {
+  if (angle == 0) {
     fprintf(stderr, "Error: Provide a valid value of angle\n");
     exit(1);
   }
-  if (angleFlags&ANGLE_TYPE) {
+  if (angleFlags & ANGLE_TYPE) {
     switch (match_string(magnetType, magnetTypeOption, MAGNET_TYPE_OPTIONS, 0)) {
     case MAGNET_TYPE_SECTOR:
-      face1angle = face2angle = angle/2;
+      face1angle = face2angle = angle / 2;
       break;
     case MAGNET_TYPE_RECTAN:
       face1angle = face2angle = 0;
@@ -339,250 +337,253 @@ int main(int argc, char **argv)
       exit(1);
       break;
     }
-  } else if (angleFlags&ANGLE_E1 && angleFlags&ANGLE_E2) {
-    face1angle = angle/2 - edge1angle;
-    face2angle = angle/2 - edge2angle;
+  } else if (angleFlags & ANGLE_E1 && angleFlags & ANGLE_E2) {
+    face1angle = angle / 2 - edge1angle;
+    face2angle = angle / 2 - edge2angle;
   }
-  
-  temp1 = -0.5*(storedBGGExpData.zMax - storedBGGExpData.zMin);
-  for(iz=0; iz<Nz; iz++)
-    z[iz] = temp1 + storedBGGExpData.dz*(double)iz;
+
+  temp1 = -0.5 * (storedBGGExpData.zMax - storedBGGExpData.zMin);
+  for (iz = 0; iz < Nz; iz++)
+    z[iz] = temp1 + storedBGGExpData.dz * (double)iz;
 
   // Compute the angle along the reference orbit (= s/rho in ideal limit)
   iz = 0;
-  hs[iz] = atan( (x[iz] - x[iz+1])/(z[iz+1] - z[iz]) );
-  theta1 =-hs[iz];	// theta1 is entrance angle > 0 for "normal" bend
-  for(iz=1; iz<Nz-1; iz++)
-    hs[iz] = atan( (x[iz-1] - x[iz+1])/(z[iz+1] - z[iz-1]) );
-  iz = Nz-1;
-  hs[iz] = atan( (x[iz-1] - x[iz])/(z[iz] - z[iz-1]) );
-  theta2 = hs[iz];	// theta2 is exit angle > 0 for "normal" bend
+  hs[iz] = atan((x[iz] - x[iz + 1]) / (z[iz + 1] - z[iz]));
+  theta1 = -hs[iz]; // theta1 is entrance angle > 0 for "normal" bend
+  for (iz = 1; iz < Nz - 1; iz++)
+    hs[iz] = atan((x[iz - 1] - x[iz + 1]) / (z[iz + 1] - z[iz - 1]));
+  iz = Nz - 1;
+  hs[iz] = atan((x[iz - 1] - x[iz]) / (z[iz] - z[iz - 1]));
+  theta2 = hs[iz]; // theta2 is exit angle > 0 for "normal" bend
 
   // This is for a rectagular magnet
-  edge1angle = theta1-face1angle;
-  edge2angle = theta2-face2angle;
+  edge1angle = theta1 - face1angle;
+  edge2angle = theta2 - face2angle;
 
-  if(fabs((theta1+theta2) - angle) > 1.e-7) {
-    printf("Warning: the change in particle angle from the trajectory file\n"); 
-    printf("differs from user defined bending angle by %f microradians\n", ((theta1+theta2) - angle)*1e6);
+  if (fabs((theta1 + theta2) - angle) > 1.e-7) {
+    printf("Warning: the change in particle angle from the trajectory file\n");
+    printf("differs from user defined bending angle by %f microradians\n", ((theta1 + theta2) - angle) * 1e6);
   }
   // compute GGE-like quantities for the on-axis expansion along reference orbit
   computeFringeQuant(a10, a11, a12, strength, storedBGGExpData, hs, x, 0.0);
-  rigidity = 1.0e-12*E_CHARGE_PC/(E_MASS_MKS*C_LIGHT_MKS*pCentral);
-  for(iz=0; iz<Nz; iz++) {
-    a10[iz] = rigidity*a10[iz];
-    a11[iz] = rigidity*a11[iz];
-    a12[iz] = rigidity*a12[iz];
+  rigidity = 1.0e-12 * E_CHARGE_PC / (E_MASS_MKS * C_LIGHT_MKS * pCentral);
+  for (iz = 0; iz < Nz; iz++) {
+    a10[iz] = rigidity * a10[iz];
+    a11[iz] = rigidity * a11[iz];
+    a12[iz] = rigidity * a12[iz];
   }
   // If the field is symmetric about z=0, set the end/start of the fringe region at z=0
-  if((Nz-1)%2 == 0) {
-    temp1 = integrateTrap(a10, z, 0, (Nz-1)/2);
-    temp2 = integrateTrap(a10, z, (Nz-1)/2, Nz-1);
-    if(FABS(temp1/temp2 - 1.0) < 1.e-4) {
-      Nmid = (Nz-1)/2;
-      if(fabs(x[0] - x[Nz-1]) > 1.e-7) {
-	printf("Warning: the bending field is symmetric about z = 0");
-	printf("but the initial and final x differ by %f microns\n", fabs(x[0] - x[Nz-1])*1e6);
+  if ((Nz - 1) % 2 == 0) {
+    temp1 = integrateTrap(a10, z, 0, (Nz - 1) / 2);
+    temp2 = integrateTrap(a10, z, (Nz - 1) / 2, Nz - 1);
+    if (FABS(temp1 / temp2 - 1.0) < 1.e-4) {
+      Nmid = (Nz - 1) / 2;
+      if (fabs(x[0] - x[Nz - 1]) > 1.e-7) {
+        printf("Warning: the bending field is symmetric about z = 0");
+        printf("but the initial and final x differ by %f microns\n", fabs(x[0] - x[Nz - 1]) * 1e6);
       }
     }
-  }  // If not, set the end/start of the fringe region where |By| is maximum
+  } // If not, set the end/start of the fringe region where |By| is maximum
   else {
     temp1 = fabs(a10[0]);
     Nmid = 0;
-    for(iz=1; iz<Nz; iz++)
-      if(fabs(a10[iz]) > temp1) {
-	Nmid = iz;
-	temp1 = fabs(a10[iz]);
+    for (iz = 1; iz < Nz; iz++)
+      if (fabs(a10[iz]) > temp1) {
+        Nmid = iz;
+        temp1 = fabs(a10[iz]);
       }
   }
 
   // Compute the path length along the reference orbit
   s[Nmid] = 0.0;
-  for(iz=Nmid + 1; iz<Nz; iz++) {
-    temp1 = z[iz] - z[iz-1];
-    temp2 = x[iz] - x[iz-1];
-    s[iz] = s[iz-1] + sqrt(temp1*temp1 + temp2*temp2);
+  for (iz = Nmid + 1; iz < Nz; iz++) {
+    temp1 = z[iz] - z[iz - 1];
+    temp2 = x[iz] - x[iz - 1];
+    s[iz] = s[iz - 1] + sqrt(temp1 * temp1 + temp2 * temp2);
   }
-  for(iz=Nmid - 1; iz>=0; iz--) {
-    temp1 = z[iz] - z[iz+1];
-    temp2 = x[iz] - x[iz+1];
-    s[iz] = s[iz+1] - sqrt(temp1*temp1 + temp2*temp2);
+  for (iz = Nmid - 1; iz >= 0; iz--) {
+    temp1 = z[iz] - z[iz + 1];
+    temp2 = x[iz] - x[iz + 1];
+    s[iz] = s[iz + 1] - sqrt(temp1 * temp1 + temp2 * temp2);
   }
 
   if (verbose) {
-    printf("rho = %22.15e\t", -1.0/a10[Nmid]);
+    printf("rho = %22.15e\t", -1.0 / a10[Nmid]);
     printf("K1 = %22.15e\t", -a11[Nmid]);
     printf("K2 = %22.15e\n", -a12[Nmid]);
   }
-  rho = -1.0/a10[Nmid];
-  //magLength = rho*( sin(theta1) + sin(theta2) );
+  rho = -1.0 / a10[Nmid];
+  // magLength = rho*( sin(theta1) + sin(theta2) );
   focK1 = -a11[Nmid];
   K2 = -a12[Nmid];
 
-  intFocus = integrateTrap(a11, s, 0, Nz-1);
-  intFocus = intFocus/(rho*angle);
+  intFocus = integrateTrap(a11, s, 0, Nz - 1);
+  intFocus = intFocus / (rho * angle);
 
-  arcLength = rho*angle;
-  intBend = integrateTrap(a10, s, 0, Nz-1);
+  arcLength = rho * angle;
+  intBend = integrateTrap(a10, s, 0, Nz - 1);
   if (verbose) {
     printf("  L = %22.15e, ", arcLength);
     printf("intBend/angle = %e, diff = %e\n",
-           -intBend/angle, (intBend/angle+1.0));
+           -intBend / angle, (intBend / angle + 1.0));
   }
-  if(fabs(intBend/angle+1.0) > 1.0e-4) {
-    printf("Warning: integrated dipole field differs from user defined bending angle by %f percent.\n", 100.*(intBend/angle+1.0));
+  if (fabs(intBend / angle + 1.0) > 1.0e-4) {
+    printf("Warning: integrated dipole field differs from user defined bending angle by %f percent.\n", 100. * (intBend / angle + 1.0));
     printf("Something may be amiss (incorrect inputs, insufficient numerical resolution, ...)\n");
   }
 
-  Npts1 = (int)(rho*sin(theta1)/(z[1]-z[0]));
-  Npts2 = (int)(rho*sin(theta2)/(z[1]-z[0]));
-  setStepFunction(stepFuncD, s, fabs(1.0/rho), Nmid-Npts1, Nmid+Npts2, fabs(intBend), Nz);
-// setStepFunction needs positive max, integral; here we set the sign
-  if(intBend>0.0)
+  Npts1 = (int)(rho * sin(theta1) / (z[1] - z[0]));
+  Npts2 = (int)(rho * sin(theta2) / (z[1] - z[0]));
+  setStepFunction(stepFuncD, s, fabs(1.0 / rho), Nmid - Npts1, Nmid + Npts2, fabs(intBend), Nz);
+  // setStepFunction needs positive max, integral; here we set the sign
+  if (intBend > 0.0)
     temp1 = 1.0;
   else
     temp1 = -1.0;
-  for(iz=0; iz<Nz; iz++)
-    stepFuncD[iz] = temp1*stepFuncD[iz];
+  for (iz = 0; iz < Nz; iz++)
+    stepFuncD[iz] = temp1 * stepFuncD[iz];
 
-// set hard edge models for quadrupole- and sextupole-like components
-  for(iz=0; iz<Nz; iz++)
-    stepFuncQ[iz] = a11[Nmid]*(stepFuncD[iz]/stepFuncD[Nmid]);
-  for(iz=0; iz<Nz; iz++)
-    stepFuncS[iz] = a12[Nmid]*(stepFuncD[iz]/stepFuncD[Nmid]);
+  // set hard edge models for quadrupole- and sextupole-like components
+  for (iz = 0; iz < Nz; iz++)
+    stepFuncQ[iz] = a11[Nmid] * (stepFuncD[iz] / stepFuncD[Nmid]);
+  for (iz = 0; iz < Nz; iz++)
+    stepFuncS[iz] = a12[Nmid] * (stepFuncD[iz] / stepFuncD[Nmid]);
 
-// Compute soft edge focusing terms in x, y
-  for(iz=0; iz<Nz; iz++)
-    integrand[iz] = a11[iz] - stepFuncQ[iz] - stepFuncD[iz]*(1.0/rho + a10[iz]);
+  // Compute soft edge focusing terms in x, y
+  for (iz = 0; iz < Nz; iz++)
+    integrand[iz] = a11[iz] - stepFuncQ[iz] - stepFuncD[iz] * (1.0 / rho + a10[iz]);
   integrand[Nmid] = 0.0;
   intFocus = integrateTrap(integrand, s, 0, Nmid);
-  entryIntK[1] = intFocus - tan(edge1angle)/rho;
-  intFocus = integrateTrap(integrand, s, Nmid, Nz-1);
-  exitIntK[1] = intFocus - tan(edge2angle)/rho;
+  entryIntK[1] = intFocus - tan(edge1angle) / rho;
+  intFocus = integrateTrap(integrand, s, Nmid, Nz - 1);
+  exitIntK[1] = intFocus - tan(edge2angle) / rho;
 
-// Compute soft edge, FINT-like, focusing term in y
+  // Compute soft edge, FINT-like, focusing term in y
   intCurv = -integrateTrap(integrand, s, 0, Nmid);
-  for(iz=0; iz<Nmid; iz++)
-    integrand[iz] = -a10[iz]*(1.0/rho + a10[iz]);
+  for (iz = 0; iz < Nmid; iz++)
+    integrand[iz] = -a10[iz] * (1.0 / rho + a10[iz]);
   integrand[Nmid] = 0.0;
   intFocus = intCurv + integrateTrap(integrand, s, 0, Nmid);
   entryIntK[2] = intFocus - intCurv;
-  intCurv = -integrateTrap(integrand, s, Nmid, Nz-1);
-  for(iz=Nmid+1; iz<Nz; iz++)
-    integrand[iz] = -a10[iz]*(1.0/rho + a10[iz]);
-  intFocus = intCurv + integrateTrap(integrand, s, Nmid, Nz-1);
+  intCurv = -integrateTrap(integrand, s, Nmid, Nz - 1);
+  for (iz = Nmid + 1; iz < Nz; iz++)
+    integrand[iz] = -a10[iz] * (1.0 / rho + a10[iz]);
+  intFocus = intCurv + integrateTrap(integrand, s, Nmid, Nz - 1);
   exitIntK[2] = intFocus - intCurv;
 
-// Compute orbit displacement term
-  for(iz=0; iz<Nmid; iz++)
-    integrand[iz] = (a10[iz] - stepFuncD[iz])*(s[iz] + rho*theta1);
+  // Compute orbit displacement term
+  for (iz = 0; iz < Nmid; iz++)
+    integrand[iz] = (a10[iz] - stepFuncD[iz]) * (s[iz] + rho * theta1);
   integrand[Nmid] = 0.0;
-  for(iz=Nmid+1; iz<Nz; iz++)
-    integrand[iz] = (a10[iz] - stepFuncD[iz])*(s[iz] - rho*theta2);
+  for (iz = Nmid + 1; iz < Nz; iz++)
+    integrand[iz] = (a10[iz] - stepFuncD[iz]) * (s[iz] - rho * theta2);
   intFocus = integrateTrap(integrand, s, 0, Nmid);
   entryIntK[0] = intFocus;
-  intFocus = integrateTrap(integrand, s, Nmid, Nz-1);
+  intFocus = integrateTrap(integrand, s, Nmid, Nz - 1);
   exitIntK[0] = intFocus;
 
-// Compute linear magnification terms in x
-  for(iz=0; iz<Nmid; iz++)
-    integrand[iz] = -stepFuncD[iz]*(a10[iz] + 1.0/rho)*(s[iz] + rho*theta1);
+  // Compute linear magnification terms in x
+  for (iz = 0; iz < Nmid; iz++)
+    integrand[iz] = -stepFuncD[iz] * (a10[iz] + 1.0 / rho) * (s[iz] + rho * theta1);
   integrand[Nmid] = 0.0;
   intFocus = integrateTrap(integrand, s, 0, Nmid);
   entryIntK[4] = intFocus;
-  for(iz=Nmid+1; iz<Nz; iz++)
-    integrand[iz] = -stepFuncD[iz]*(a10[iz] + 1.0/rho)*(s[iz] - rho*theta2);
-  intFocus = integrateTrap(integrand, s, Nmid, Nz-1);
+  for (iz = Nmid + 1; iz < Nz; iz++)
+    integrand[iz] = -stepFuncD[iz] * (a10[iz] + 1.0 / rho) * (s[iz] - rho * theta2);
+  intFocus = integrateTrap(integrand, s, Nmid, Nz - 1);
   exitIntK[4] = intFocus;
 
-// Compute linear magnification terms in y
-  for(iz=0; iz<Nmid; iz++)
-    integrand[iz] = (-a11[iz] + stepFuncQ[iz] )*(s[iz] + rho*theta1);
+  // Compute linear magnification terms in y
+  for (iz = 0; iz < Nmid; iz++)
+    integrand[iz] = (-a11[iz] + stepFuncQ[iz]) * (s[iz] + rho * theta1);
   integrand[Nmid] = 0.0;
-  for(iz=Nmid+1; iz<Nz; iz++)
-    integrand[iz] = (-a11[iz] + stepFuncQ[iz] )*(s[iz] - rho*theta2);
+  for (iz = Nmid + 1; iz < Nz; iz++)
+    integrand[iz] = (-a11[iz] + stepFuncQ[iz]) * (s[iz] - rho * theta2);
   intFocus = integrateTrap(integrand, s, 0, Nmid);
   entryIntK[3] = -intFocus;
-  intFocus = integrateTrap(integrand, s, Nmid, Nz-1);
+  intFocus = integrateTrap(integrand, s, Nmid, Nz - 1);
   exitIntK[3] = -intFocus;
 
-// Compute nonlinear y^2 [in x] xy [in y] terms
-  for(iz=0; iz<Nmid; iz++)
-    integrand[iz] = -( a12[iz] - stepFuncS[iz] - stepFuncD[iz]*(a11[iz] + focK1) );
+  // Compute nonlinear y^2 [in x] xy [in y] terms
+  for (iz = 0; iz < Nmid; iz++)
+    integrand[iz] = -(a12[iz] - stepFuncS[iz] - stepFuncD[iz] * (a11[iz] + focK1));
   integrand[Nmid] = 0.0;
-  for(iz=Nmid+1; iz<Nz; iz++)
-    integrand[iz] = -( a12[iz] - stepFuncS[iz] - stepFuncD[iz]*(a11[iz] + focK1) );
+  for (iz = Nmid + 1; iz < Nz; iz++)
+    integrand[iz] = -(a12[iz] - stepFuncS[iz] - stepFuncD[iz] * (a11[iz] + focK1));
   intCurv = integrateTrap(integrand, s, 0, Nmid);
-  temp1 = rho*cos(edge1angle);
-  temp1 = tan(edge1angle)*(-2.0*focK1 + 0.5/(temp1*temp1) );
+  temp1 = rho * cos(edge1angle);
+  temp1 = tan(edge1angle) * (-2.0 * focK1 + 0.5 / (temp1 * temp1));
   entryIntK[5] = -intCurv + temp1;
-  intCurv = integrateTrap(integrand, s, Nmid, Nz-1);
-  temp1 = rho*cos(edge2angle);
-  temp1 = tan(edge2angle)*(-2.0*focK1 + 0.5/(temp1*temp1) );
+  intCurv = integrateTrap(integrand, s, Nmid, Nz - 1);
+  temp1 = rho * cos(edge2angle);
+  temp1 = tan(edge2angle) * (-2.0 * focK1 + 0.5 / (temp1 * temp1));
   exitIntK[5] = -intCurv + temp1;
 
-  for(iz=0; iz<Nmid; iz++)
-    integrand[iz] = -( a12[iz] - stepFuncS[iz] - 2.0*stepFuncD[iz]*(a11[iz] + focK1) );
+  for (iz = 0; iz < Nmid; iz++)
+    integrand[iz] = -(a12[iz] - stepFuncS[iz] - 2.0 * stepFuncD[iz] * (a11[iz] + focK1));
   integrand[Nmid] = 0.0;
-  for(iz=Nmid+1; iz<Nz; iz++)
-    integrand[iz] = -( a12[iz] - stepFuncS[iz] - 2.0*stepFuncD[iz]*(a11[iz] + focK1) );
+  for (iz = Nmid + 1; iz < Nz; iz++)
+    integrand[iz] = -(a12[iz] - stepFuncS[iz] - 2.0 * stepFuncD[iz] * (a11[iz] + focK1));
   intCurv = integrateTrap(integrand, s, 0, Nmid);
-  temp1 = tan(edge1angle)/rho;
-  temp1 = tan(edge1angle)*(-2.0*focK1 + 0.5*temp1*temp1 );
+  temp1 = tan(edge1angle) / rho;
+  temp1 = tan(edge1angle) * (-2.0 * focK1 + 0.5 * temp1 * temp1);
   entryIntK[6] = -intCurv + temp1;
-  intCurv = integrateTrap(integrand, s, Nmid, Nz-1);
-  temp1 = tan(edge2angle)/rho;
-  temp1 = tan(edge2angle)*(-2.0*focK1 + 0.5*temp1*temp1 );
+  intCurv = integrateTrap(integrand, s, Nmid, Nz - 1);
+  temp1 = tan(edge2angle) / rho;
+  temp1 = tan(edge2angle) * (-2.0 * focK1 + 0.5 * temp1 * temp1);
   exitIntK[6] = -intCurv + temp1;
 
   // compute vertex
   double xv, zv, tant1, tant2;
   tant1 = tan(theta1);
   tant2 = tan(theta2);
-  xv = tant2*x[0] + tant1*x[Nz-1] + tant1*tant2*(z[Nz-1] - z[0]);
-  xv = xv/(tant1 + tant2);
-  zv = x[Nz-1] - x[0] + tant2*z[Nz-1] + tant1*z[0];
-  zv = zv/(tant1 + tant2);
+  xv = tant2 * x[0] + tant1 * x[Nz - 1] + tant1 * tant2 * (z[Nz - 1] - z[0]);
+  xv = xv / (tant1 + tant2);
+  zv = x[Nz - 1] - x[0] + tant2 * z[Nz - 1] + tant1 * z[0];
+  zv = zv / (tant1 + tant2);
 
-  if(zEntry < zExit) {
-    if(fabs(zv - zVertex) > 1.e-7) {
-      printf("Warning: the input zVertex differs from that calculated by %f microns.\n", (zVertex - zv)*1e6); 
+  if (zEntry < zExit) {
+    if (fabs(zv - zVertex) > 1.e-7) {
+      printf("Warning: the input zVertex differs from that calculated by %f microns.\n", (zVertex - zv) * 1e6);
       printf("If this difference does not equal to the magnet DZ then there might be a problem.\n");
     }
-    temp1 = rho*sin(theta1);  // hard edge length from entry point to vertex
-    temp2 = zVertex - zEntry; // tracking length from entry point to vertex
-    driftEE[0] = (temp2 - temp1)/cos(theta1);
-    temp1 = rho*sin(theta2);  // hard edge length from vertex to exit point
-    temp2 = zExit - zVertex; // tracking length from vertex to exit point
-    driftEE[1] = (temp2 - temp1)/cos(theta2);
+    temp1 = rho * sin(theta1); // hard edge length from entry point to vertex
+    temp2 = zVertex - zEntry;  // tracking length from entry point to vertex
+    driftEE[0] = (temp2 - temp1) / cos(theta1);
+    temp1 = rho * sin(theta2); // hard edge length from vertex to exit point
+    temp2 = zExit - zVertex;   // tracking length from vertex to exit point
+    driftEE[1] = (temp2 - temp1) / cos(theta2);
   }
   if (verbose)
     printf("driftEntry = %e, driftExit = %e\n", driftEE[0], driftEE[1]);
-  
+
   writeCSBENDparameters(angle, arcLength, focK1, K2, edge1angle, edge2angle, entryIntK, exitIntK, elementName,
                         &driftName[0], &driftEE[0], outputName);
 
-//  printf("ZENTRY = %22.15e = -ZEXIT\n", -0.5*magLength);
+  //  printf("ZENTRY = %22.15e = -ZEXIT\n", -0.5*magLength);
   memcpy(&newData, &refData, sizeof(refData));
-  newData.entry[0] = zv - rho*sin(theta1);
-  newData.exit[0] = zv + rho*sin(theta2);
-  if (verbose) printf("Tracking parameters to match hard edge model (should add DX, DZ if non-zero):\n");
-  if (verbose) printf(" ZENTRY = %22.15e, ZEXIT = %22.15e\n", newData.entry[0], newData.exit[0]);
-  newData.entry[1] = xv - rho*sin(theta1)*sin(theta1);
-  newData.exit[1] = xv - rho*sin(theta2)*sin(theta2);
-  if (verbose) printf(" XENTRY = %22.15e, XEXIT = %22.15e\n", newData.entry[1], newData.exit[1]);
+  newData.entry[0] = zv - rho * sin(theta1);
+  newData.exit[0] = zv + rho * sin(theta2);
+  if (verbose)
+    printf("Tracking parameters to match hard edge model (should add DX, DZ if non-zero):\n");
+  if (verbose)
+    printf(" ZENTRY = %22.15e, ZEXIT = %22.15e\n", newData.entry[0], newData.exit[0]);
+  newData.entry[1] = xv - rho * sin(theta1) * sin(theta1);
+  newData.exit[1] = xv - rho * sin(theta2) * sin(theta2);
+  if (verbose)
+    printf(" XENTRY = %22.15e, XEXIT = %22.15e\n", newData.entry[1], newData.exit[1]);
   newData.vertex[0] = zv;
   newData.vertex[1] = xv;
   // temp1 = x[0] - tan(theta1)*z[0];
   // printf("XVERTEX = %22.15e, ZVERTEX = 0.0\n", temp1);
-  if (verbose) printf(" XVERTEX = %22.15e, ZVERTEX = %22.15e\n", newData.vertex[1], newData.vertex[0]);
+  if (verbose)
+    printf(" XVERTEX = %22.15e, ZVERTEX = %22.15e\n", newData.vertex[1], newData.vertex[0]);
 
   if (bggexpOutput)
     writeBggexpOutput(bggexpOutput, bggexpName, &newData);
 }
 
-void writeBggexpOutput(char *output, char *elementName, REFERENCE_DATA *newData)
-{
+void writeBggexpOutput(char *output, char *elementName, REFERENCE_DATA *newData) {
   SDDS_DATASET SDDSout;
   int iRow = 0;
 
@@ -595,58 +596,54 @@ void writeBggexpOutput(char *output, char *elementName, REFERENCE_DATA *newData)
       !SDDS_DefineSimpleColumn(&SDDSout, "ElementParameter", NULL, SDDS_STRING) ||
       !SDDS_DefineSimpleColumn(&SDDSout, "ParameterValue", NULL, SDDS_DOUBLE) ||
       !SDDS_WriteLayout(&SDDSout) ||
-      !SDDS_StartPage(&SDDSout, 4+10*2+2) ) {
+      !SDDS_StartPage(&SDDSout, 4 + 10 * 2 + 2)) {
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
     exit(1);
   }
   if (!elementName)
     elementName = newData->elementName;
-  
-  if (!SDDS_SetRowValues(&SDDSout, SDDS_SET_BY_NAME|SDDS_PASS_BY_VALUE, iRow++,
-			 "ElementName", elementName, "ElementType", "BGGEXP", 
-			 "ElementParameter", "ZENTRY", "ParameterValue", newData->entry[0], NULL) ||
-      !SDDS_SetRowValues(&SDDSout, SDDS_SET_BY_NAME|SDDS_PASS_BY_VALUE, iRow++,
-			 "ElementName", elementName, "ElementType", "BGGEXP", 
-			 "ElementParameter", "ZVERTEX", "ParameterValue", newData->vertex[0], NULL) ||
-      !SDDS_SetRowValues(&SDDSout, SDDS_SET_BY_NAME|SDDS_PASS_BY_VALUE, iRow++,
-			 "ElementName", elementName, "ElementType", "BGGEXP", 
-			 "ElementParameter", "ZEXIT", "ParameterValue", newData->exit[0], NULL) ||
-      !SDDS_SetRowValues(&SDDSout, SDDS_SET_BY_NAME|SDDS_PASS_BY_VALUE, iRow++,
-			 "ElementName", elementName, "ElementType", "BGGEXP", 
-			 "ElementParameter", "XENTRY", "ParameterValue", newData->entry[1], NULL) ||
-      !SDDS_SetRowValues(&SDDSout, SDDS_SET_BY_NAME|SDDS_PASS_BY_VALUE, iRow++,
-			 "ElementName", elementName, "ElementType", "BGGEXP", 
-			 "ElementParameter", "XVERTEX", "ParameterValue", newData->vertex[1], NULL) ||
-      !SDDS_SetRowValues(&SDDSout, SDDS_SET_BY_NAME|SDDS_PASS_BY_VALUE, iRow++,
-			 "ElementName", elementName, "ElementType", "BGGEXP", 
-			 "ElementParameter", "XEXIT", "ParameterValue", newData->exit[1], NULL) ||
-      !SDDS_SetRowValues(&SDDSout, SDDS_SET_BY_NAME|SDDS_PASS_BY_VALUE, iRow++,
-			 "ElementName", elementName, "ElementType", "BGGEXP", 
-			 "ElementParameter", "DX", "ParameterValue", newData->dx[0], NULL) ||
-      !SDDS_SetRowValues(&SDDSout, SDDS_SET_BY_NAME|SDDS_PASS_BY_VALUE, iRow++,
-			 "ElementName", elementName, "ElementType", "BGGEXP", 
-			 "ElementParameter", "DY", "ParameterValue", newData->dx[1], NULL) ||
-      !SDDS_SetRowValues(&SDDSout, SDDS_SET_BY_NAME|SDDS_PASS_BY_VALUE, iRow++,
-			 "ElementName", elementName, "ElementType", "BGGEXP", 
-			 "ElementParameter", "DZ", "ParameterValue", newData->dx[2], NULL) ||
-      !SDDS_SetRowValues(&SDDSout, SDDS_SET_BY_NAME|SDDS_PASS_BY_VALUE, iRow++,
-			 "ElementName", elementName, "ElementType", "BGGEXP", 
-			 "ElementParameter", "STRENGTH", "ParameterValue", newData->strength, NULL))
-    {
-      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
-      exit(1);
-    }
 
-  if (!SDDS_WritePage(&SDDSout) || !SDDS_Terminate(&SDDSout))
-    {
-      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
-      exit(1);
-    }
-  
+  if (!SDDS_SetRowValues(&SDDSout, SDDS_SET_BY_NAME | SDDS_PASS_BY_VALUE, iRow++,
+                         "ElementName", elementName, "ElementType", "BGGEXP",
+                         "ElementParameter", "ZENTRY", "ParameterValue", newData->entry[0], NULL) ||
+      !SDDS_SetRowValues(&SDDSout, SDDS_SET_BY_NAME | SDDS_PASS_BY_VALUE, iRow++,
+                         "ElementName", elementName, "ElementType", "BGGEXP",
+                         "ElementParameter", "ZVERTEX", "ParameterValue", newData->vertex[0], NULL) ||
+      !SDDS_SetRowValues(&SDDSout, SDDS_SET_BY_NAME | SDDS_PASS_BY_VALUE, iRow++,
+                         "ElementName", elementName, "ElementType", "BGGEXP",
+                         "ElementParameter", "ZEXIT", "ParameterValue", newData->exit[0], NULL) ||
+      !SDDS_SetRowValues(&SDDSout, SDDS_SET_BY_NAME | SDDS_PASS_BY_VALUE, iRow++,
+                         "ElementName", elementName, "ElementType", "BGGEXP",
+                         "ElementParameter", "XENTRY", "ParameterValue", newData->entry[1], NULL) ||
+      !SDDS_SetRowValues(&SDDSout, SDDS_SET_BY_NAME | SDDS_PASS_BY_VALUE, iRow++,
+                         "ElementName", elementName, "ElementType", "BGGEXP",
+                         "ElementParameter", "XVERTEX", "ParameterValue", newData->vertex[1], NULL) ||
+      !SDDS_SetRowValues(&SDDSout, SDDS_SET_BY_NAME | SDDS_PASS_BY_VALUE, iRow++,
+                         "ElementName", elementName, "ElementType", "BGGEXP",
+                         "ElementParameter", "XEXIT", "ParameterValue", newData->exit[1], NULL) ||
+      !SDDS_SetRowValues(&SDDSout, SDDS_SET_BY_NAME | SDDS_PASS_BY_VALUE, iRow++,
+                         "ElementName", elementName, "ElementType", "BGGEXP",
+                         "ElementParameter", "DX", "ParameterValue", newData->dx[0], NULL) ||
+      !SDDS_SetRowValues(&SDDSout, SDDS_SET_BY_NAME | SDDS_PASS_BY_VALUE, iRow++,
+                         "ElementName", elementName, "ElementType", "BGGEXP",
+                         "ElementParameter", "DY", "ParameterValue", newData->dx[1], NULL) ||
+      !SDDS_SetRowValues(&SDDSout, SDDS_SET_BY_NAME | SDDS_PASS_BY_VALUE, iRow++,
+                         "ElementName", elementName, "ElementType", "BGGEXP",
+                         "ElementParameter", "DZ", "ParameterValue", newData->dx[2], NULL) ||
+      !SDDS_SetRowValues(&SDDSout, SDDS_SET_BY_NAME | SDDS_PASS_BY_VALUE, iRow++,
+                         "ElementName", elementName, "ElementType", "BGGEXP",
+                         "ElementParameter", "STRENGTH", "ParameterValue", newData->strength, NULL)) {
+    SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
+    exit(1);
+  }
+
+  if (!SDDS_WritePage(&SDDSout) || !SDDS_Terminate(&SDDSout)) {
+    SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
+    exit(1);
+  }
 }
 
-int readInNormGGEs(char *filename)
-{
+int readInNormGGEs(char *filename) {
   SDDS_DATASET SDDSin;
   char buffer[1024];
   char nameFragment[8];
@@ -682,7 +679,7 @@ int readInNormGGEs(char *filename)
       snprintf(nameFragment, 8, "CnmS");
       snprintf(buffer, 1024, "%s%ld", nameFragment, 2 * ic);
       if (SDDS_CheckColumn(&SDDSin, buffer, NULL, SDDS_ANY_FLOATING_TYPE, NULL) != SDDS_CHECK_OK)
-	break;
+        break;
       ic++;
     }
     if (ic == 0) {
@@ -691,7 +688,8 @@ int readInNormGGEs(char *filename)
     }
   }
   nc = ic;
-  if (verbose) printf("Found %ld %s* columns\n", nc, nameFragment);
+  if (verbose)
+    printf("Found %ld %s* columns\n", nc, nameFragment);
   /* Check for presence of matching dCnmXXX/dz columns */
   for (ic = 0; ic < nc; ic++) {
     snprintf(buffer, 1024, "d%s%ld/dz", nameFragment, 2 * ic);
@@ -721,28 +719,28 @@ int readInNormGGEs(char *filename)
       double dz0, dz, *z;
       if ((nz = SDDS_RowCount(&SDDSin)) <= 1) {
         fprintf(stderr, "Error:Too few z values in BGGEXP file\n");
-	exit(1);
+        exit(1);
       }
       if (!(z = SDDS_GetColumnInDoubles(&SDDSin, "z"))) {
         fprintf(stderr, "Error:Problem reading column z from BGGEXP file\n");
-	exit(1);
+        exit(1);
       }
       dz0 = z[1] - z[0];
       for (iz = 1; iz < nz; iz++) {
         dz = z[iz] - z[iz - 1];
         if (dz <= 0 || fabs(dz0 / dz - 1) > 1e-6) {
           fprintf(stderr, "Error:BGGEXP data not uniformly and monotonically increasing in z column\n");
-	  exit(1);
-	}
+          exit(1);
+        }
       }
       storedBGGExpData.zMin = z[0];
-      storedBGGExpData.zMax = z[nz-1];
+      storedBGGExpData.zMax = z[nz - 1];
       free(z);
       storedBGGExpData.dz = dz0;
     } else {
       if (nz != SDDS_RowCount(&SDDSin)) {
         fprintf(stderr, "Error:Inconsistent number of z values in BGGEXP file\n");
-	exit(1);
+        exit(1);
       }
     }
     if (!(storedBGGExpData.m = SDDS_Realloc(storedBGGExpData.m, sizeof(*storedBGGExpData.m) * (im + 1))) ||
@@ -764,28 +762,27 @@ int readInNormGGEs(char *filename)
       if (!(storedBGGExpData.Cmn[im][ic] = SDDS_GetColumnInDoubles(&SDDSin, buffer))) {
         SDDS_PrintErrors(stdout, SDDS_VERBOSE_PrintErrors);
         fprintf(stderr, "Error:Problem reading column %s from BGGEXP file\n", buffer);
-	exit(1);
+        exit(1);
       }
       snprintf(buffer, 1024, "d%s%ld/dz", nameFragment, 2 * ic);
       if (!(storedBGGExpData.dCmn_dz[im][ic] = SDDS_GetColumnInDoubles(&SDDSin, buffer))) {
         SDDS_PrintErrors(stdout, SDDS_VERBOSE_PrintErrors);
         fprintf(stderr, "Error:Problem reading column %s from BGGEXP file\n", buffer);
-	exit(1);
+        exit(1);
       }
     }
     storedBGGExpData.m[im] = m;
     im++;
   }
   SDDS_Terminate(&SDDSin);
-  
+
   storedBGGExpData.nm = im;
   storedBGGExpData.nz = nz;
 
-  return(1);
+  return (1);
 }
 
-int readTrajectoryFile(char *filename, double *xTraj, REFERENCE_DATA *refData)
-{
+int readTrajectoryFile(char *filename, double *xTraj, REFERENCE_DATA *refData) {
   SDDS_DATASET SDDSin;
   double *z, *x;
   double dz0, dz;
@@ -796,34 +793,34 @@ int readTrajectoryFile(char *filename, double *xTraj, REFERENCE_DATA *refData)
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
     return (0);
   }
-  for (ip=0; ip<6; ip++) {
-    if (SDDS_CheckParameter(&SDDSin, pCheckList[ip], "m", SDDS_ANY_FLOATING_TYPE, stderr)!=SDDS_CHECK_OK) {
+  for (ip = 0; ip < 6; ip++) {
+    if (SDDS_CheckParameter(&SDDSin, pCheckList[ip], "m", SDDS_ANY_FLOATING_TYPE, stderr) != SDDS_CHECK_OK) {
       fprintf(stderr, "Error: Unable to find floating-point parameter \"%s\" with units \"m\" in trajectory file\n",
-	      pCheckList[ip]);
-      return(0);
+              pCheckList[ip]);
+      return (0);
     }
   }
-  if (SDDS_CheckParameter(&SDDSin, "pCentral", NULL, SDDS_ANY_FLOATING_TYPE, stderr)!=SDDS_CHECK_OK) {
+  if (SDDS_CheckParameter(&SDDSin, "pCentral", NULL, SDDS_ANY_FLOATING_TYPE, stderr) != SDDS_CHECK_OK) {
     fprintf(stderr, "Error: Unable to find floating-point parameter \"pCentral\" in trajectory file\n");
-    return(0);
+    return (0);
   }
-  if (SDDS_CheckParameter(&SDDSin, "Strength", NULL, SDDS_ANY_FLOATING_TYPE, stderr)!=SDDS_CHECK_OK) {
+  if (SDDS_CheckParameter(&SDDSin, "Strength", NULL, SDDS_ANY_FLOATING_TYPE, stderr) != SDDS_CHECK_OK) {
     fprintf(stderr, "Error: Unable to find floating-point parameter \"Strength\" in trajectory file\n");
-    return(0);
+    return (0);
   }
-  if (SDDS_CheckParameter(&SDDSin, "ElementName", NULL, SDDS_STRING, stderr)!=SDDS_CHECK_OK) {
+  if (SDDS_CheckParameter(&SDDSin, "ElementName", NULL, SDDS_STRING, stderr) != SDDS_CHECK_OK) {
     fprintf(stderr, "Error: Unable to find string parameter \"ElementName\" in trajectory file\n");
-    return(0);
+    return (0);
   }
 
   /* Check presence of z, x columns */
   if (SDDS_CheckColumn(&SDDSin, "z", "m", SDDS_ANY_FLOATING_TYPE, stderr) != SDDS_CHECK_OK) {
     fprintf(stderr, "Error:Unable to find floating-point column \"z\" with units \"m\" in trajectory file\n");
-    return(0);
+    return (0);
   }
   if (SDDS_CheckColumn(&SDDSin, "x", "m", SDDS_ANY_FLOATING_TYPE, stderr) != SDDS_CHECK_OK) {
     fprintf(stderr, "Error:Unable to find floating-point column \"x\" with units \"m\" in trajectory file\n");
-    return(0);
+    return (0);
   }
 
   SDDS_ReadTable(&SDDSin);
@@ -847,51 +844,51 @@ int readTrajectoryFile(char *filename, double *xTraj, REFERENCE_DATA *refData)
 
   if ((nz = SDDS_CountRowsOfInterest(&SDDSin)) <= 1) {
     fprintf(stderr, "Error:Too few z values in trajectory file, %ld\n", nz);
-    return(0);
+    return (0);
   }
   if (!(z = SDDS_GetColumnInDoubles(&SDDSin, "z"))) {
     fprintf(stderr, "Error:Problem reading column z from trajectory file\n");
-    return(0);
+    return (0);
   }
   dz0 = z[1] - z[0];
   for (iz = 1; iz < nz; iz++) {
     dz = z[iz] - z[iz - 1];
     if (dz <= 0 || fabs(dz0 / dz - 1) > 1e-6) {
       fprintf(stderr, "Error:trajectory data not uniformly and monotonically increasing in z column\n");
-      return(0);
+      return (0);
     }
   }
-  if( (nz != storedBGGExpData.nz) && (nz != storedBGGExpData.nz+1) ) {
+  if ((nz != storedBGGExpData.nz) && (nz != storedBGGExpData.nz + 1)) {
     fprintf(stderr, "Error:the number of points in the trajectory file differs from that in the GGE file such that they probably do not go together\n");
-    return(0);
+    return (0);
   }
-  if( fabs(1.0 - dz0/storedBGGExpData.dz) > 1.e-6 ) {
+  if (fabs(1.0 - dz0 / storedBGGExpData.dz) > 1.e-6) {
     fprintf(stderr, "Error:the z spacing of the trajectory and GGE files don't match\n");
-    return(0);
+    return (0);
   }
 
   if (!(x = SDDS_GetColumnInDoubles(&SDDSin, "x"))) {
     fprintf(stderr, "Error:Problem reading column x from trajectory file\n");
-    return(0);
+    return (0);
   }
-  if (nz == storedBGGExpData.nz)  // comes from nonsymplectic tracking
-    for(iz=0; iz<nz; iz++)
+  if (nz == storedBGGExpData.nz) // comes from nonsymplectic tracking
+    for (iz = 0; iz < nz; iz++)
       xTraj[iz] = x[iz];
-  else {                            // comes from symplectic tracking
-    for(iz=0; iz<storedBGGExpData.nz-1; iz++)
-      xTraj[iz] = 0.5*(x[iz] + x[iz+1]);
-    xTraj[iz] = x[iz+1];
+  else { // comes from symplectic tracking
+    for (iz = 0; iz < storedBGGExpData.nz - 1; iz++)
+      xTraj[iz] = 0.5 * (x[iz] + x[iz + 1]);
+    xTraj[iz] = x[iz + 1];
   }
-  free(z);  free(x);
+  free(z);
+  free(x);
   SDDS_Terminate(&SDDSin);
 
-  return(1);
+  return (1);
 }
 
 void writeCSBENDparameters(double bendAngle, double arcLength, double K1, double K2, double E1, double E2,
-			   double *entryIntK, double *exitIntK, char *elementName,
-                           char **driftName, double *driftValue, char *output)
-{
+                           double *entryIntK, double *exitIntK, char *elementName,
+                           char **driftName, double *driftValue, char *output) {
   SDDS_DATASET SDDSout;
   int iRow = 0;
 
@@ -904,17 +901,17 @@ void writeCSBENDparameters(double bendAngle, double arcLength, double K1, double
       !SDDS_DefineSimpleColumn(&SDDSout, "ElementParameter", NULL, SDDS_STRING) ||
       !SDDS_DefineSimpleColumn(&SDDSout, "ParameterValue", NULL, SDDS_DOUBLE) ||
       !SDDS_WriteLayout(&SDDSout) ||
-      !SDDS_StartPage(&SDDSout, 4+10*2+2) ) {
+      !SDDS_StartPage(&SDDSout, 4 + 10 * 2 + 2)) {
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
     exit(1);
   }
 
   if (driftName && driftValue) {
     int j;
-    for (j=0; j<2; j++) {
+    for (j = 0; j < 2; j++) {
       if (driftName[j] && strlen(driftName[j]) &&
-          !SDDS_SetRowValues(&SDDSout, SDDS_SET_BY_NAME|SDDS_PASS_BY_VALUE, iRow++,
-                             "ElementName", driftName[j], "ElementType", "EDRIFT", 
+          !SDDS_SetRowValues(&SDDSout, SDDS_SET_BY_NAME | SDDS_PASS_BY_VALUE, iRow++,
+                             "ElementName", driftName[j], "ElementType", "EDRIFT",
                              "ElementParameter", "L", "ParameterValue", driftValue[j], NULL)) {
         SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
         exit(1);
@@ -922,119 +919,113 @@ void writeCSBENDparameters(double bendAngle, double arcLength, double K1, double
     }
   }
 
-  if (!SDDS_SetRowValues(&SDDSout, SDDS_SET_BY_NAME|SDDS_PASS_BY_VALUE, iRow++,
-			 "ElementName", elementName, "ElementType", "CSBEND", 
-			 "ElementParameter", "L", "ParameterValue", arcLength, NULL) ||
-      !SDDS_SetRowValues(&SDDSout, SDDS_SET_BY_NAME|SDDS_PASS_BY_VALUE, iRow++,
-			 "ElementName", elementName, "ElementType", "CSBEND", 
-			 "ElementParameter", "ANGLE", "ParameterValue", bendAngle, NULL) ||
-      !SDDS_SetRowValues(&SDDSout, SDDS_SET_BY_NAME|SDDS_PASS_BY_VALUE, iRow++,
-			 "ElementName", elementName, "ElementType", "CSBEND", 
-			 "ElementParameter", "K1", "ParameterValue", K1, NULL) ||
-      !SDDS_SetRowValues(&SDDSout, SDDS_SET_BY_NAME|SDDS_PASS_BY_VALUE, iRow++,
-			 "ElementName", elementName, "ElementType", "CSBEND", 
-			 "ElementParameter", "K2", "ParameterValue", K2, NULL) )
-    {
-      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
-      exit(1);
-    }
+  if (!SDDS_SetRowValues(&SDDSout, SDDS_SET_BY_NAME | SDDS_PASS_BY_VALUE, iRow++,
+                         "ElementName", elementName, "ElementType", "CSBEND",
+                         "ElementParameter", "L", "ParameterValue", arcLength, NULL) ||
+      !SDDS_SetRowValues(&SDDSout, SDDS_SET_BY_NAME | SDDS_PASS_BY_VALUE, iRow++,
+                         "ElementName", elementName, "ElementType", "CSBEND",
+                         "ElementParameter", "ANGLE", "ParameterValue", bendAngle, NULL) ||
+      !SDDS_SetRowValues(&SDDSout, SDDS_SET_BY_NAME | SDDS_PASS_BY_VALUE, iRow++,
+                         "ElementName", elementName, "ElementType", "CSBEND",
+                         "ElementParameter", "K1", "ParameterValue", K1, NULL) ||
+      !SDDS_SetRowValues(&SDDSout, SDDS_SET_BY_NAME | SDDS_PASS_BY_VALUE, iRow++,
+                         "ElementName", elementName, "ElementType", "CSBEND",
+                         "ElementParameter", "K2", "ParameterValue", K2, NULL)) {
+    SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
+    exit(1);
+  }
 
-  if (!SDDS_SetRowValues(&SDDSout, SDDS_SET_BY_NAME|SDDS_PASS_BY_VALUE, iRow++,
-			 "ElementName", elementName, "ElementType", "CSBEND", 
-			 "ElementParameter", "EDGE1_EFFECTS", 
-			 "ParameterValue", (double)5.0, NULL) ||
-      !SDDS_SetRowValues(&SDDSout, SDDS_SET_BY_NAME|SDDS_PASS_BY_VALUE, iRow++,
-			 "ElementName", elementName, "ElementType", "CSBEND", 
-			 "ElementParameter", "EDGE_ORDER", /* For backward compatibility */
-			 "ParameterValue", (double)2.0, NULL) ||
-      !SDDS_SetRowValues(&SDDSout, SDDS_SET_BY_NAME|SDDS_PASS_BY_VALUE, iRow++,
-			 "ElementName", elementName, "ElementType", "CSBEND", 
-			 "ElementParameter", "E1",
-			 "ParameterValue", E1, NULL) ||
-      !SDDS_SetRowValues(&SDDSout, SDDS_SET_BY_NAME|SDDS_PASS_BY_VALUE, iRow++,
-			 "ElementName", elementName, "ElementType", "CCBEND", 
-			 "ElementParameter", "FRINGE1K0",
-			 "ParameterValue", entryIntK[0], NULL) ||
-      !SDDS_SetRowValues(&SDDSout, SDDS_SET_BY_NAME|SDDS_PASS_BY_VALUE, iRow++,
-			 "ElementName", elementName, "ElementType", "CSBEND", 
-			 "ElementParameter", "FRINGE1K1",
-			 "ParameterValue", entryIntK[1], NULL) ||
-      !SDDS_SetRowValues(&SDDSout, SDDS_SET_BY_NAME|SDDS_PASS_BY_VALUE, iRow++,
-			 "ElementName", elementName, "ElementType", "CSBEND", 
-			 "ElementParameter", "FRINGE1K2",
-			 "ParameterValue", entryIntK[2], NULL) ||
-      !SDDS_SetRowValues(&SDDSout, SDDS_SET_BY_NAME|SDDS_PASS_BY_VALUE, iRow++,
-			 "ElementName", elementName, "ElementType", "CSBEND", 
-			 "ElementParameter", "FRINGE1K3",
-			 "ParameterValue", entryIntK[3], NULL) ||
-      !SDDS_SetRowValues(&SDDSout, SDDS_SET_BY_NAME|SDDS_PASS_BY_VALUE, iRow++,
-			 "ElementName", elementName, "ElementType", "CSBEND", 
-			 "ElementParameter", "FRINGE1K4",
-			 "ParameterValue", entryIntK[4], NULL) ||
-      !SDDS_SetRowValues(&SDDSout, SDDS_SET_BY_NAME|SDDS_PASS_BY_VALUE, iRow++,
-			 "ElementName", elementName, "ElementType", "CSBEND", 
-			 "ElementParameter", "FRINGE1K5",
-			 "ParameterValue", entryIntK[5], NULL) ||
-      !SDDS_SetRowValues(&SDDSout, SDDS_SET_BY_NAME|SDDS_PASS_BY_VALUE, iRow++,
-			 "ElementName", elementName, "ElementType", "CSBEND", 
-			 "ElementParameter", "FRINGE1K6",
-			 "ParameterValue", entryIntK[6], NULL))
-    {
-      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
-      exit(1);
-    }
+  if (!SDDS_SetRowValues(&SDDSout, SDDS_SET_BY_NAME | SDDS_PASS_BY_VALUE, iRow++,
+                         "ElementName", elementName, "ElementType", "CSBEND",
+                         "ElementParameter", "EDGE1_EFFECTS",
+                         "ParameterValue", (double)5.0, NULL) ||
+      !SDDS_SetRowValues(&SDDSout, SDDS_SET_BY_NAME | SDDS_PASS_BY_VALUE, iRow++,
+                         "ElementName", elementName, "ElementType", "CSBEND",
+                         "ElementParameter", "EDGE_ORDER", /* For backward compatibility */
+                         "ParameterValue", (double)2.0, NULL) ||
+      !SDDS_SetRowValues(&SDDSout, SDDS_SET_BY_NAME | SDDS_PASS_BY_VALUE, iRow++,
+                         "ElementName", elementName, "ElementType", "CSBEND",
+                         "ElementParameter", "E1",
+                         "ParameterValue", E1, NULL) ||
+      !SDDS_SetRowValues(&SDDSout, SDDS_SET_BY_NAME | SDDS_PASS_BY_VALUE, iRow++,
+                         "ElementName", elementName, "ElementType", "CCBEND",
+                         "ElementParameter", "FRINGE1K0",
+                         "ParameterValue", entryIntK[0], NULL) ||
+      !SDDS_SetRowValues(&SDDSout, SDDS_SET_BY_NAME | SDDS_PASS_BY_VALUE, iRow++,
+                         "ElementName", elementName, "ElementType", "CSBEND",
+                         "ElementParameter", "FRINGE1K1",
+                         "ParameterValue", entryIntK[1], NULL) ||
+      !SDDS_SetRowValues(&SDDSout, SDDS_SET_BY_NAME | SDDS_PASS_BY_VALUE, iRow++,
+                         "ElementName", elementName, "ElementType", "CSBEND",
+                         "ElementParameter", "FRINGE1K2",
+                         "ParameterValue", entryIntK[2], NULL) ||
+      !SDDS_SetRowValues(&SDDSout, SDDS_SET_BY_NAME | SDDS_PASS_BY_VALUE, iRow++,
+                         "ElementName", elementName, "ElementType", "CSBEND",
+                         "ElementParameter", "FRINGE1K3",
+                         "ParameterValue", entryIntK[3], NULL) ||
+      !SDDS_SetRowValues(&SDDSout, SDDS_SET_BY_NAME | SDDS_PASS_BY_VALUE, iRow++,
+                         "ElementName", elementName, "ElementType", "CSBEND",
+                         "ElementParameter", "FRINGE1K4",
+                         "ParameterValue", entryIntK[4], NULL) ||
+      !SDDS_SetRowValues(&SDDSout, SDDS_SET_BY_NAME | SDDS_PASS_BY_VALUE, iRow++,
+                         "ElementName", elementName, "ElementType", "CSBEND",
+                         "ElementParameter", "FRINGE1K5",
+                         "ParameterValue", entryIntK[5], NULL) ||
+      !SDDS_SetRowValues(&SDDSout, SDDS_SET_BY_NAME | SDDS_PASS_BY_VALUE, iRow++,
+                         "ElementName", elementName, "ElementType", "CSBEND",
+                         "ElementParameter", "FRINGE1K6",
+                         "ParameterValue", entryIntK[6], NULL)) {
+    SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
+    exit(1);
+  }
 
-  if (!SDDS_SetRowValues(&SDDSout, SDDS_SET_BY_NAME|SDDS_PASS_BY_VALUE, iRow++,
-			 "ElementName", elementName, "ElementType", "CSBEND", 
-			 "ElementParameter", "EDGE2_EFFECTS", 
-			 "ParameterValue", (double)5.0, NULL) ||
-      !SDDS_SetRowValues(&SDDSout, SDDS_SET_BY_NAME|SDDS_PASS_BY_VALUE, iRow++,
-			 "ElementName", elementName, "ElementType", "CSBEND", 
-			 "ElementParameter", "E2",
-			 "ParameterValue", E2, NULL) ||
-      !SDDS_SetRowValues(&SDDSout, SDDS_SET_BY_NAME|SDDS_PASS_BY_VALUE, iRow++,
-			 "ElementName", elementName, "ElementType", "CSBEND", 
-			 "ElementParameter", "FRINGE2K0",
-			 "ParameterValue", exitIntK[0], NULL) ||
-      !SDDS_SetRowValues(&SDDSout, SDDS_SET_BY_NAME|SDDS_PASS_BY_VALUE, iRow++,
-			 "ElementName", elementName, "ElementType", "CSBEND", 
-			 "ElementParameter", "FRINGE2K1",
-			 "ParameterValue", exitIntK[1], NULL) ||
-      !SDDS_SetRowValues(&SDDSout, SDDS_SET_BY_NAME|SDDS_PASS_BY_VALUE, iRow++,
-			 "ElementName", elementName, "ElementType", "CSBEND", 
-			 "ElementParameter", "FRINGE2K2",
-			 "ParameterValue", exitIntK[2], NULL) ||
-      !SDDS_SetRowValues(&SDDSout, SDDS_SET_BY_NAME|SDDS_PASS_BY_VALUE, iRow++,
-			 "ElementName", elementName, "ElementType", "CSBEND", 
-			 "ElementParameter", "FRINGE2K3",
-			 "ParameterValue", exitIntK[3], NULL) ||
-      !SDDS_SetRowValues(&SDDSout, SDDS_SET_BY_NAME|SDDS_PASS_BY_VALUE, iRow++,
-			 "ElementName", elementName, "ElementType", "CSBEND", 
-			 "ElementParameter", "FRINGE2K4",
-			 "ParameterValue", exitIntK[4], NULL) ||
-      !SDDS_SetRowValues(&SDDSout, SDDS_SET_BY_NAME|SDDS_PASS_BY_VALUE, iRow++,
-			 "ElementName", elementName, "ElementType", "CSBEND", 
-			 "ElementParameter", "FRINGE2K5",
-			 "ParameterValue", exitIntK[5], NULL) ||
-      !SDDS_SetRowValues(&SDDSout, SDDS_SET_BY_NAME|SDDS_PASS_BY_VALUE, iRow++,
-			 "ElementName", elementName, "ElementType", "CSBEND", 
-			 "ElementParameter", "FRINGE2K6",
-			 "ParameterValue", exitIntK[6], NULL))
-    {
-      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
-      exit(1);
-    }
-  if (!SDDS_WritePage(&SDDSout) || !SDDS_Terminate(&SDDSout))
-    {
-      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
-      exit(1);
-    }
-
+  if (!SDDS_SetRowValues(&SDDSout, SDDS_SET_BY_NAME | SDDS_PASS_BY_VALUE, iRow++,
+                         "ElementName", elementName, "ElementType", "CSBEND",
+                         "ElementParameter", "EDGE2_EFFECTS",
+                         "ParameterValue", (double)5.0, NULL) ||
+      !SDDS_SetRowValues(&SDDSout, SDDS_SET_BY_NAME | SDDS_PASS_BY_VALUE, iRow++,
+                         "ElementName", elementName, "ElementType", "CSBEND",
+                         "ElementParameter", "E2",
+                         "ParameterValue", E2, NULL) ||
+      !SDDS_SetRowValues(&SDDSout, SDDS_SET_BY_NAME | SDDS_PASS_BY_VALUE, iRow++,
+                         "ElementName", elementName, "ElementType", "CSBEND",
+                         "ElementParameter", "FRINGE2K0",
+                         "ParameterValue", exitIntK[0], NULL) ||
+      !SDDS_SetRowValues(&SDDSout, SDDS_SET_BY_NAME | SDDS_PASS_BY_VALUE, iRow++,
+                         "ElementName", elementName, "ElementType", "CSBEND",
+                         "ElementParameter", "FRINGE2K1",
+                         "ParameterValue", exitIntK[1], NULL) ||
+      !SDDS_SetRowValues(&SDDSout, SDDS_SET_BY_NAME | SDDS_PASS_BY_VALUE, iRow++,
+                         "ElementName", elementName, "ElementType", "CSBEND",
+                         "ElementParameter", "FRINGE2K2",
+                         "ParameterValue", exitIntK[2], NULL) ||
+      !SDDS_SetRowValues(&SDDSout, SDDS_SET_BY_NAME | SDDS_PASS_BY_VALUE, iRow++,
+                         "ElementName", elementName, "ElementType", "CSBEND",
+                         "ElementParameter", "FRINGE2K3",
+                         "ParameterValue", exitIntK[3], NULL) ||
+      !SDDS_SetRowValues(&SDDSout, SDDS_SET_BY_NAME | SDDS_PASS_BY_VALUE, iRow++,
+                         "ElementName", elementName, "ElementType", "CSBEND",
+                         "ElementParameter", "FRINGE2K4",
+                         "ParameterValue", exitIntK[4], NULL) ||
+      !SDDS_SetRowValues(&SDDSout, SDDS_SET_BY_NAME | SDDS_PASS_BY_VALUE, iRow++,
+                         "ElementName", elementName, "ElementType", "CSBEND",
+                         "ElementParameter", "FRINGE2K5",
+                         "ParameterValue", exitIntK[5], NULL) ||
+      !SDDS_SetRowValues(&SDDSout, SDDS_SET_BY_NAME | SDDS_PASS_BY_VALUE, iRow++,
+                         "ElementName", elementName, "ElementType", "CSBEND",
+                         "ElementParameter", "FRINGE2K6",
+                         "ParameterValue", exitIntK[6], NULL)) {
+    SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
+    exit(1);
+  }
+  if (!SDDS_WritePage(&SDDSout) || !SDDS_Terminate(&SDDSout)) {
+    SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
+    exit(1);
+  }
 }
 
 void computeFringeQuant(double *bend, double *foc, double *curv, double strength,
-			STORED_BGGEXP_DATA storedBGGExpData, double *hs, double *x, double y)
-{
+                        STORED_BGGEXP_DATA storedBGGExpData, double *hs, double *x, double y) {
   double r, phi;
   double a10, a11, a12;
   double a11p, a12p, a12pp;
@@ -1042,208 +1033,192 @@ void computeFringeQuant(double *bend, double *foc, double *curv, double strength
 
   int iz, Nz = storedBGGExpData.nz;
   int m, im, mMax = storedBGGExpData.nm;
-  int il, l_2Max = storedBGGExpData.nGradients-1;
-    
-  for(iz=0; iz<Nz; iz++) {
-    r = sqrt(x[iz]*x[iz] + y*y);
+  int il, l_2Max = storedBGGExpData.nGradients - 1;
+
+  for (iz = 0; iz < Nz; iz++) {
+    r = sqrt(x[iz] * x[iz] + y * y);
     phi = atan2(y, x[iz]);
 
     a10 = 0.0;
-    for (im=0; im<mMax; im++) {
+    for (im = 0; im < mMax; im++) {
       m = storedBGGExpData.m[im];
       mfact = (double)factorialI(m);
-      cos_mphi = cos(m*phi);
+      cos_mphi = cos(m * phi);
 
-      for (il=0; il<=l_2Max-(m/2); il++) {
-	term = intPower(r, 2*il+m-1)*intPower(-1.0, il)*mfact
-	  /( intPower(2.0, 2*il)*factorialI(il)*factorialI(il+m) );
+      for (il = 0; il <= l_2Max - (m / 2); il++) {
+        term = intPower(r, 2 * il + m - 1) * intPower(-1.0, il) * mfact / (intPower(2.0, 2 * il) * factorialI(il) * factorialI(il + m));
 
-	a10 += term*(double)m*cos_mphi*storedBGGExpData.Cmn[im][il][iz];	// Bphi
+        a10 += term * (double)m * cos_mphi * storedBGGExpData.Cmn[im][il][iz]; // Bphi
       }
     }
-    bend[iz] = a10*cos(phi);
-    bend[iz] = bend[iz]*strength;
+    bend[iz] = a10 * cos(phi);
+    bend[iz] = bend[iz] * strength;
 
     im = 0;
     m = 1;
-    cos_mphi = cos(m*phi);
-    a11  = 0.0;
-    a11p = cos(phi)*cos_mphi*storedBGGExpData.dCmn_dz[im][0][iz];
-    for (il=1; il<=l_2Max; il++) {
-      term = intPower(r, 2*il+m-2)*intPower(-1.0, il)
-	  /( intPower(2.0, 2*il)*factorialI(il)*factorialI(il+m) );
-      a11 += term*(double)(2*il+m-1)*cos_mphi*storedBGGExpData.Cmn[im][il][iz];
-      a11p += term*r*cos(phi)*cos_mphi*storedBGGExpData.dCmn_dz[im][il][iz];
+    cos_mphi = cos(m * phi);
+    a11 = 0.0;
+    a11p = cos(phi) * cos_mphi * storedBGGExpData.dCmn_dz[im][0][iz];
+    for (il = 1; il <= l_2Max; il++) {
+      term = intPower(r, 2 * il + m - 2) * intPower(-1.0, il) / (intPower(2.0, 2 * il) * factorialI(il) * factorialI(il + m));
+      a11 += term * (double)(2 * il + m - 1) * cos_mphi * storedBGGExpData.Cmn[im][il][iz];
+      a11p += term * r * cos(phi) * cos_mphi * storedBGGExpData.dCmn_dz[im][il][iz];
     }
-    for (im=1; im<mMax; im++) {
+    for (im = 1; im < mMax; im++) {
       m = storedBGGExpData.m[im];
       mfact = (double)factorialI(m);
-      cos_mphi = cos(m*phi);
+      cos_mphi = cos(m * phi);
 
-      for (il=0; il<=l_2Max-(m/2); il++) {
-	term = intPower(r, 2*il+m-2)*intPower(-1.0, il)*mfact*(double)m
-	  /( intPower(2.0, 2*il)*factorialI(il)*factorialI(il+m) );
+      for (il = 0; il <= l_2Max - (m / 2); il++) {
+        term = intPower(r, 2 * il + m - 2) * intPower(-1.0, il) * mfact * (double)m / (intPower(2.0, 2 * il) * factorialI(il) * factorialI(il + m));
 
-	a11 += term*(double)(2*il+m-1)*cos_mphi*storedBGGExpData.Cmn[im][il][iz];
-	a11p += term*r*cos(phi)*cos_mphi*storedBGGExpData.dCmn_dz[im][il][iz];
+        a11 += term * (double)(2 * il + m - 1) * cos_mphi * storedBGGExpData.Cmn[im][il][iz];
+        a11p += term * r * cos(phi) * cos_mphi * storedBGGExpData.dCmn_dz[im][il][iz];
       }
     }
-    foc[iz] = a11*cos(hs[iz]) + a11p*sin(hs[iz]);
-    foc[iz] = foc[iz]*strength;
+    foc[iz] = a11 * cos(hs[iz]) + a11p * sin(hs[iz]);
+    foc[iz] = foc[iz] * strength;
 
     a12 = 0.0;
-    for (im=0; im<=1; im++) {
+    for (im = 0; im <= 1; im++) {
       m = storedBGGExpData.m[im];
       mfact = (double)factorialI(m);
-      cos_mphi = cos(m*phi);
-      for (il=1; il<=l_2Max; il++) {
-	term = intPower(r, 2*il+m-3)*intPower(-1.0, il)*mfact*(double)m
-	  /( intPower(2.0, 2*il)*factorialI(il)*factorialI(il+m) );
-	a12 += term*cos(phi)*cos_mphi*(double)((2*il+m-1)*(2*il+m-2))*storedBGGExpData.Cmn[im][il][iz];
+      cos_mphi = cos(m * phi);
+      for (il = 1; il <= l_2Max; il++) {
+        term = intPower(r, 2 * il + m - 3) * intPower(-1.0, il) * mfact * (double)m / (intPower(2.0, 2 * il) * factorialI(il) * factorialI(il + m));
+        a12 += term * cos(phi) * cos_mphi * (double)((2 * il + m - 1) * (2 * il + m - 2)) * storedBGGExpData.Cmn[im][il][iz];
       }
     }
-    for (im=2; im<mMax; im++) {
+    for (im = 2; im < mMax; im++) {
       m = storedBGGExpData.m[im];
       mfact = (double)factorialI(m);
-      cos_mphi = cos(m*phi);
+      cos_mphi = cos(m * phi);
 
-      for (il=0; il<=l_2Max; il++) {
-	term = intPower(r, 2*il+m-3)*intPower(-1.0, il)*mfact*(double)m
-	  /( intPower(2.0, 2*il)*factorialI(il)*factorialI(il+m) );
-	a12 += term*cos(phi)*cos_mphi*(double)((2*il+m-1)*(2*il+m-2))*storedBGGExpData.Cmn[im][il][iz];
+      for (il = 0; il <= l_2Max; il++) {
+        term = intPower(r, 2 * il + m - 3) * intPower(-1.0, il) * mfact * (double)m / (intPower(2.0, 2 * il) * factorialI(il) * factorialI(il + m));
+        a12 += term * cos(phi) * cos_mphi * (double)((2 * il + m - 1) * (2 * il + m - 2)) * storedBGGExpData.Cmn[im][il][iz];
       }
     }
 
     a12p = 0.0;
     im = 0;
     m = 1;
-    cos_mphi = cos(m*phi);
-    for (il=1; il<=l_2Max; il++) {
-      term = intPower(r, 2*il+m-2)*intPower(-1.0, il)
-	/( intPower(2.0, 2*il)*factorialI(il)*factorialI(il+m) );
-      a12p += term*cos_mphi*(double)(2*il+m-1)*storedBGGExpData.dCmn_dz[im][il][iz];
+    cos_mphi = cos(m * phi);
+    for (il = 1; il <= l_2Max; il++) {
+      term = intPower(r, 2 * il + m - 2) * intPower(-1.0, il) / (intPower(2.0, 2 * il) * factorialI(il) * factorialI(il + m));
+      a12p += term * cos_mphi * (double)(2 * il + m - 1) * storedBGGExpData.dCmn_dz[im][il][iz];
     }
-    for (im=1; im<mMax; im++) {
+    for (im = 1; im < mMax; im++) {
       m = storedBGGExpData.m[im];
       mfact = (double)factorialI(m);
-      cos_mphi = cos(m*phi);
+      cos_mphi = cos(m * phi);
 
-      for (il=0; il<=l_2Max; il++) {
-	term = intPower(r, 2*il+m-2)*intPower(-1.0, il)*mfact*(double)m
-	  /( intPower(2.0, 2*il)*factorialI(il)*factorialI(il+m) );
-	a12p += term*cos_mphi*(double)(2*il+m-1)*storedBGGExpData.dCmn_dz[im][il][iz];
+      for (il = 0; il <= l_2Max; il++) {
+        term = intPower(r, 2 * il + m - 2) * intPower(-1.0, il) * mfact * (double)m / (intPower(2.0, 2 * il) * factorialI(il) * factorialI(il + m));
+        a12p += term * cos_mphi * (double)(2 * il + m - 1) * storedBGGExpData.dCmn_dz[im][il][iz];
       }
     }
 
     a12pp = 0.0;
-    for (im=0; im<mMax; im++) {
+    for (im = 0; im < mMax; im++) {
       m = storedBGGExpData.m[im];
       mfact = (double)factorialI(m);
-      cos_mphi = cos(m*phi);
-      for (il=0; il<l_2Max; il++) {
-	term = intPower(r, 2*il+m-1)*intPower(-1.0, il)*mfact*(double)m
-	  /( intPower(2.0, 2*il)*factorialI(il)*factorialI(il+m) );
-	a12pp += term*cos(phi)*cos_mphi*(double)(2*il+m-1)*storedBGGExpData.dCmn_dz[im][il][iz];
+      cos_mphi = cos(m * phi);
+      for (il = 0; il < l_2Max; il++) {
+        term = intPower(r, 2 * il + m - 1) * intPower(-1.0, il) * mfact * (double)m / (intPower(2.0, 2 * il) * factorialI(il) * factorialI(il + m));
+        a12pp += term * cos(phi) * cos_mphi * (double)(2 * il + m - 1) * storedBGGExpData.dCmn_dz[im][il][iz];
       }
     }
-    curv[iz] = a12*cos(hs[iz])*cos(hs[iz])
-      + 2.0*a12p*cos(hs[iz])*sin(hs[iz]) + a12pp*sin(hs[iz])*sin(hs[iz]);
-    curv[iz] = curv[iz]*strength;
+    curv[iz] = a12 * cos(hs[iz]) * cos(hs[iz]) + 2.0 * a12p * cos(hs[iz]) * sin(hs[iz]) + a12pp * sin(hs[iz]) * sin(hs[iz]);
+    curv[iz] = curv[iz] * strength;
   }
 }
 
 /*** integrates integrand along s using the trapezoidal rule from startPt to endPt ***/
-double integrateTrap(double *integrand, double *s, int startPt, int endPt)
-{
+double integrateTrap(double *integrand, double *s, int startPt, int endPt) {
   double integral = 0.0;
   int ip;
 
-  for(ip=startPt; ip<endPt; ip++)
-    integral += 0.5*(integrand[ip] + integrand[ip+1])*(s[ip+1]-s[ip]);
+  for (ip = startPt; ip < endPt; ip++)
+    integral += 0.5 * (integrand[ip] + integrand[ip + 1]) * (s[ip + 1] - s[ip]);
 
-  return(integral);
+  return (integral);
 }
 
 /*** sets heaviside step function such that the integrated bending field between  ***/
 /*** zMaxInt[edgeNum] and zEdgeInt[edgeNum] matches that of field map = checkInt  ***/
 void setStepFunction(double *heaviside, double *s, double max, int z1, int z2, double checkInt, int Nz)
-//void setStepFunction(double *heaviside, double *maxD, int *zMaxInt, int *zEdgeInt, int edgeNum, double checkInt, double dz)
+// void setStepFunction(double *heaviside, double *maxD, int *zMaxInt, int *zEdgeInt, int edgeNum, double checkInt, double dz)
 {
   double integral1, integral2;
   int Nz1 = z1;
   int Nz2 = z2;
   int iz, test = -1;
 
-    /* set constant value for approximate length */
-  for(iz=0; iz<Nz1; iz++)
+  /* set constant value for approximate length */
+  for (iz = 0; iz < Nz1; iz++)
     heaviside[iz] = 0.0;
-  for(iz=Nz1; iz<=Nz2; iz++)
+  for (iz = Nz1; iz <= Nz2; iz++)
     heaviside[iz] = max;
-  for(iz=Nz2+1; iz<Nz; iz++)
+  for (iz = Nz2 + 1; iz < Nz; iz++)
     heaviside[iz] = 0.0;
 
-  integral1 = integrateTrap(heaviside, s, 0, Nz-1);
-  if(integral1 > checkInt) {
-    while(test<0) {
+  integral1 = integrateTrap(heaviside, s, 0, Nz - 1);
+  if (integral1 > checkInt) {
+    while (test < 0) {
       heaviside[Nz1] = 0.0;
       heaviside[Nz2] = 0.0;
-      integral2 = integrateTrap(heaviside, s, 0, Nz-1);
-      if(integral2<checkInt) {
-	heaviside[Nz1] = (checkInt-integral2)/(s[Nz1+1]-s[Nz1-1]);
-	heaviside[Nz2] = (checkInt-integral2)/(s[Nz2+1]-s[Nz2-1]);
-	test=1;
-      }
-      else {
-	Nz1++;
-	Nz2--;
+      integral2 = integrateTrap(heaviside, s, 0, Nz - 1);
+      if (integral2 < checkInt) {
+        heaviside[Nz1] = (checkInt - integral2) / (s[Nz1 + 1] - s[Nz1 - 1]);
+        heaviside[Nz2] = (checkInt - integral2) / (s[Nz2 + 1] - s[Nz2 - 1]);
+        test = 1;
+      } else {
+        Nz1++;
+        Nz2--;
       }
     }
-  }
-  else {
-    while(test<0) {
+  } else {
+    while (test < 0) {
       Nz1--;
       Nz2++;
       heaviside[Nz1] = max;
       heaviside[Nz2] = max;
-      integral2 = integrateTrap(heaviside, s, 0, Nz-1);
-      if(integral2>checkInt) {
-	heaviside[Nz1] = 0.0;
-	heaviside[Nz2] = 0.0;
-	integral2 = integrateTrap(heaviside, s, 0, Nz-1);
-	heaviside[Nz1] = (checkInt-integral2)/(s[Nz1+1]-s[Nz1-1]);
-	heaviside[Nz2] = (checkInt-integral2)/(s[Nz2+1]-s[Nz2-1]);
-	test=1;
+      integral2 = integrateTrap(heaviside, s, 0, Nz - 1);
+      if (integral2 > checkInt) {
+        heaviside[Nz1] = 0.0;
+        heaviside[Nz2] = 0.0;
+        integral2 = integrateTrap(heaviside, s, 0, Nz - 1);
+        heaviside[Nz1] = (checkInt - integral2) / (s[Nz1 + 1] - s[Nz1 - 1]);
+        heaviside[Nz2] = (checkInt - integral2) / (s[Nz2 + 1] - s[Nz2 - 1]);
+        test = 1;
       }
     }
   }
-
 }
 
 /*******************************************/
 /* Calculates x^n assuming n is an integer */
 /*******************************************/
-double intPower(double x, int n)
-{
+double intPower(double x, int n) {
   double out = 1.0;
   int j;
 
-  for(j=0; j<abs(n); j++)
-    out = out*x;
+  for (j = 0; j < abs(n); j++)
+    out = out * x;
 
-  if(n<0)
-    out = 1.0/out;
+  if (n < 0)
+    out = 1.0 / out;
 
-  return(out);
+  return (out);
 }
 
-long factorialI(int n)
-{
+long factorialI(int n) {
   int out = 1;
   int j;
 
-  for(j=1; j<=n; j++)
-    out = out*j;
+  for (j = 1; j <= n; j++)
+    out = out * j;
 
-  return(out);
+  return (out);
 }
-

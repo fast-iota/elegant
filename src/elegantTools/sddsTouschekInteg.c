@@ -1,10 +1,10 @@
 /*************************************************************************\
-* Copyright (c) 2002 The University of Chicago, as Operator of Argonne
-* National Laboratory.
-* Copyright (c) 2002 The Regents of the University of California, as
-* Operator of Los Alamos National Laboratory.
-* This file is distributed subject to a Software License Agreement found
-* in the file LICENSE that is included with this distribution. 
+ * Copyright (c) 2002 The University of Chicago, as Operator of Argonne
+ * National Laboratory.
+ * Copyright (c) 2002 The Regents of the University of California, as
+ * Operator of Los Alamos National Laboratory.
+ * This file is distributed subject to a Software License Agreement found
+ * in the file LICENSE that is included with this distribution.
 \*************************************************************************/
 
 /* program: sddsTouschekInteg.c
@@ -14,27 +14,23 @@
  */
 #include "mdb.h"
 #if defined(_WIN32)
-#include <float.h>
+#  include <float.h>
 #else
-#if defined(SOLARIS) && !defined(__GNUC__)
-#include <sunmath.h>
-#endif
 #endif
 double eacc;
 double f1;
 
-long gaussianQuadrature(double(*fn)(), double a, double b, long n, double err, double *result);
+long gaussianQuadrature(double (*fn)(), double a, double b, long n, double err, double *result);
 
-int main()
-{
+int main() {
   double a, b, err, factor, eaccFinal;
   long i, n, limit, evals, decades, decade;
-  double fn(), result=0, lastResult;
+  double fn(), result = 0, lastResult;
   double fn1(double x);
   char filename[500];
   FILE *fp;
-  
-  b = PI/2;
+
+  b = PI / 2;
 
   err = query_double("Error for adaptive integration: ", 1e-10);
   n = query_long("Number of initial evaluations: ", 100);
@@ -43,7 +39,7 @@ int main()
   limit = query_long("Number of values per decade: ", 10);
   queryn("Output file: ", filename, 500);
   chop_nl(filename);
-  factor = exp(log(result/eacc)/limit);
+  factor = exp(log(result / eacc) / limit);
   if (!(fp = fopen(filename, "w"))) {
     fprintf(stdout, "Couldn't open: %s\n", filename);
     fflush(stdout);
@@ -66,76 +62,73 @@ int main()
   fputs("&column name=F type=double &end\n", fp);
   fputs("&data mode=ascii no_row_counts=1 &end\n", fp);
   fflush(fp);
-  
+
   lastResult = 0;
-  decades = log10(eaccFinal/eacc)+0.5;
-  for (decade=0; decade<decades; decade++) {
+  decades = log10(eaccFinal / eacc) + 0.5;
+  for (decade = 0; decade < decades; decade++) {
     fprintf(stderr, "Decade %ld of %ld\n", decade, decades);
-    factor = pow(10.0, 1./limit);
-    for (i=0; i<limit; i++) {
+    factor = pow(10.0, 1. / limit);
+    for (i = 0; i < limit; i++) {
       fprintf(stderr, "Step %ld of %ld\n", i, limit);
-      f1 = 3*eacc-eacc*log(eacc)+2;
+      f1 = 3 * eacc - eacc * log(eacc) + 2;
       a = atan(eacc);
       evals = gaussianQuadrature(fn, a, b, n, err, &result);
-      if (result==0)
+      if (result == 0)
         break;
-      fprintf(fp, "%ld %.16e %.16e %.16e ", evals, eacc, 0.5*result-1.5*exp(-eacc),
-              (0.5*result-1.5*exp(-eacc))*sqrt(eacc));
-      evals = gaussianQuadrature(fn1, 0.0, PI/2, n, err, &result);
+      fprintf(fp, "%ld %.16e %.16e %.16e ", evals, eacc, 0.5 * result - 1.5 * exp(-eacc),
+              (0.5 * result - 1.5 * exp(-eacc)) * sqrt(eacc));
+      evals = gaussianQuadrature(fn1, 0.0, PI / 2, n, err, &result);
       fprintf(fp, "%ld %.16e\n", evals, result);
       fflush(fp);
       eacc *= factor;
-      if (eacc>eaccFinal)
+      if (eacc > eaccFinal)
         break;
       if (lastResult) {
         /* err *= result/lastResult;
            fprintf(stdout, "err -> %le\n", err);
            fflush(stdout);
-           */
+        */
       }
       lastResult = result;
     }
-    if (eacc>eaccFinal)
+    if (eacc > eaccFinal)
       break;
   }
   fclose(fp);
-  return(0);
+  return (0);
 }
-  
-double fn(double x)
-{
+
+double fn(double x) {
   double sinx, cosx, tanx, prod, result;
-  
+
   sinx = sin(x);
   cosx = cos(x);
-  if ((prod=sinx*cosx)==0)
+  if ((prod = sinx * cosx) == 0)
     return 0;
   tanx = tan(x);
   if (isnan(tanx))
     return 0;
-  result = (eacc*log(tanx)+f1)*exp(-tanx)/prod;
+  result = (eacc * log(tanx) + f1) * exp(-tanx) / prod;
   if (isnan(result))
     return 0;
   return result;
 }
 
-double fn1(double x)
-{
+double fn1(double x) {
   double tanx, cosx, tanxp1;
   double result;
   tanx = tan(x);
   cosx = cos(x);
   if (isnan(tanx) || isinf(tanx))
     return 0;
-  if (cosx==0)
+  if (cosx == 0)
     return 0;
-  tanxp1 = tanx+1;
-  result = (tanx/tanxp1-0.5*log(tanxp1)/tanxp1)*exp(-eacc*tanxp1)/tanxp1;
-  if (result==0)
+  tanxp1 = tanx + 1;
+  result = (tanx / tanxp1 - 0.5 * log(tanxp1) / tanxp1) * exp(-eacc * tanxp1) / tanxp1;
+  if (result == 0)
     return 0;
-  result = result/(cosx*cosx);
+  result = result / (cosx * cosx);
   if (isnan(result) || isinf(result))
     return 0;
   return result;
 }
-

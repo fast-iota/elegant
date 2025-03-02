@@ -2,10 +2,10 @@
 
 **elegant (ELEctron Generation ANd Tracking)** is a tool for simulating particle accelerators, particularly useful at facilities like the Advanced Photon Source (APS). It helps model beam dynamics, track particles in 6D, and optimize accelerator parameters, making it vital for research and operations.
 
-##Introduction to Elegant
+##Introduction to elegant
 
-Elegant, standing for ELEctron Generation ANd Tracking, is a 6-D accelerator simulation code developed by the Accelerator Operations and Physics Group at the Advanced Photon Source (APS), a facility under Argonne National Laboratory. It is designed to model and simulate particle accelerators, particularly synchrotron light sources, with capabilities extending to tracking particles in 6-dimensional phase space (x, x', y, y', s, δ), using matrices up to third order, canonical kick elements, and numerically integrated elements. The software is not standalone, relying on the SDDS (Self-Describing Data Sets) Toolkit for post-processing and data analysis, and supports multi-stage simulations, making it suitable for complex projects like start-to-end jitter analysis and top-up tracking.
-The program’s philosophy emphasizes flexibility, encouraging users to leverage UNIX shell scripts and languages like Tcl/Tk for tailored outputs. It supports concurrent computing on multiple workstations, with complete backward compatibility to ensure existing input files remain functional. This makes Elegant an essential tool for the design, operation, and upgrade of particle accelerators, particularly in research environments.
+**elegant**, standing for ELEctron Generation ANd Tracking, is a 6-D accelerator simulation code developed by the Accelerator Operations and Physics Group at the Advanced Photon Source (APS), a facility under Argonne National Laboratory. It is designed to model and simulate particle accelerators, particularly synchrotron light sources, with capabilities extending to tracking particles in 6-dimensional phase space (x, x', y, y', s, δ), using matrices up to third order, canonical kick elements, and numerically integrated elements. The software is not standalone, relying on the SDDS (Self-Describing Data Sets) Toolkit for post-processing and data analysis, and supports multi-stage simulations, making it suitable for complex projects like start-to-end jitter analysis and top-up tracking.
+The program’s philosophy emphasizes flexibility, encouraging users to leverage UNIX shell scripts and languages like Tcl/Tk for tailored outputs. It supports concurrent computing on multiple workstations, with complete backward compatibility to ensure existing input files remain functional. This makes **elegant** an essential tool for the design, operation, and upgrade of particle accelerators, particularly in research environments.
 
 ## Documentation
 
@@ -25,7 +25,7 @@ make -j
 
 ## Usage
 
-Run elegant with an appropriate input file:
+Run **elegant** with an appropriate input file:
 
 ```bash
 ./elegant your_input_file.ele
@@ -39,7 +39,7 @@ Contributions, bug reports, and suggestions are welcome. Please open an issue or
 
 ## Citation
 
-If you use elegant in your research, please cite:
+If you use **elegant** in your research, please cite:
 
 > M. Borland, “elegant: A Flexible SDDS-Compliant Code for Accelerator Simulation,” Advanced Photon Source LS-287, September 2000.
 

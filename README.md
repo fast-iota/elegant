@@ -43,3 +43,20 @@ If you use **elegant** in your research, please cite:
 
 > M. Borland, “elegant: A Flexible SDDS-Compliant Code for Accelerator Simulation,” Advanced Photon Source LS-287, September 2000.
 
+## Authors
+- Michael Borland
+- Bob Soliday
+- Yusong Wang
+- Aiaim Xiao
+- Hairong Shang
+- Nikita Kuklev
+- Joe Calvey
+- Yipeng Sun
+- Louis Emery
+- Xuesong Jiao
+- Vadim Sajaev
+
+## Acknowledgments
+This project is developed and maintained by **[Accelerator Operations & Physics](https://www.aps.anl.gov/Accelerator-Operations-Physics)** at the **Advanced Photon Source** at **Argonne National Laboratory**.
+
+For more details, visit the official **[SDDS documentation](https://www.aps.anl.gov/Accelerator-Operations-Physics/Documentation)**.

@@ -119,11 +119,6 @@ endif
 
 include ../../Makefile.build
 
-$(OBJ_DIR)/elegant$(EXEEXT): $(elegant_OBJS) $(PROD_DEPS)
-	$(LINKEXE) $(OUTPUTEXE) $(elegant_OBJS) $(LDFLAGS) $(LIB_LINK_DIRS) $(PROD_LIBS) $(PROD_LIBS_SDDS) $(PROD_SYS_LIBS)
-	cp -f $@ $(BIN_DIR)/
-
-
 $(OBJ_DIR)/sddsrandmult.$(OBJEXT): $(OBJ_DIR)/sddsrandmult.h
 
 $(OBJ_DIR)/sddsrandmult.h: sddsrandmult.nl

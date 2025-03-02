@@ -216,7 +216,7 @@ ifeq ($(OS), Linux)
   CCFLAGS += -DUSE_GSL $(MKL_CFLAG) $(MKL_INCLUDE) $(LAPACK_CFLAG) $(LAPACK_INCLUDE)
   LDFLAGS := -L$(SDDS_REPO)/lib/$(OS)-$(ARCH) -fopenmp $(LDFLAGS)
   PROD_SYS_LIBS := $(LZMA_LIB) $(GSL_LIB) $(GSLCBLAS_LIB) $(Z_LIB) $(FFTW3_LIB)  $(MKL_LIB) $(LAPACK_LIB) $(PROD_SYS_LIBS)
-  PROD_LIBS = -lmdbcommon -lmatlib -lfftpack -lSDDS1 -lnamelist -lrpnlib -lmdbmth -lmdblib
+  PROD_LIBS_SDDS = -lmdbcommon -lmatlib -lfftpack -lSDDS1 -lnamelist -lrpnlib -lmdbmth -lmdblib
 endif
 
 ifeq ($(OS), Darwin)
@@ -224,45 +224,45 @@ ifeq ($(OS), Darwin)
   CCFLAGS += -DUSE_GSL -DCLAPACK
   LDFLAGS := -L$(SDDS_REPO)/lib/$(OS)-$(ARCH) $(LDFLAGS)
   PROD_SYS_LIBS := -framework Accelerate $(LZMA_LIB) $(GSL_LIB) $(GSLCBLAS_LIB) $(Z_LIB) $(FFTW3_LIB)  $(MKL_LIB) $(LAPACK_LIB) $(PROD_SYS_LIBS)
-  PROD_LIBS = -lmdbcommon -lmatlib -lfftpack -lSDDS1 -lnamelist -lrpnlib -lmdbmth -lmdblib
+  PROD_LIBS_SDDS = -lmdbcommon -lmatlib -lfftpack -lSDDS1 -lnamelist -lrpnlib -lmdbmth -lmdblib
 endif
 
 ifeq ($(OS), Windows)
   CFLAGS += -I$(SDDS_REPO)/lzma $(MKL_CFLAG) $(MKL_INCLUDE) $(MKL_INCLUDE)/fftw -wd4018 -wd4244 -wd4267 -wd4311
   CCFLAGS += -I$(SDDS_REPO)/lzma $(MKL_CFLAG) $(MKL_INCLUDE) $(MKL_INCLUDE)/fftw -wd4018 -wd4244 -wd4267 -wd4311
   PROD_SYS_LIBS := $(MKL_LIB) $(PROD_SYS_LIBS)
-  PROD_LIBS = mdbcommon.lib matlib.lib fftpack.lib SDDS1.lib namelist.lib rpnlib.lib mdbmth.lib mdblib.lib lzma.lib z.lib
+  PROD_LIBS_SDDS = mdbcommon.lib matlib.lib fftpack.lib SDDS1.lib namelist.lib rpnlib.lib mdbmth.lib mdblib.lib lzma.lib z.lib
   LIB_LINK_DIRS = -LIBPATH:$(SDDS_REPO)/lib/$(OS)-$(ARCH)
 endif
 
 include ../Makefile.build
 
 $(OBJ_DIR)/elegant$(EXEEXT): $(elegant_OBJS) $(PROD_DEPS)
-	$(LINKEXE) $(OUTPUTEXE) $(elegant_OBJS) $(LDFLAGS) $(LIB_LINK_DIRS) $(PROD_LIBS) $(TIFF_LIBS) $(PROD_SYS_LIBS)
+	$(LINKEXE) $(OUTPUTEXE) $(elegant_OBJS) $(LDFLAGS) $(LIB_LINK_DIRS) $(PROD_LIBS) $(PROD_LIBS_SDDS) $(PROD_SYS_LIBS)
 	cp -f $@ $(BIN_DIR)/
 
 $(OBJ_DIR)/elegantto$(EXEEXT): $(elegantto_OBJS) $(PROD_DEPS)
-	$(LINKEXE) $(OUTPUTEXE) $(elegantto_OBJS) $(LDFLAGS) $(LIB_LINK_DIRS) $(PROD_LIBS) $(TIFF_LIBS) $(PROD_SYS_LIBS)
+	$(LINKEXE) $(OUTPUTEXE) $(elegantto_OBJS) $(LDFLAGS) $(LIB_LINK_DIRS) $(PROD_LIBS) $(PROD_LIBS_SDDS) $(PROD_SYS_LIBS)
 	cp -f $@ $(BIN_DIR)/
 
 $(OBJ_DIR)/sddssasefel$(EXEEXT): $(sddssasefel_OBJS) $(PROD_DEPS)
-	$(LINKEXE) $(OUTPUTEXE) $(sddssasefel_OBJS) $(LDFLAGS) $(LIB_LINK_DIRS) $(PROD_LIBS) $(TIFF_LIBS) $(PROD_SYS_LIBS)
+	$(LINKEXE) $(OUTPUTEXE) $(sddssasefel_OBJS) $(LDFLAGS) $(LIB_LINK_DIRS) $(PROD_LIBS) $(PROD_LIBS_SDDS) $(PROD_SYS_LIBS)
 	cp -f $@ $(BIN_DIR)/
 
 $(OBJ_DIR)/ibsEmittance$(EXEEXT): $(ibsEmittance_OBJS) $(PROD_DEPS)
-	$(LINKEXE) $(OUTPUTEXE) $(ibsEmittance_OBJS) $(LDFLAGS) $(LIB_LINK_DIRS) $(PROD_LIBS) $(TIFF_LIBS) $(PROD_SYS_LIBS)
+	$(LINKEXE) $(OUTPUTEXE) $(ibsEmittance_OBJS) $(LDFLAGS) $(LIB_LINK_DIRS) $(PROD_LIBS) $(PROD_LIBS_SDDS) $(PROD_SYS_LIBS)
 	cp -f $@ $(BIN_DIR)/
 
 $(OBJ_DIR)/abrat$(EXEEXT): $(abrat_OBJS) $(PROD_DEPS)
-	$(LINKEXE) $(OUTPUTEXE) $(abrat_OBJS) $(LDFLAGS) $(LIB_LINK_DIRS) $(PROD_LIBS) $(TIFF_LIBS) $(PROD_SYS_LIBS)
+	$(LINKEXE) $(OUTPUTEXE) $(abrat_OBJS) $(LDFLAGS) $(LIB_LINK_DIRS) $(PROD_LIBS) $(PROD_LIBS_SDDS) $(PROD_SYS_LIBS)
 	cp -f $@ $(BIN_DIR)/
 
 $(OBJ_DIR)/trimda$(EXEEXT): $(trimda_OBJS) $(PROD_DEPS)
-	$(LINKEXE) $(OUTPUTEXE) $(trimda_OBJS) $(LDFLAGS) $(LIB_LINK_DIRS) $(PROD_LIBS) $(TIFF_LIBS) $(PROD_SYS_LIBS)
+	$(LINKEXE) $(OUTPUTEXE) $(trimda_OBJS) $(LDFLAGS) $(LIB_LINK_DIRS) $(PROD_LIBS) $(PROD_LIBS_SDDS) $(PROD_SYS_LIBS)
 	cp -f $@ $(BIN_DIR)/
 
 $(OBJ_DIR)/iirFilterTest$(EXEEXT): $(iirFilterTest_OBJS) $(PROD_DEPS)
-	$(LINKEXE) $(OUTPUTEXE) $(iirFilterTest_OBJS) $(LDFLAGS) $(LIB_LINK_DIRS) $(PROD_LIBS) $(TIFF_LIBS) $(PROD_SYS_LIBS)
+	$(LINKEXE) $(OUTPUTEXE) $(iirFilterTest_OBJS) $(LDFLAGS) $(LIB_LINK_DIRS) $(PROD_LIBS) $(PROD_LIBS_SDDS) $(PROD_SYS_LIBS)
 	cp -f $@ $(BIN_DIR)/
 
 $(OBJ_DIR)/insertSCeffects.$(OBJEXT): $(OBJ_DIR)/insertSCeffects.h

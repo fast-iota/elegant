@@ -21,7 +21,8 @@ ifeq ($(OS), Linux)
   CFLAGS += -fopenmp -DUSE_GSL
   LDFLAGS := -L$(SDDS_REPO)/lib/$(OS)-$(ARCH) -L../../lib/$(OS)-$(ARCH) -fopenmp $(LDFLAGS)
   PROD_SYS_LIBS := $(LZMA_LIB) $(GSL_LIB) $(GSLCBLAS_LIB) $(Z_LIB) $(PROD_SYS_LIBS)
-  PROD_LIBS = -lxrl -loagphy -lmdbcommon -lSDDS1 -lrpnlib -lmdbmth -lmdblib
+  PROD_LIBS = -lxrl -loagphy
+  PROD_LIBS_SDDS = -lmdbcommon -lSDDS1 -lrpnlib -lmdbmth -lmdblib
 endif
 
 ifeq ($(OS), Darwin)
@@ -29,27 +30,29 @@ ifeq ($(OS), Darwin)
   CFLAGS += -DUSE_GSL
   LDFLAGS := -L$(SDDS_REPO)/lib/$(OS)-$(ARCH) -L../../lib/$(OS)-$(ARCH) $(LDFLAGS)
   PROD_SYS_LIBS := $(LZMA_LIB) $(GSL_LIB) $(GSLCBLAS_LIB) $(Z_LIB) $(PROD_SYS_LIBS)
-  PROD_LIBS = -lxrl -loagphy -lmdbcommon -lSDDS1 -lrpnlib -lmdbmth -lmdblib
+  PROD_LIBS = -lxrl -loagphy
+  PROD_LIBS_SDDS = -lmdbcommon -lSDDS1 -lrpnlib -lmdbmth -lmdblib
 endif
 
 ifeq ($(OS), Windows)
   CFLAGS += -I$(SDDS_REPO)/lzma -wd4244 -wd4267
-  PROD_LIBS = xrl.lib oagphy.lib mdbcommon.lib SDDS1.lib rpnlib.lib mdbmth.lib mdblib.lib lzma.lib z.lib
+  PROD_LIBS = xrl.lib oagphy.lib
+  PROD_LIBS_SDDS = mdbcommon.lib SDDS1.lib rpnlib.lib mdbmth.lib mdblib.lib lzma.lib z.lib
   LIB_LINK_DIRS = -LIBPATH:$(SDDS_REPO)/lib/$(OS)-$(ARCH) -LIBPATH:../../lib/$(OS)-$(ARCH)
 endif
 
 include ../../Makefile.build
 
 $(OBJ_DIR)/sddsbrightness$(EXEEXT): $(sddsbrightness_OBJS) $(PROD_DEPS) $(OBJ_DIR)/usb.$(OBJEXT) $(OBJ_DIR)/hunt.$(OBJEXT) $(OBJ_DIR)/brighte.$(OBJEXT)
-	$(F77) $(RPATH) $(OUTPUTEXE) $(sddsbrightness_OBJS) $(OBJ_DIR)/usb.$(OBJEXT) $(OBJ_DIR)/hunt.$(OBJEXT) $(OBJ_DIR)/brighte.$(OBJEXT) $(LDFLAGS) $(LIB_LINK_DIRS) $(PROD_LIBS) $(TIFF_LIBS) $(PROD_SYS_LIBS)
+	$(F77) $(RPATH) $(OUTPUTEXE) $(sddsbrightness_OBJS) $(OBJ_DIR)/usb.$(OBJEXT) $(OBJ_DIR)/hunt.$(OBJEXT) $(OBJ_DIR)/brighte.$(OBJEXT) $(LDFLAGS) $(LIB_LINK_DIRS) $(PROD_LIBS) $(PROD_LIBS_SDDS) $(PROD_SYS_LIBS)
 	cp -f $@ $(BIN_DIR)/
 
 $(OBJ_DIR)/sddsurgent$(EXEEXT): $(sddsurgent_OBJS) $(PROD_DEPS) $(OBJ_DIR)/us.$(OBJEXT) $(OBJ_DIR)/hunt.$(OBJEXT) $(OBJ_DIR)/brighte.$(OBJEXT) $(OBJ_DIR)/urgent.$(OBJEXT)
-	$(F77) $(RPATH) $(OUTPUTEXE) $(sddsurgent_OBJS) $(OBJ_DIR)/us.$(OBJEXT) $(OBJ_DIR)/hunt.$(OBJEXT) $(OBJ_DIR)/brighte.$(OBJEXT) $(OBJ_DIR)/urgent.$(OBJEXT) $(LDFLAGS) $(LIB_LINK_DIRS) $(PROD_LIBS) $(TIFF_LIBS) $(PROD_SYS_LIBS)
+	$(F77) $(RPATH) $(OUTPUTEXE) $(sddsurgent_OBJS) $(OBJ_DIR)/us.$(OBJEXT) $(OBJ_DIR)/hunt.$(OBJEXT) $(OBJ_DIR)/brighte.$(OBJEXT) $(OBJ_DIR)/urgent.$(OBJEXT) $(LDFLAGS) $(LIB_LINK_DIRS) $(PROD_LIBS) $(PROD_LIBS_SDDS) $(PROD_SYS_LIBS)
 	cp -f $@ $(BIN_DIR)/
 
 $(OBJ_DIR)/sddsfluxcurve$(EXEEXT): $(sddsfluxcurve_OBJS) $(PROD_DEPS) $(OBJ_DIR)/us.$(OBJEXT) $(OBJ_DIR)/hunt.$(OBJEXT) $(OBJ_DIR)/brighte.$(OBJEXT)
-	$(F77) $(RPATH) $(OUTPUTEXE) $(sddsfluxcurve_OBJS) $(OBJ_DIR)/us.$(OBJEXT) $(OBJ_DIR)/hunt.$(OBJEXT) $(OBJ_DIR)/brighte.$(OBJEXT) $(LDFLAGS) $(LIB_LINK_DIRS) $(PROD_LIBS) $(TIFF_LIBS) $(PROD_SYS_LIBS)
+	$(F77) $(RPATH) $(OUTPUTEXE) $(sddsfluxcurve_OBJS) $(OBJ_DIR)/us.$(OBJEXT) $(OBJ_DIR)/hunt.$(OBJEXT) $(OBJ_DIR)/brighte.$(OBJEXT) $(LDFLAGS) $(LIB_LINK_DIRS) $(PROD_LIBS) $(PROD_LIBS_SDDS) $(PROD_SYS_LIBS)
 	cp -f $@ $(BIN_DIR)/
 
 $(OBJ_DIR)/usb.$(OBJEXT): usb.f

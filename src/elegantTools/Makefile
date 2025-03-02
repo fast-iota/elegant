@@ -95,7 +95,8 @@ ifeq ($(OS), Linux)
   CCFLAGS += -fopenmp -DUSE_GSL
   LDFLAGS := -L$(SDDS_REPO)/lib/$(OS)-$(ARCH) -L../../lib/$(OS)-$(ARCH) -fopenmp $(LDFLAGS)
   PROD_SYS_LIBS := $(LZMA_LIB) $(GSL_LIB) $(GSLCBLAS_LIB) $(Z_LIB) $(PROD_SYS_LIBS)
-  PROD_LIBS = -loagphy -lmdbcommon -lmatlib -lfftpack -lSDDS1 -lnamelist -lrpnlib -lmdbmth -lmdblib -lmeschach
+  PROD_LIBS = -loagphy
+  PROD_LIBS_SDDS = -lmdbcommon -lmatlib -lfftpack -lSDDS1 -lnamelist -lrpnlib -lmdbmth -lmdblib -lmeschach
 endif
 
 ifeq ($(OS), Darwin)
@@ -104,20 +105,22 @@ ifeq ($(OS), Darwin)
   CCFLAGS += -DUSE_GSL
   LDFLAGS := -L$(SDDS_REPO)/lib/$(OS)-$(ARCH) -L../../lib/$(OS)-$(ARCH) $(LDFLAGS)
   PROD_SYS_LIBS := $(LZMA_LIB) $(GSL_LIB) $(GSLCBLAS_LIB) $(Z_LIB) $(PROD_SYS_LIBS)
-  PROD_LIBS = -loagphy -lmdbcommon -lmatlib -lfftpack -lSDDS1 -lnamelist -lrpnlib -lmdbmth -lmdblib -lmeschach
+  PROD_LIBS = -loagphy
+  PROD_LIBS_SDDS = -lmdbcommon -lmatlib -lfftpack -lSDDS1 -lnamelist -lrpnlib -lmdbmth -lmdblib -lmeschach
 endif
 
 ifeq ($(OS), Windows)
   CFLAGS += -I$(SDDS_REPO)/lzma -wd4244
   CCFLAGS += -I$(SDDS_REPO)/lzma -wd4244
-  PROD_LIBS = oagphy.lib mdbcommon.lib matlib.lib fftpack.lib SDDS1.lib namelist.lib rpnlib.lib mdbmth.lib mdblib.lib lzma.lib z.lib meschach.lib
+  PROD_LIBS = oagphy.lib
+  PROD_LIBS_SDDS = mdbcommon.lib matlib.lib fftpack.lib SDDS1.lib namelist.lib rpnlib.lib mdbmth.lib mdblib.lib lzma.lib z.lib meschach.lib
   LIB_LINK_DIRS = -LIBPATH:$(SDDS_REPO)/lib/$(OS)-$(ARCH) -LIBPATH:../../lib/$(OS)-$(ARCH)
 endif
 
 include ../../Makefile.build
 
 $(OBJ_DIR)/elegant$(EXEEXT): $(elegant_OBJS) $(PROD_DEPS)
-	$(LINKEXE) $(OUTPUTEXE) $(elegant_OBJS) $(LDFLAGS) $(LIB_LINK_DIRS) $(PROD_LIBS) $(TIFF_LIBS) $(PROD_SYS_LIBS)
+	$(LINKEXE) $(OUTPUTEXE) $(elegant_OBJS) $(LDFLAGS) $(LIB_LINK_DIRS) $(PROD_LIBS) $(PROD_LIBS_SDDS) $(PROD_SYS_LIBS)
 	cp -f $@ $(BIN_DIR)/
 
 

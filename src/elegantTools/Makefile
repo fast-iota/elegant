@@ -59,7 +59,9 @@ SCRIPTS = analyzeMagnets \
 	weightedBunch
 
 PROD = astra2elegant \
+	computeCBGGE \
 	computeRBGGE \
+	csrImpedance \
 	curvedDipoleFringeCalc \
 	elasticScatteringAnalysis \
 	haissinski \
@@ -86,13 +88,12 @@ PROD = astra2elegant \
 
 SVN_VERSION=GIT_$(shell git log --oneline | wc -l | sed 's/^[[:space:]]*//')
 
-CFLAGS +=  -I$(SDDS_REPO)/include -I$(SDDS_REPO)/meschach -I../../physics -I$(OBJ_DIR) -DSVN_VERSION=\"$(SVN_VERSION)\"
-CCFLAGS +=  -I$(SDDS_REPO)/include -I$(SDDS_REPO)/meschach -I../../physics -I$(OBJ_DIR) -DSVN_VERSION=\"$(SVN_VERSION)\"
+CFLAGS +=  -I$(SDDS_REPO)/include -I$(SDDS_REPO)/meschach -I../../physics -I$(OBJ_DIR) -DUSE_GSL -DSVN_VERSION=\"$(SVN_VERSION)\"
+CCFLAGS +=  -I$(SDDS_REPO)/include -I$(SDDS_REPO)/meschach -I../../physics -I$(OBJ_DIR) -DUSE_GSL -DSVN_VERSION=\"$(SVN_VERSION)\"
 
 ifeq ($(OS), Linux)
-  PROD += computeCBGGE csrImpedance
-  CFLAGS += -fopenmp -DUSE_GSL
-  CCFLAGS += -fopenmp -DUSE_GSL
+  CFLAGS += -fopenmp
+  CCFLAGS += -fopenmp
   LDFLAGS := -L$(SDDS_REPO)/lib/$(OS)-$(ARCH) -L../../lib/$(OS)-$(ARCH) -fopenmp $(LDFLAGS)
   PROD_SYS_LIBS := $(LZMA_LIB) $(GSL_LIB) $(GSLCBLAS_LIB) $(Z_LIB) $(PROD_SYS_LIBS)
   PROD_LIBS = -loagphy
@@ -100,9 +101,6 @@ ifeq ($(OS), Linux)
 endif
 
 ifeq ($(OS), Darwin)
-  PROD += computeCBGGE csrImpedance
-  CFLAGS += -DUSE_GSL
-  CCFLAGS += -DUSE_GSL
   LDFLAGS := -L$(SDDS_REPO)/lib/$(OS)-$(ARCH) -L../../lib/$(OS)-$(ARCH) $(LDFLAGS)
   PROD_SYS_LIBS := $(LZMA_LIB) $(GSL_LIB) $(GSLCBLAS_LIB) $(Z_LIB) $(PROD_SYS_LIBS)
   PROD_LIBS = -loagphy
@@ -110,11 +108,11 @@ ifeq ($(OS), Darwin)
 endif
 
 ifeq ($(OS), Windows)
-  CFLAGS += -I$(SDDS_REPO)/lzma -wd4244
-  CCFLAGS += -I$(SDDS_REPO)/lzma -wd4244
+  CFLAGS += -I$(SDDS_REPO)/lzma -I../../../gsl -wd4244
+  CCFLAGS += -I$(SDDS_REPO)/lzma -I../../../gsl -wd4244
   PROD_LIBS = oagphy.lib
-  PROD_LIBS_SDDS = mdbcommon.lib matlib.lib fftpack.lib SDDS1.lib namelist.lib rpnlib.lib mdbmth.lib mdblib.lib lzma.lib z.lib meschach.lib
-  LIB_LINK_DIRS = -LIBPATH:$(SDDS_REPO)/lib/$(OS)-$(ARCH) -LIBPATH:../../lib/$(OS)-$(ARCH)
+  PROD_LIBS_SDDS = mdbcommon.lib matlib.lib fftpack.lib SDDS1.lib namelist.lib rpnlib.lib gsl.lib gslcblas.lib mdbmth.lib mdblib.lib lzma.lib z.lib meschach.lib
+  LIB_LINK_DIRS += -LIBPATH:$(SDDS_REPO)/lib/$(OS)-$(ARCH) -LIBPATH:../../lib/$(OS)-$(ARCH)
 endif
 
 include ../../Makefile.build

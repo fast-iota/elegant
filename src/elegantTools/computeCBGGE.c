@@ -55,7 +55,7 @@ int ReadInputFile(FIELDS_ON_BOUNDARY *fieldsOnBoundary, char *inputFile,
 void freeFieldsOnBoundary(FIELDS_ON_BOUNDARY *fob);
 double BesIn(double x, long order);
 int SetUpOutputFile(SDDS_DATASET *SDDSout, char *filename, long skew, long derivatives);
-int StartPage(SDDS_DATASET *SDDSout, FIELDS_ON_BOUNDARY *fob, long m, char *type);
+int StartPageLocal(SDDS_DATASET *SDDSout, FIELDS_ON_BOUNDARY *fob, long m, char *type);
 void FFT(COMPLEX *field, int32_t isign, int32_t npts);
 
 void readBGGExpData(BGGEXP_DATA *bggexpData, char *filename, char *nameFragment, short skew);
@@ -692,11 +692,11 @@ int computeGGE(
       iharm = m + 1;
     if (normalOutput && m >= 0) {
       offsetN = SDDS_GetColumnIndex(&SDDSnormal, "CnmS0");
-      StartPage(&SDDSnormal, fieldsOnBoundary, iharm, "Normal");
+      StartPageLocal(&SDDSnormal, fieldsOnBoundary, iharm, "Normal");
     }
     if (skewOutput) {
       offsetS = SDDS_GetColumnIndex(&SDDSskew, "CnmC0");
-      StartPage(&SDDSskew, fieldsOnBoundary, iharm, "Skew");
+      StartPageLocal(&SDDSskew, fieldsOnBoundary, iharm, "Skew");
     }
 #ifdef DEBUG
     printf("GGE m=%ld, iharm=%ld, offsetN = %ld, offsetS = %ld\n",
@@ -1359,8 +1359,7 @@ int SetUpOutputFile(SDDS_DATASET *SDDSout, char *filename, long skew, long deriv
   return 0;
 }
 
-int StartPage(
-              SDDS_DATASET *SDDSout,
+int StartPageLocal(SDDS_DATASET *SDDSout,
               FIELDS_ON_BOUNDARY *fob,
               long m,
               char *type) {
@@ -1377,7 +1376,7 @@ int StartPage(
   }
   index = SDDS_GetColumnIndex(SDDSout, "z");
 #ifdef DEBUG
-  printf("StartPage %s: dz = %le, Nz = %ld, column index = %ld\n",
+  printf("StartPageLocal %s: dz = %le, Nz = %ld, column index = %ld\n",
          type, fob->dz, fob->Nz, index);
 #endif
   for (iz = 0; iz < fob->Nz; iz++) {

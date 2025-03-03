@@ -1,6 +1,6 @@
 SDDS_REPO = $(wildcard ../../SDDS)
 ifeq ($(SDDS_REPO),)
-  $(error SDDS source code not found. Run 'git clone https://github.com/rtsoliday/SDDS.git' next to the SDDS-Python-module repository)
+  $(error SDDS source code not found. Run 'git clone https://github.com/rtsoliday/SDDS.git' next to the elegant repository)
 endif
 
 include ../Makefile.rules
@@ -207,32 +207,31 @@ iirFilterTest_SRC = iirFilterTest.c iirFilter.c bombElegant.c sdds_support_commo
 
 SVN_VERSION=GIT_$(shell git log --oneline | wc -l | sed 's/^[[:space:]]*//')
 
-CFLAGS +=  -I$(SDDS_REPO)/include -I$(OBJ_DIR) -DIEEE_MATH -DMINIMIZE_MEMORY -DUSE_KAHAN -DSVN_VERSION=\"$(SVN_VERSION)\"
-CCFLAGS +=  -I$(SDDS_REPO)/include -I$(OBJ_DIR) -DIEEE_MATH -DMINIMIZE_MEMORY -DUSE_KAHAN -DSVN_VERSION=\"$(SVN_VERSION)\"
-
+CFLAGS +=  -I$(SDDS_REPO)/include -I$(OBJ_DIR) -DIEEE_MATH -DMINIMIZE_MEMORY -DUSE_KAHAN -DUSE_GSL -DSVN_VERSION=\"$(SVN_VERSION)\"
+CCFLAGS +=  -I$(SDDS_REPO)/include -I$(OBJ_DIR) -DIEEE_MATH -DMINIMIZE_MEMORY -DUSE_KAHAN -DUSE_GSL -DSVN_VERSION=\"$(SVN_VERSION)\"
 
 ifeq ($(OS), Linux)
-  CFLAGS += -DUSE_GSL $(MKL_CFLAG) $(MKL_INCLUDE) $(LAPACK_CFLAG) $(LAPACK_INCLUDE)
-  CCFLAGS += -DUSE_GSL $(MKL_CFLAG) $(MKL_INCLUDE) $(LAPACK_CFLAG) $(LAPACK_INCLUDE)
+  CFLAGS += $(MKL_CFLAG) $(MKL_INCLUDE) $(LAPACK_CFLAG) $(LAPACK_INCLUDE)
+  CCFLAGS += $(MKL_CFLAG) $(MKL_INCLUDE) $(LAPACK_CFLAG) $(LAPACK_INCLUDE)
   LDFLAGS := -L$(SDDS_REPO)/lib/$(OS)-$(ARCH) -fopenmp $(LDFLAGS)
   PROD_SYS_LIBS := $(LZMA_LIB) $(GSL_LIB) $(GSLCBLAS_LIB) $(Z_LIB) $(FFTW3_LIB)  $(MKL_LIB) $(LAPACK_LIB) $(PROD_SYS_LIBS)
   PROD_LIBS_SDDS = -lmdbcommon -lmatlib -lfftpack -lSDDS1 -lnamelist -lrpnlib -lmdbmth -lmdblib
 endif
 
 ifeq ($(OS), Darwin)
-  CFLAGS += -DUSE_GSL -DCLAPACK
-  CCFLAGS += -DUSE_GSL -DCLAPACK
+  CFLAGS += -DCLAPACK
+  CCFLAGS += -DCLAPACK
   LDFLAGS := -L$(SDDS_REPO)/lib/$(OS)-$(ARCH) $(LDFLAGS)
   PROD_SYS_LIBS := -framework Accelerate $(LZMA_LIB) $(GSL_LIB) $(GSLCBLAS_LIB) $(Z_LIB) $(FFTW3_LIB)  $(MKL_LIB) $(LAPACK_LIB) $(PROD_SYS_LIBS)
   PROD_LIBS_SDDS = -lmdbcommon -lmatlib -lfftpack -lSDDS1 -lnamelist -lrpnlib -lmdbmth -lmdblib
 endif
 
 ifeq ($(OS), Windows)
-  CFLAGS += -I$(SDDS_REPO)/lzma $(MKL_CFLAG) $(MKL_INCLUDE) $(MKL_INCLUDE)/fftw -wd4018 -wd4244 -wd4267 -wd4311
-  CCFLAGS += -I$(SDDS_REPO)/lzma $(MKL_CFLAG) $(MKL_INCLUDE) $(MKL_INCLUDE)/fftw -wd4018 -wd4244 -wd4267 -wd4311
+  CFLAGS += -I$(SDDS_REPO)/lzma -I../../gsl $(MKL_CFLAG) $(MKL_INCLUDE) $(MKL_INCLUDE)/fftw -wd4018 -wd4244 -wd4267 -wd4311
+  CCFLAGS += -I$(SDDS_REPO)/lzma -I../../gsl $(MKL_CFLAG) $(MKL_INCLUDE) $(MKL_INCLUDE)/fftw -wd4018 -wd4244 -wd4267 -wd4311
   PROD_SYS_LIBS := $(MKL_LIB) $(PROD_SYS_LIBS)
-  PROD_LIBS_SDDS = mdbcommon.lib matlib.lib fftpack.lib SDDS1.lib namelist.lib rpnlib.lib mdbmth.lib mdblib.lib lzma.lib z.lib
-  LIB_LINK_DIRS = -LIBPATH:$(SDDS_REPO)/lib/$(OS)-$(ARCH)
+  PROD_LIBS_SDDS = mdbcommon.lib matlib.lib fftpack.lib SDDS1.lib namelist.lib rpnlib.lib gsl.lib gslcblas.lib mdbmth.lib mdblib.lib lzma.lib z.lib
+  LIB_LINK_DIRS += -LIBPATH:$(SDDS_REPO)/lib/$(OS)-$(ARCH)
 endif
 
 include ../Makefile.build

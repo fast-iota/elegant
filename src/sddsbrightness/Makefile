@@ -8,17 +8,17 @@ include ../../Makefile.rules
 
 SCRIPTS = brightnessEnvelope
 
-PROD = sddsws sddsbs sddsecon sddscompton sddsxrf xrltool xrltest
+PROD = sddsws sddsbs sddsecon sddscompton sddsxrf xrltool xrltest sddssyncflux
 
 sddsbrightness_SRC = sddsbrightness.c usbC.c brighteC.c huntC.c
 sddsurgent_SRC = sddsurgent.c
 sddsfluxcurve_SRC = sddsfluxcurve.c
 
-CFLAGS +=  -I$(SDDS_REPO)/include -I../../physics -I../../xraylib -I$(OBJ_DIR)
+CFLAGS += -DUSE_GSL -I$(SDDS_REPO)/include -I../../physics -I../../xraylib -I$(OBJ_DIR)
 
 ifeq ($(OS), Linux)
-  PROD += sddsbrightness sddsurgent sddsfluxcurve sddssyncflux sddsxra
-  CFLAGS += -fopenmp -DUSE_GSL
+  PROD += sddsbrightness sddsurgent sddsfluxcurve sddsxra
+  CFLAGS += -fopenmp
   LDFLAGS := -L$(SDDS_REPO)/lib/$(OS)-$(ARCH) -L../../lib/$(OS)-$(ARCH) -fopenmp $(LDFLAGS)
   PROD_SYS_LIBS := $(LZMA_LIB) $(GSL_LIB) $(GSLCBLAS_LIB) $(Z_LIB) $(PROD_SYS_LIBS)
   PROD_LIBS = -lxrl -loagphy
@@ -26,8 +26,7 @@ ifeq ($(OS), Linux)
 endif
 
 ifeq ($(OS), Darwin)
-  PROD += sddsbrightness sddsurgent sddsfluxcurve sddssyncflux sddsxra
-  CFLAGS += -DUSE_GSL
+  PROD += sddsbrightness sddsurgent sddsfluxcurve sddsxra
   LDFLAGS := -L$(SDDS_REPO)/lib/$(OS)-$(ARCH) -L../../lib/$(OS)-$(ARCH) $(LDFLAGS)
   PROD_SYS_LIBS := $(LZMA_LIB) $(GSL_LIB) $(GSLCBLAS_LIB) $(Z_LIB) $(PROD_SYS_LIBS)
   PROD_LIBS = -lxrl -loagphy
@@ -35,10 +34,10 @@ ifeq ($(OS), Darwin)
 endif
 
 ifeq ($(OS), Windows)
-  CFLAGS += -I$(SDDS_REPO)/lzma -wd4244 -wd4267
+  CFLAGS += -I$(SDDS_REPO)/lzma -I../../../gsl -wd4244 -wd4267
   PROD_LIBS = xrl.lib oagphy.lib
-  PROD_LIBS_SDDS = mdbcommon.lib SDDS1.lib rpnlib.lib mdbmth.lib mdblib.lib lzma.lib z.lib
-  LIB_LINK_DIRS = -LIBPATH:$(SDDS_REPO)/lib/$(OS)-$(ARCH) -LIBPATH:../../lib/$(OS)-$(ARCH)
+  PROD_LIBS_SDDS = mdbcommon.lib SDDS1.lib rpnlib.lib gsl.lib gslcblas.lib mdbmth.lib mdblib.lib lzma.lib z.lib
+  LIB_LINK_DIRS += -LIBPATH:$(SDDS_REPO)/lib/$(OS)-$(ARCH) -LIBPATH:../../lib/$(OS)-$(ARCH)
 endif
 
 include ../../Makefile.build

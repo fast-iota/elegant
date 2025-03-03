@@ -46,7 +46,6 @@ DIRS += src/sddsbrightness
 all: $(DIRS)
 
 ifneq ($(GSL_REPO),)
-  GSL_CLEAN = $(MAKE) -C $(GSL_REPO) -f Makefile.MSVC clean
   $(GSL_REPO):
 	$(MAKE) -C $@ -f Makefile.MSVC all
 endif
@@ -100,7 +99,6 @@ src/sddsbrightness: src/elegantTools
 	$(MAKE) -C $@
 
 clean:
-	$(GSL_CLEAN)
 	$(MAKE) -C physics clean
 	$(MAKE) -C xraylib clean
 	$(MAKE) -C src clean

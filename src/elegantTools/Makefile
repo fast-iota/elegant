@@ -111,7 +111,8 @@ ifeq ($(OS), Windows)
   CFLAGS += -I$(SDDS_REPO)/lzma -I../../../gsl -wd4244
   CCFLAGS += -I$(SDDS_REPO)/lzma -I../../../gsl -wd4244
   PROD_LIBS = oagphy.lib
-  PROD_LIBS_SDDS = mdbcommon.lib matlib.lib fftpack.lib SDDS1.lib namelist.lib rpnlib.lib gsl.lib gslcblas.lib mdbmth.lib mdblib.lib lzma.lib z.lib meschach.lib
+  PROD_SYS_LIBS += gsl.lib gslcblas.lib
+  PROD_LIBS_SDDS = mdbcommon.lib matlib.lib fftpack.lib SDDS1.lib namelist.lib rpnlib.lib mdbmth.lib mdblib.lib lzma.lib z.lib meschach.lib
   LIB_LINK_DIRS += -LIBPATH:$(SDDS_REPO)/lib/$(OS)-$(ARCH) -LIBPATH:../../lib/$(OS)-$(ARCH)
 endif
 

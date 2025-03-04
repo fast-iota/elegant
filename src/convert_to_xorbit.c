@@ -32,7 +32,7 @@ void convert_to_xorbit(char *outputfile, LINE_LIST *beamline, long flip_k,
   VCOR *vcor;
   DRIFT *drift;
   MULT *mult;
-  char s[100];
+  char s[256];
   int quad_sign;
   FILE *fpi, *fp;
   double length;

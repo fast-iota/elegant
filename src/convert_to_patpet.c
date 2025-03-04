@@ -32,7 +32,7 @@ void convert_to_patpet(char *outputfile, LINE_LIST *beamline, long flip_k, doubl
   VMON *vmon;
   MONI *moni;
   DRIFT *drift;
-  char s[100], output[300];
+  char s[256], output[300];
   int count, quad_sign, bend_sign;
   FILE *fpi;
 

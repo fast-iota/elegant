@@ -30,7 +30,7 @@ void convert_to_parmela(char *outputfile, LINE_LIST *beamline, long flip_k, doub
   BEND *bend;
   HCOR *hcor;
   DRIFT *drift;
-  char s[100];
+  char s[256];
   int quad_sign;
   FILE *fpi;
 

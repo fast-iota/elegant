@@ -13,7 +13,7 @@ ifeq ($(OS), Windows)
 endif
 
 # Check for external SDDS repository
-SDDS_REPO = $(wildcard ../SDDS)
+SDDS_REPO = $(wildcard ../SDDS ../../../../epics/extensions/src/SDDS)
 ifeq ($(SDDS_REPO),)
   $(error SDDS source code not found. Run 'git clone https://github.com/rtsoliday/SDDS.git' next to the elegant repository)
 endif
@@ -38,8 +38,8 @@ endif
 DIRS += physics
 DIRS += xraylib
 DIRS += src
-DIRS += src/elegantTools
-DIRS += src/sddsbrightness
+DIRS += elegantTools
+DIRS += sddsbrightness
 
 .PHONY: all $(DIRS) clean distclean
 
@@ -93,17 +93,17 @@ src: xraylib
 	$(MAKE) -C $@
 	$(MAKE) -C $@ -f Makefile.mpi
 endif
-src/elegantTools: src
+elegantTools: src
 	$(MAKE) -C $@
-src/sddsbrightness: src/elegantTools
+sddsbrightness: elegantTools
 	$(MAKE) -C $@
 
 clean:
 	$(MAKE) -C physics clean
 	$(MAKE) -C xraylib clean
 	$(MAKE) -C src clean
-	$(MAKE) -C src/elegantTools clean
-	$(MAKE) -C src/sddsbrightness clean
+	$(MAKE) -C elegantTools clean
+	$(MAKE) -C sddsbrightness clean
 
 distclean: clean
 	rm -rf bin/$(OS)-$(ARCH)

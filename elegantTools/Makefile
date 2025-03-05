@@ -1,10 +1,9 @@
-SDDS_REPO = $(wildcard ../../../SDDS)
+SDDS_REPO = $(wildcard ../../SDDS ../../../../../epics/extensions/src/SDDS)
 ifeq ($(SDDS_REPO),)
   $(error SDDS source code not found. Run 'git clone https://github.com/rtsoliday/SDDS.git' next to the SDDS-Python-module repository)
 endif
 
-DD=../
-include ../../Makefile.rules
+include ../Makefile.rules
 
 SCRIPTS = analyzeMagnets \
 	beamLifetimeCalc \
@@ -86,40 +85,44 @@ PROD = astra2elegant \
 	touschekLifetime
 
 
-SVN_VERSION=GIT_$(shell git log --oneline | wc -l | sed 's/^[[:space:]]*//')
+ifneq ($(wildcard $(DD)../.svn $(DD)../../../../.svn),)
+  SVN_VERSION=$(shell svnversion .)
+else
+  SVN_VERSION=GIT_$(shell git log --oneline | wc -l | sed 's/^[[:space:]]*//')
+endif
 
-CFLAGS +=  -I$(SDDS_REPO)/include -I$(SDDS_REPO)/meschach -I../../physics -I$(OBJ_DIR) -DUSE_GSL -DSVN_VERSION=\"$(SVN_VERSION)\"
-CCFLAGS +=  -I$(SDDS_REPO)/include -I$(SDDS_REPO)/meschach -I../../physics -I$(OBJ_DIR) -DUSE_GSL -DSVN_VERSION=\"$(SVN_VERSION)\"
+CFLAGS +=  -I$(SDDS_REPO)/include -I$(SDDS_REPO)/meschach -I../physics -I$(OBJ_DIR) -DUSE_GSL -DSVN_VERSION=\"$(SVN_VERSION)\"
+CCFLAGS +=  -I$(SDDS_REPO)/include -I$(SDDS_REPO)/meschach -I../physics -I$(OBJ_DIR) -DUSE_GSL -DSVN_VERSION=\"$(SVN_VERSION)\"
 
 ifeq ($(OS), Linux)
   CFLAGS += -fopenmp
   CCFLAGS += -fopenmp
-  LDFLAGS := -L$(SDDS_REPO)/lib/$(OS)-$(ARCH) -L../../lib/$(OS)-$(ARCH) -fopenmp $(LDFLAGS)
+  LDFLAGS := -L$(SDDS_REPO)/lib/$(OS)-$(ARCH) -L../lib/$(OS)-$(ARCH) -fopenmp $(LDFLAGS)
   PROD_SYS_LIBS := $(LZMA_LIB) $(GSL_LIB) $(GSLCBLAS_LIB) $(Z_LIB) $(PROD_SYS_LIBS)
   PROD_LIBS = -loagphy
   PROD_LIBS_SDDS = -lmdbcommon -lmatlib -lfftpack -lSDDS1 -lnamelist -lrpnlib -lmdbmth -lmdblib -lmeschach
 endif
 
 ifeq ($(OS), Darwin)
-  LDFLAGS := -L$(SDDS_REPO)/lib/$(OS)-$(ARCH) -L../../lib/$(OS)-$(ARCH) $(LDFLAGS)
+  LDFLAGS := -L$(SDDS_REPO)/lib/$(OS)-$(ARCH) -L../lib/$(OS)-$(ARCH) $(LDFLAGS)
   PROD_SYS_LIBS := $(LZMA_LIB) $(GSL_LIB) $(GSLCBLAS_LIB) $(Z_LIB) $(PROD_SYS_LIBS)
   PROD_LIBS = -loagphy
   PROD_LIBS_SDDS = -lmdbcommon -lmatlib -lfftpack -lSDDS1 -lnamelist -lrpnlib -lmdbmth -lmdblib -lmeschach
 endif
 
 ifeq ($(OS), Windows)
-  CFLAGS += -I$(SDDS_REPO)/lzma -I../../../gsl -wd4244
-  CCFLAGS += -I$(SDDS_REPO)/lzma -I../../../gsl -wd4244
+  CFLAGS += -I$(SDDS_REPO)/lzma -I../../gsl -wd4244
+  CCFLAGS += -I$(SDDS_REPO)/lzma -I../../gsl -wd4244
   PROD_LIBS = oagphy.lib
   PROD_SYS_LIBS += gsl.lib gslcblas.lib
   PROD_LIBS_SDDS = mdbcommon.lib matlib.lib fftpack.lib SDDS1.lib namelist.lib rpnlib.lib mdbmth.lib mdblib.lib lzma.lib z.lib meschach.lib
-  LIB_LINK_DIRS += -LIBPATH:$(SDDS_REPO)/lib/$(OS)-$(ARCH) -LIBPATH:../../lib/$(OS)-$(ARCH)
+  LIB_LINK_DIRS += -LIBPATH:$(SDDS_REPO)/lib/$(OS)-$(ARCH) -LIBPATH:../lib/$(OS)-$(ARCH)
 endif
 
-include ../../Makefile.build
+include ../Makefile.build
 
 $(OBJ_DIR)/sddsrandmult.$(OBJEXT): $(OBJ_DIR)/sddsrandmult.h
 
 $(OBJ_DIR)/sddsrandmult.h: sddsrandmult.nl
-	../../../SDDS/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables sddsrandmult.nl $(OBJ_DIR)/sddsrandmult.h
+	$(SDDS_REPO)/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables sddsrandmult.nl $(OBJ_DIR)/sddsrandmult.h
 

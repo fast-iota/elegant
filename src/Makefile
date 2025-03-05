@@ -1,4 +1,4 @@
-SDDS_REPO = $(wildcard ../../SDDS)
+SDDS_REPO = $(wildcard ../../SDDS ../../../../../epics/extensions/src/SDDS)
 ifeq ($(SDDS_REPO),)
   $(error SDDS source code not found. Run 'git clone https://github.com/rtsoliday/SDDS.git' next to the elegant repository)
 endif
@@ -205,7 +205,11 @@ trimda_SRC = trimda.c trimApertureSearchResult.c
 
 iirFilterTest_SRC = iirFilterTest.c iirFilter.c bombElegant.c sdds_support_common.c track_data.c
 
-SVN_VERSION=GIT_$(shell git log --oneline | wc -l | sed 's/^[[:space:]]*//')
+ifneq ($(wildcard $(DD)../.svn $(DD)../../../../.svn),)
+  SVN_VERSION=$(shell svnversion .)
+else
+  SVN_VERSION=GIT_$(shell git log --oneline | wc -l | sed 's/^[[:space:]]*//')
+endif
 
 CFLAGS +=  -I$(SDDS_REPO)/include -I$(OBJ_DIR) -DIEEE_MATH -DMINIMIZE_MEMORY -DUSE_KAHAN -DUSE_GSL -DSVN_VERSION=\"$(SVN_VERSION)\"
 CCFLAGS +=  -I$(SDDS_REPO)/include -I$(OBJ_DIR) -DIEEE_MATH -DMINIMIZE_MEMORY -DUSE_KAHAN -DUSE_GSL -DSVN_VERSION=\"$(SVN_VERSION)\"
@@ -239,290 +243,304 @@ include ../Makefile.build
 $(OBJ_DIR)/elegant$(EXEEXT): $(elegant_OBJS) $(PROD_DEPS)
 	$(LINKEXE) $(OUTPUTEXE) $(elegant_OBJS) $(LDFLAGS) $(LIB_LINK_DIRS) $(PROD_LIBS) $(PROD_LIBS_SDDS) $(PROD_SYS_LIBS)
 	cp -f $@ $(BIN_DIR)/
+	@if [ -n "$(EPICS_BIN_DIR)" ]; then echo cp -f $@ $(EPICS_BIN_DIR)/; fi
+	@if [ -n "$(EPICS_BIN_DIR)" ]; then cp -f $@ $(EPICS_BIN_DIR)/; fi
 
 $(OBJ_DIR)/elegantto$(EXEEXT): $(elegantto_OBJS) $(PROD_DEPS)
 	$(LINKEXE) $(OUTPUTEXE) $(elegantto_OBJS) $(LDFLAGS) $(LIB_LINK_DIRS) $(PROD_LIBS) $(PROD_LIBS_SDDS) $(PROD_SYS_LIBS)
 	cp -f $@ $(BIN_DIR)/
+	@if [ -n "$(EPICS_BIN_DIR)" ]; then echo cp -f $@ $(EPICS_BIN_DIR)/; fi
+	@if [ -n "$(EPICS_BIN_DIR)" ]; then cp -f $@ $(EPICS_BIN_DIR)/; fi
 
 $(OBJ_DIR)/sddssasefel$(EXEEXT): $(sddssasefel_OBJS) $(PROD_DEPS)
 	$(LINKEXE) $(OUTPUTEXE) $(sddssasefel_OBJS) $(LDFLAGS) $(LIB_LINK_DIRS) $(PROD_LIBS) $(PROD_LIBS_SDDS) $(PROD_SYS_LIBS)
 	cp -f $@ $(BIN_DIR)/
+	@if [ -n "$(EPICS_BIN_DIR)" ]; then echo cp -f $@ $(EPICS_BIN_DIR)/; fi
+	@if [ -n "$(EPICS_BIN_DIR)" ]; then cp -f $@ $(EPICS_BIN_DIR)/; fi
 
 $(OBJ_DIR)/ibsEmittance$(EXEEXT): $(ibsEmittance_OBJS) $(PROD_DEPS)
 	$(LINKEXE) $(OUTPUTEXE) $(ibsEmittance_OBJS) $(LDFLAGS) $(LIB_LINK_DIRS) $(PROD_LIBS) $(PROD_LIBS_SDDS) $(PROD_SYS_LIBS)
 	cp -f $@ $(BIN_DIR)/
+	@if [ -n "$(EPICS_BIN_DIR)" ]; then echo cp -f $@ $(EPICS_BIN_DIR)/; fi
+	@if [ -n "$(EPICS_BIN_DIR)" ]; then cp -f $@ $(EPICS_BIN_DIR)/; fi
 
 $(OBJ_DIR)/abrat$(EXEEXT): $(abrat_OBJS) $(PROD_DEPS)
 	$(LINKEXE) $(OUTPUTEXE) $(abrat_OBJS) $(LDFLAGS) $(LIB_LINK_DIRS) $(PROD_LIBS) $(PROD_LIBS_SDDS) $(PROD_SYS_LIBS)
 	cp -f $@ $(BIN_DIR)/
+	@if [ -n "$(EPICS_BIN_DIR)" ]; then echo cp -f $@ $(EPICS_BIN_DIR)/; fi
+	@if [ -n "$(EPICS_BIN_DIR)" ]; then cp -f $@ $(EPICS_BIN_DIR)/; fi
 
 $(OBJ_DIR)/trimda$(EXEEXT): $(trimda_OBJS) $(PROD_DEPS)
 	$(LINKEXE) $(OUTPUTEXE) $(trimda_OBJS) $(LDFLAGS) $(LIB_LINK_DIRS) $(PROD_LIBS) $(PROD_LIBS_SDDS) $(PROD_SYS_LIBS)
 	cp -f $@ $(BIN_DIR)/
+	@if [ -n "$(EPICS_BIN_DIR)" ]; then echo cp -f $@ $(EPICS_BIN_DIR)/; fi
+	@if [ -n "$(EPICS_BIN_DIR)" ]; then cp -f $@ $(EPICS_BIN_DIR)/; fi
 
 $(OBJ_DIR)/iirFilterTest$(EXEEXT): $(iirFilterTest_OBJS) $(PROD_DEPS)
 	$(LINKEXE) $(OUTPUTEXE) $(iirFilterTest_OBJS) $(LDFLAGS) $(LIB_LINK_DIRS) $(PROD_LIBS) $(PROD_LIBS_SDDS) $(PROD_SYS_LIBS)
 	cp -f $@ $(BIN_DIR)/
+	@if [ -n "$(EPICS_BIN_DIR)" ]; then echo cp -f $@ $(EPICS_BIN_DIR)/; fi
+	@if [ -n "$(EPICS_BIN_DIR)" ]; then cp -f $@ $(EPICS_BIN_DIR)/; fi
 
 $(OBJ_DIR)/insertSCeffects.$(OBJEXT): $(OBJ_DIR)/insertSCeffects.h
 
 $(OBJ_DIR)/insertSCeffects.h: insertSCeffects.nl
-	../../SDDS/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables insertSCeffects.nl $(OBJ_DIR)/insertSCeffects.h
+	$(SDDS_REPO)/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables insertSCeffects.nl $(OBJ_DIR)/insertSCeffects.h
 
 $(OBJ_DIR)/amplif.$(OBJEXT): $(OBJ_DIR)/amplif.h
 
 $(OBJ_DIR)/amplif.h: amplif.nl
-	../../SDDS/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables amplif.nl $(OBJ_DIR)/amplif.h
+	$(SDDS_REPO)/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables amplif.nl $(OBJ_DIR)/amplif.h
 
 $(OBJ_DIR)/momentumAperture.$(OBJEXT): $(OBJ_DIR)/momentumAperture.h
 
 $(OBJ_DIR)/momentumAperture.h: momentumAperture.nl
-	../../SDDS/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables momentumAperture.nl $(OBJ_DIR)/momentumAperture.h
+	$(SDDS_REPO)/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables momentumAperture.nl $(OBJ_DIR)/momentumAperture.h
 
 $(OBJ_DIR)/sasefel.$(OBJEXT): $(OBJ_DIR)/sasefel.h
 
 $(OBJ_DIR)/sasefel.h: sasefel.nl
-	../../SDDS/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables sasefel.nl $(OBJ_DIR)/sasefel.h
+	$(SDDS_REPO)/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables sasefel.nl $(OBJ_DIR)/sasefel.h
 
 $(OBJ_DIR)/matrix_output.$(OBJEXT): $(OBJ_DIR)/matrix_output.h
 
 $(OBJ_DIR)/matrix_output.h: matrix_output.nl
-	../../SDDS/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables matrix_output.nl $(OBJ_DIR)/matrix_output.h
+	$(SDDS_REPO)/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables matrix_output.nl $(OBJ_DIR)/matrix_output.h
 
 $(OBJ_DIR)/insert_elements.$(OBJEXT): $(OBJ_DIR)/insert_elements.h
 
 $(OBJ_DIR)/insert_elements.h: insert_elements.nl
-	../../SDDS/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables insert_elements.nl $(OBJ_DIR)/insert_elements.h
+	$(SDDS_REPO)/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables insert_elements.nl $(OBJ_DIR)/insert_elements.h
 
 $(OBJ_DIR)/analyze.$(OBJEXT): $(OBJ_DIR)/analyze.h
 
 $(OBJ_DIR)/analyze.h: analyze.nl
-	../../SDDS/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables analyze.nl $(OBJ_DIR)/analyze.h
+	$(SDDS_REPO)/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables analyze.nl $(OBJ_DIR)/analyze.h
 
 $(OBJ_DIR)/replace_elements.$(OBJEXT): $(OBJ_DIR)/replace_elements.h
 
 $(OBJ_DIR)/replace_elements.h: replace_elements.nl
-	../../SDDS/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables replace_elements.nl $(OBJ_DIR)/replace_elements.h
+	$(SDDS_REPO)/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables replace_elements.nl $(OBJ_DIR)/replace_elements.h
 
 $(OBJ_DIR)/tune.$(OBJEXT): $(OBJ_DIR)/tune.h
 
 $(OBJ_DIR)/tune.h: tune.nl
-	../../SDDS/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables tune.nl $(OBJ_DIR)/tune.h
+	$(SDDS_REPO)/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables tune.nl $(OBJ_DIR)/tune.h
 
 $(OBJ_DIR)/floor.$(OBJEXT): $(OBJ_DIR)/floor.h
 
 $(OBJ_DIR)/floor.h: floor.nl
-	../../SDDS/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables floor.nl $(OBJ_DIR)/floor.h
+	$(SDDS_REPO)/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables floor.nl $(OBJ_DIR)/floor.h
 
 $(OBJ_DIR)/run_rpnexpr.$(OBJEXT): $(OBJ_DIR)/run_rpnexpr.h
 
 $(OBJ_DIR)/run_rpnexpr.h: run_rpnexpr.nl
-	../../SDDS/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables run_rpnexpr.nl $(OBJ_DIR)/run_rpnexpr.h
+	$(SDDS_REPO)/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables run_rpnexpr.nl $(OBJ_DIR)/run_rpnexpr.h
 
 $(OBJ_DIR)/ionEffects.$(OBJEXT): $(OBJ_DIR)/ionEffects.h
 
 $(OBJ_DIR)/ionEffects.h: ionEffects.nl
-	../../SDDS/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables ionEffects.nl $(OBJ_DIR)/ionEffects.h
+	$(SDDS_REPO)/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables ionEffects.nl $(OBJ_DIR)/ionEffects.h
 
 $(OBJ_DIR)/subprocess.$(OBJEXT): $(OBJ_DIR)/subprocess.h
 
 $(OBJ_DIR)/subprocess.h: subprocess.nl
-	../../SDDS/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables subprocess.nl $(OBJ_DIR)/subprocess.h
+	$(SDDS_REPO)/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables subprocess.nl $(OBJ_DIR)/subprocess.h
 
 $(OBJ_DIR)/trace.$(OBJEXT): $(OBJ_DIR)/trace.h
 
 $(OBJ_DIR)/trace.h: trace.nl
-	../../SDDS/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables trace.nl $(OBJ_DIR)/trace.h
+	$(SDDS_REPO)/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables trace.nl $(OBJ_DIR)/trace.h
 
 $(OBJ_DIR)/divideElements.$(OBJEXT): $(OBJ_DIR)/divideElements.h
 
 $(OBJ_DIR)/divideElements.h: divideElements.nl
-	../../SDDS/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables divideElements.nl $(OBJ_DIR)/divideElements.h
+	$(SDDS_REPO)/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables divideElements.nl $(OBJ_DIR)/divideElements.h
 
 $(OBJ_DIR)/load_parameters.$(OBJEXT): $(OBJ_DIR)/load_parameters.h
 
 $(OBJ_DIR)/load_parameters.h: load_parameters.nl
-	../../SDDS/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables load_parameters.nl $(OBJ_DIR)/load_parameters.h
+	$(SDDS_REPO)/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables load_parameters.nl $(OBJ_DIR)/load_parameters.h
 
 $(OBJ_DIR)/optim_covariable.$(OBJEXT): $(OBJ_DIR)/optim_covariable.h
 
 $(OBJ_DIR)/optim_covariable.h: optim_covariable.nl
-	../../SDDS/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables optim_covariable.nl $(OBJ_DIR)/optim_covariable.h
+	$(SDDS_REPO)/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables optim_covariable.nl $(OBJ_DIR)/optim_covariable.h
 
 $(OBJ_DIR)/ignoreElements.$(OBJEXT): $(OBJ_DIR)/ignoreElements.h
 
 $(OBJ_DIR)/ignoreElements.h: ignoreElements.nl
-	../../SDDS/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables ignoreElements.nl $(OBJ_DIR)/ignoreElements.h
+	$(SDDS_REPO)/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables ignoreElements.nl $(OBJ_DIR)/ignoreElements.h
 
 $(OBJ_DIR)/moments.$(OBJEXT): $(OBJ_DIR)/moments.h
 
 $(OBJ_DIR)/moments.h: moments.nl
-	../../SDDS/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables moments.nl $(OBJ_DIR)/moments.h
+	$(SDDS_REPO)/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables moments.nl $(OBJ_DIR)/moments.h
 
 $(OBJ_DIR)/chaosMap.$(OBJEXT): $(OBJ_DIR)/chaosMap.h
 
 $(OBJ_DIR)/chaosMap.h: chaosMap.nl
-	../../SDDS/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables chaosMap.nl $(OBJ_DIR)/chaosMap.h
+	$(SDDS_REPO)/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables chaosMap.nl $(OBJ_DIR)/chaosMap.h
 
 $(OBJ_DIR)/response.$(OBJEXT): $(OBJ_DIR)/response.h
 
 $(OBJ_DIR)/response.h: response.nl
-	../../SDDS/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables response.nl $(OBJ_DIR)/response.h
+	$(SDDS_REPO)/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables response.nl $(OBJ_DIR)/response.h
 
 $(OBJ_DIR)/correct.$(OBJEXT): $(OBJ_DIR)/correct.h $(OBJ_DIR)/steer_elem.h 
 
 $(OBJ_DIR)/correct.h: correct.nl
-	../../SDDS/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables correct.nl $(OBJ_DIR)/correct.h
+	$(SDDS_REPO)/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables correct.nl $(OBJ_DIR)/correct.h
 
 $(OBJ_DIR)/closed_orbit.$(OBJEXT): $(OBJ_DIR)/closed_orbit.h
 
 $(OBJ_DIR)/closed_orbit.h: closed_orbit.nl
-	../../SDDS/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables closed_orbit.nl $(OBJ_DIR)/closed_orbit.h
+	$(SDDS_REPO)/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables closed_orbit.nl $(OBJ_DIR)/closed_orbit.h
 
 $(OBJ_DIR)/twiss.$(OBJEXT): $(OBJ_DIR)/twiss.h
 
 $(OBJ_DIR)/twiss.h: twiss.nl
-	../../SDDS/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables twiss.nl $(OBJ_DIR)/twiss.h
+	$(SDDS_REPO)/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables twiss.nl $(OBJ_DIR)/twiss.h
 
 $(OBJ_DIR)/link_elements.$(OBJEXT): $(OBJ_DIR)/link_elements.h
 
 $(OBJ_DIR)/link_elements.h: link_elements.nl
-	../../SDDS/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables link_elements.nl $(OBJ_DIR)/link_elements.h
+	$(SDDS_REPO)/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables link_elements.nl $(OBJ_DIR)/link_elements.h
 
 $(OBJ_DIR)/chrom.$(OBJEXT): $(OBJ_DIR)/chrom.h
 
 $(OBJ_DIR)/chrom.h: chrom.nl
-	../../SDDS/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables chrom.nl $(OBJ_DIR)/chrom.h
+	$(SDDS_REPO)/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables chrom.nl $(OBJ_DIR)/chrom.h
 
 $(OBJ_DIR)/touschekScatter.$(OBJEXT): $(OBJ_DIR)/touschekScatter.h
 
 $(OBJ_DIR)/touschekScatter.h: touschekScatter.nl
-	../../SDDS/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables touschekScatter.nl $(OBJ_DIR)/touschekScatter.h
+	$(SDDS_REPO)/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables touschekScatter.nl $(OBJ_DIR)/touschekScatter.h
 
 $(OBJ_DIR)/transmuteElements.$(OBJEXT): $(OBJ_DIR)/transmuteElements.h
 
 $(OBJ_DIR)/transmuteElements.h: transmuteElements.nl
-	../../SDDS/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables transmuteElements.nl $(OBJ_DIR)/transmuteElements.h
+	$(SDDS_REPO)/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables transmuteElements.nl $(OBJ_DIR)/transmuteElements.h
 
 $(OBJ_DIR)/sdds_beam.$(OBJEXT): $(OBJ_DIR)/sdds_beam.h
 
 $(OBJ_DIR)/sdds_beam.h: sdds_beam.nl
-	../../SDDS/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables sdds_beam.nl $(OBJ_DIR)/sdds_beam.h
+	$(SDDS_REPO)/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables sdds_beam.nl $(OBJ_DIR)/sdds_beam.h
 
 $(OBJ_DIR)/aperture_search.$(OBJEXT): $(OBJ_DIR)/aperture_search.h
 
 $(OBJ_DIR)/aperture_search.h: aperture_search.nl
-	../../SDDS/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables aperture_search.nl $(OBJ_DIR)/aperture_search.h
+	$(SDDS_REPO)/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables aperture_search.nl $(OBJ_DIR)/aperture_search.h
 
 $(OBJ_DIR)/aperture_data.$(OBJEXT): $(OBJ_DIR)/aperture_data.h
 
 $(OBJ_DIR)/aperture_data.h: aperture_data.nl
-	../../SDDS/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables aperture_data.nl $(OBJ_DIR)/aperture_data.h
+	$(SDDS_REPO)/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables aperture_data.nl $(OBJ_DIR)/aperture_data.h
 
 $(OBJ_DIR)/tuneFootprint.$(OBJEXT): $(OBJ_DIR)/tuneFootprint.h
 
 $(OBJ_DIR)/tuneFootprint.h: tuneFootprint.nl
-	../../SDDS/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables tuneFootprint.nl $(OBJ_DIR)/tuneFootprint.h
+	$(SDDS_REPO)/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables tuneFootprint.nl $(OBJ_DIR)/tuneFootprint.h
 
 $(OBJ_DIR)/vary.$(OBJEXT): $(OBJ_DIR)/vary.h
 
 $(OBJ_DIR)/vary.h: vary.nl
-	../../SDDS/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables vary.nl $(OBJ_DIR)/vary.h
+	$(SDDS_REPO)/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables vary.nl $(OBJ_DIR)/vary.h
 
 $(OBJ_DIR)/steer_elem.$(OBJEXT): $(OBJ_DIR)/steer_elem.h
 
 $(OBJ_DIR)/steer_elem.h: steer_elem.nl
-	../../SDDS/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables steer_elem.nl $(OBJ_DIR)/steer_elem.h
+	$(SDDS_REPO)/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables steer_elem.nl $(OBJ_DIR)/steer_elem.h
 
 $(OBJ_DIR)/error.$(OBJEXT): $(OBJ_DIR)/error.h
 
 $(OBJ_DIR)/error.h: error.nl
-	../../SDDS/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables error.nl $(OBJ_DIR)/error.h
+	$(SDDS_REPO)/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables error.nl $(OBJ_DIR)/error.h
 
 $(OBJ_DIR)/bunched_beam.$(OBJEXT): $(OBJ_DIR)/bunched_beam.h $(OBJ_DIR)/bunched_beam2.h 
 
 $(OBJ_DIR)/bunched_beam.h: bunched_beam.nl
-	../../SDDS/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables bunched_beam.nl $(OBJ_DIR)/bunched_beam.h
+	$(SDDS_REPO)/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables bunched_beam.nl $(OBJ_DIR)/bunched_beam.h
 
 $(OBJ_DIR)/ramp.$(OBJEXT): $(OBJ_DIR)/ramp.h
 
 $(OBJ_DIR)/ramp.h: ramp.nl
-	../../SDDS/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables ramp.nl $(OBJ_DIR)/ramp.h
+	$(SDDS_REPO)/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables ramp.nl $(OBJ_DIR)/ramp.h
 
 $(OBJ_DIR)/inelasticScattering.$(OBJEXT): $(OBJ_DIR)/inelasticScattering.h
 
 $(OBJ_DIR)/inelasticScattering.h: inelasticScattering.nl
-	../../SDDS/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables inelasticScattering.nl $(OBJ_DIR)/inelasticScattering.h
+	$(SDDS_REPO)/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables inelasticScattering.nl $(OBJ_DIR)/inelasticScattering.h
 
 $(OBJ_DIR)/bunched_beam2.$(OBJEXT): $(OBJ_DIR)/bunched_beam2.h
 
 $(OBJ_DIR)/bunched_beam2.h: bunched_beam2.nl
-	../../SDDS/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables bunched_beam2.nl $(OBJ_DIR)/bunched_beam2.h
+	$(SDDS_REPO)/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables bunched_beam2.nl $(OBJ_DIR)/bunched_beam2.h
 
 $(OBJ_DIR)/optimize.$(OBJEXT): $(OBJ_DIR)/optimize.h $(OBJ_DIR)/optim_covariable.h
 
 $(OBJ_DIR)/optimize.h: optimize.nl
-	../../SDDS/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables optimize.nl $(OBJ_DIR)/optimize.h
+	$(SDDS_REPO)/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables optimize.nl $(OBJ_DIR)/optimize.h
 
 $(OBJ_DIR)/elasticScattering.$(OBJEXT): $(OBJ_DIR)/elasticScattering.h
 
 $(OBJ_DIR)/elasticScattering.h: elasticScattering.nl
-	../../SDDS/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables elasticScattering.nl $(OBJ_DIR)/elasticScattering.h
+	$(SDDS_REPO)/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables elasticScattering.nl $(OBJ_DIR)/elasticScattering.h
 
 $(OBJ_DIR)/modulate.$(OBJEXT): $(OBJ_DIR)/modulate.h
 
 $(OBJ_DIR)/modulate.h: modulate.nl
-	../../SDDS/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables modulate.nl $(OBJ_DIR)/modulate.h
+	$(SDDS_REPO)/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables modulate.nl $(OBJ_DIR)/modulate.h
 
 $(OBJ_DIR)/fitTraces.$(OBJEXT): $(OBJ_DIR)/fitTraces.h
 
 $(OBJ_DIR)/fitTraces.h: fitTraces.nl
-	../../SDDS/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables fitTraces.nl $(OBJ_DIR)/fitTraces.h
+	$(SDDS_REPO)/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables fitTraces.nl $(OBJ_DIR)/fitTraces.h
 
 $(OBJ_DIR)/frequencyMap.$(OBJEXT): $(OBJ_DIR)/frequencyMap.h
 
 $(OBJ_DIR)/frequencyMap.h: frequencyMap.nl
-	../../SDDS/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables frequencyMap.nl $(OBJ_DIR)/frequencyMap.h
+	$(SDDS_REPO)/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables frequencyMap.nl $(OBJ_DIR)/frequencyMap.h
 
 $(OBJ_DIR)/sliceAnalysis.$(OBJEXT): $(OBJ_DIR)/sliceAnalysis.h
 
 $(OBJ_DIR)/sliceAnalysis.h: sliceAnalysis.nl
-	../../SDDS/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables sliceAnalysis.nl $(OBJ_DIR)/sliceAnalysis.h
+	$(SDDS_REPO)/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables sliceAnalysis.nl $(OBJ_DIR)/sliceAnalysis.h
 
 $(OBJ_DIR)/get_beamline.$(OBJEXT): $(OBJ_DIR)/save_lattice.h
 
 $(OBJ_DIR)/save_lattice.$(OBJEXT): $(OBJ_DIR)/save_lattice.h
 
 $(OBJ_DIR)/save_lattice.h: save_lattice.nl
-	../../SDDS/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables save_lattice.nl $(OBJ_DIR)/save_lattice.h
+	$(SDDS_REPO)/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables save_lattice.nl $(OBJ_DIR)/save_lattice.h
 
 $(OBJ_DIR)/alter.$(OBJEXT): $(OBJ_DIR)/alter.h
 
 $(OBJ_DIR)/alter.h: alter.nl
-	../../SDDS/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables alter.nl $(OBJ_DIR)/alter.h
+	$(SDDS_REPO)/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables alter.nl $(OBJ_DIR)/alter.h
 
 $(OBJ_DIR)/elegant.$(OBJEXT): $(OBJ_DIR)/elegant.h $(OBJ_DIR)/aperture_data.h
 
 $(OBJ_DIR)/elegant.h: elegant.nl
-	../../SDDS/bin/$(OS)-$(ARCH)/nlpp elegant.nl $(OBJ_DIR)/elegant.h
+	$(SDDS_REPO)/bin/$(OS)-$(ARCH)/nlpp elegant.nl $(OBJ_DIR)/elegant.h
 
 $(OBJ_DIR)/coupled_twiss.$(OBJEXT): $(OBJ_DIR)/coupled_twiss.h
 
 $(OBJ_DIR)/coupled_twiss.h: coupled_twiss.nl
-	../../SDDS/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables coupled_twiss.nl $(OBJ_DIR)/coupled_twiss.h
+	$(SDDS_REPO)/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables coupled_twiss.nl $(OBJ_DIR)/coupled_twiss.h
 
 $(OBJ_DIR)/obstructionData.$(OBJEXT): $(OBJ_DIR)/obstructionData.h
 
 $(OBJ_DIR)/obstructionData.h: obstructionData.nl
-	../../SDDS/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables obstructionData.nl $(OBJ_DIR)/obstructionData.h
+	$(SDDS_REPO)/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables obstructionData.nl $(OBJ_DIR)/obstructionData.h
 
 $(OBJ_DIR)/global_settings.$(OBJEXT): $(OBJ_DIR)/global_settings.h
 
 $(OBJ_DIR)/global_settings.h: global_settings.nl
-	../../SDDS/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables global_settings.nl $(OBJ_DIR)/global_settings.h
+	$(SDDS_REPO)/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables global_settings.nl $(OBJ_DIR)/global_settings.h
 
 $(OBJ_DIR)/particleTunes.$(OBJEXT): $(OBJ_DIR)/particleTunes.h
 
 $(OBJ_DIR)/particleTunes.h: particleTunes.nl
-	../../SDDS/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables particleTunes.nl $(OBJ_DIR)/particleTunes.h
+	$(SDDS_REPO)/bin/$(OS)-$(ARCH)/nlpp -suppressSummaryVariables particleTunes.nl $(OBJ_DIR)/particleTunes.h
 

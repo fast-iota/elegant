@@ -3,7 +3,6 @@ ifeq ($(SDDS_REPO),)
   $(error SDDS source code not found. Run 'git clone https://github.com/rtsoliday/SDDS.git' next to the SDDS-Python-module repository)
 endif
 
-DD=../
 include ../Makefile.rules
 
 SCRIPTS = brightnessEnvelope

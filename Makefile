@@ -13,7 +13,7 @@ ifeq ($(OS), Windows)
 endif
 
 # Check for external SDDS repository
-SDDS_REPO = $(wildcard ../SDDS ../../../../epics/extensions/src/SDDS)
+SDDS_REPO = $(firstword $(wildcard ../SDDS ../../../../epics/extensions/src/SDDS))
 ifeq ($(SDDS_REPO),)
   $(error SDDS source code not found. Run 'git clone https://github.com/rtsoliday/SDDS.git' next to the elegant repository)
 endif
@@ -44,7 +44,6 @@ DIRS += sddsbrightness
 .PHONY: all $(DIRS) clean distclean
 
 all: $(DIRS)
-
 ifneq ($(GSL_REPO),)
   $(GSL_REPO):
 	$(MAKE) -C $@ -f Makefile.MSVC all

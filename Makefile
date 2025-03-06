@@ -18,9 +18,14 @@ ifeq ($(SDDS_REPO),)
   $(error SDDS source code not found. Run 'git clone https://github.com/rtsoliday/SDDS.git' next to the elegant repository)
 endif
 
+ifeq ($(OS), Linux)
+  GSL_LOCAL = $(wildcard $(SDDS_REPO)/gsl)
+endif
+
 include Makefile.rules
 
 DIRS = $(GSL_REPO)
+DIRS += $(GSL_LOCAL)
 DIRS += $(SDDS_REPO)/meschach
 DIRS += $(SDDS_REPO)/zlib
 DIRS += $(SDDS_REPO)/lzma
@@ -48,6 +53,10 @@ ifneq ($(GSL_REPO),)
   $(GSL_REPO):
 	$(MAKE) -C $@ -f Makefile.MSVC all
 endif
+ifneq ($(GSL_LOCAL),)
+  $(GSL_LOCAL):
+	$(MAKE) -C $@ all
+endif
 $(SDDS_REPO)/meschach:
 	$(MAKE) -C $@
 $(SDDS_REPO)/zlib: $(SDDS_REPO)/meschach
@@ -58,7 +67,7 @@ $(SDDS_REPO)/mdblib: $(SDDS_REPO)/lzma
 	$(MAKE) -C $@
 $(SDDS_REPO)/mdbmth: $(SDDS_REPO)/mdblib
 	$(MAKE) -C $@
-$(SDDS_REPO)/rpns/code: $(SDDS_REPO)/mdbmth $(GSL_REPO)
+$(SDDS_REPO)/rpns/code: $(SDDS_REPO)/mdbmth $(GSL_REPO) $(GSL_LOCAL)
 	$(MAKE) -C $@
 $(SDDS_REPO)/namelist: $(SDDS_REPO)/rpns/code
 	$(MAKE) -C $@

@@ -34,9 +34,10 @@ int main(int argc, char **argv) {
     SDDS_Bomb("Problem with input file");
   if (!(x = SDDS_GetColumnInDoubles(&SDDSin, "x")) ||
       !SDDS_Terminate(&SDDSin))
-    SDDS_Bomb("Problem with input file");
+    SDDS_Bomb("Problem with input file---does not contain column 'x'");
 
   if (!SDDS_InitializeOutputElegant(&SDDSout, SDDS_BINARY, 1, NULL, NULL, output) ||
+      SDDS_DefineColumn(&SDDSout, "x", NULL, NULL, NULL, NULL, SDDS_DOUBLE, 0) < 0 ||
       SDDS_DefineColumn(&SDDSout, "y", NULL, NULL, NULL, NULL, SDDS_DOUBLE, 0) < 0 ||
       !SDDS_WriteLayout(&SDDSout) ||
       !SDDS_StartPage(&SDDSout, rows))
@@ -46,7 +47,8 @@ int main(int argc, char **argv) {
   y = tmalloc(sizeof(*y) * rows);
   for (i = 0; i < rows; i++)
     y[i] = applyIIRFilter(filterBank, nFilters, x[i]);
-  if (!SDDS_SetColumn(&SDDSout, SDDS_SET_BY_NAME, y, rows, "y") || !SDDS_WritePage(&SDDSout) || !SDDS_Terminate(&SDDSout))
+  if (!SDDS_SetColumn(&SDDSout, SDDS_SET_BY_NAME, x, rows, "x") || 
+      !SDDS_SetColumn(&SDDSout, SDDS_SET_BY_NAME, y, rows, "y") || !SDDS_WritePage(&SDDSout) || !SDDS_Terminate(&SDDSout))
     SDDS_Bomb("Problem with output file (2)");
 
   free(x);

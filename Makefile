@@ -26,6 +26,7 @@ include Makefile.rules
 
 DIRS = $(GSL_REPO)
 DIRS += $(GSL_LOCAL)
+DIRS += $(SDDS_REPO)/include
 DIRS += $(SDDS_REPO)/meschach
 DIRS += $(SDDS_REPO)/zlib
 DIRS += $(SDDS_REPO)/lzma
@@ -57,7 +58,9 @@ ifneq ($(GSL_LOCAL),)
   $(GSL_LOCAL):
 	$(MAKE) -C $@ all
 endif
-$(SDDS_REPO)/meschach:
+$(SDDS_REPO)/include: $(GSL_REPO) $(GSL_LOCAL)
+	$(MAKE) -C $@
+$(SDDS_REPO)/meschach: $(SDDS_REPO)/include
 	$(MAKE) -C $@
 $(SDDS_REPO)/zlib: $(SDDS_REPO)/meschach
 	$(MAKE) -C $@

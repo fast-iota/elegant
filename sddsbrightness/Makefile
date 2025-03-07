@@ -17,7 +17,7 @@ CFLAGS += -DUSE_GSL -I$(SDDS_REPO)/include -I../physics -I../xraylib -I$(OBJ_DIR
 
 ifeq ($(OS), Linux)
   PROD += sddsbrightness sddsurgent sddsfluxcurve sddsxra
-  CFLAGS += -fopenmp
+  CFLAGS += -fopenmp $(EPICS_EXTENSIONS_GSL_INC_LOCAL)
   LDFLAGS := -L$(SDDS_REPO)/lib/$(OS)-$(ARCH) -L../lib/$(OS)-$(ARCH) -fopenmp $(LDFLAGS)
   PROD_SYS_LIBS := $(LZMA_LIB) $(GSL_LIB) $(GSLCBLAS_LIB) $(Z_LIB) $(PROD_SYS_LIBS)
   PROD_LIBS = -lxrl -loagphy

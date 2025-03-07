@@ -75,14 +75,17 @@ foreach intensity $intensityList {
 set n [exec sdds2stream -rows=bare $input]
 set fileList ""
 set bunch 0
+set seed 987654321
 foreach bucket $bucketList intensity $intensityList {
     set sample [expr ($intensity*1.0)/$maxIntensity]
-    exec sddsprocess $input $output.$bucket \
+    #puts stderr "$bucket $intensity $sample"
+    exec sddsprocess $input $output.$bucket "-rpnexpression=$seed srnd" \
       -process=t,ave,%sAve -sample=$sample \
       "-redefine=column,particleID,$bunch $n * particleID +,type=long" \
       "-redefine=parameter,IDSlotsPerBunch,$n,type=long" \
       "-redefine=parameter,BucketSpacing,$rfFrequency rec,units=s" \
       "-redefine=column,t,t tAve - BucketSpacing $bucket * +,units=s"
+    incr seed 10
     lappend fileList $output.$bucket
     incr bunch
 }

@@ -49,6 +49,8 @@ DIRS += sddsbrightness
 
 .PHONY: all $(DIRS) clean distclean
 
+install: all
+
 all: $(DIRS)
 ifneq ($(GSL_REPO),)
   $(GSL_REPO):

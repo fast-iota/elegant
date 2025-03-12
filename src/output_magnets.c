@@ -27,7 +27,7 @@ void output_magnets(char *filename, char *line_name, LINE_LIST *beamline) {
   CSRCSBEND *csrbptr;
   LGBEND *lgbptr;
   long iPhase;
-  double start, end, dz, value;
+  double start, end, dz, value, K2;
   /* double total_length; */
   FILE *fpm;
 
@@ -130,15 +130,23 @@ void output_magnets(char *filename, char *line_name, LINE_LIST *beamline) {
       break;
     case T_SEXT:
       end = start + ((SEXT *)eptr->p_elem)->length;
-      fprintf(fpm, "\"%s\" %s %e  .5\n\"%s\" %s %e .5\n\"%s\" %s %e 0\n\"%s\" %s %e 0\n\"%s\" %s %e 0\n",
-              eptr->name, entity_name[eptr->type], start, eptr->name, entity_name[eptr->type], end, eptr->name, entity_name[eptr->type], end, eptr->name, entity_name[eptr->type], start,
+      K2 = ((SEXT *)eptr->p_elem)->k2;
+      fprintf(fpm, "\"%s\" %s %e  %e\n\"%s\" %s %e %e\n\"%s\" %s %e 0\n\"%s\" %s %e 0\n\"%s\" %s %e 0\n",
+              eptr->name, entity_name[eptr->type], start, 0.5*SIGN(K2),
+              eptr->name, entity_name[eptr->type], end, 0.5*SIGN(K2),
+              eptr->name, entity_name[eptr->type], end, 
+              eptr->name, entity_name[eptr->type], start,
               eptr->name, entity_name[eptr->type], end);
       start = end;
       break;
     case T_KSEXT:
       end = start + ((KSEXT *)eptr->p_elem)->length;
-      fprintf(fpm, "\"%s\" %s %e  .5\n\"%s\" %s %e .5\n\"%s\" %s %e 0\n\"%s\" %s %e 0\n\"%s\" %s %e 0\n",
-              eptr->name, entity_name[eptr->type], start, eptr->name, entity_name[eptr->type], end, eptr->name, entity_name[eptr->type], end, eptr->name, entity_name[eptr->type], start,
+      K2 = ((KSEXT *)eptr->p_elem)->k2;
+      fprintf(fpm, "\"%s\" %s %e  %e\n\"%s\" %s %e %e\n\"%s\" %s %e 0\n\"%s\" %s %e 0\n\"%s\" %s %e 0\n",
+              eptr->name, entity_name[eptr->type], start, 0.5*SIGN(K2),
+              eptr->name, entity_name[eptr->type], end, 0.5*SIGN(K2),
+              eptr->name, entity_name[eptr->type], end, 
+              eptr->name, entity_name[eptr->type], start,
               eptr->name, entity_name[eptr->type], end);
       start = end;
       break;

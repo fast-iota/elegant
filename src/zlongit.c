@@ -681,7 +681,7 @@ void set_up_zlongit(ZLONGIT *zlongit, RUN *run, long pass, long particles, CHARG
       Zr = Zr_data.c2;
     }
     if (Zi[0])
-      bombElegant("impedance spectrum has non-zero imaginary DC term (ZLONGIT)", NULL);
+      bombElegantVA("impedance spectrum has non-zero imaginary DC term: Z(0)=(%le, %le) (ZLONGIT)\n", Zr[0], Zi[0]);
     if (!power_of_2(n_spect - 1))
       bombElegant("number of spectrum points must be 2^n+1, n>1 (ZLONGIT)", NULL);
     zlongit->n_bins = 2 * (n_spect - 1);

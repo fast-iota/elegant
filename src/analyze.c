@@ -1000,6 +1000,7 @@ VMATRIX *determineMatrixHigherOrder(RUN *run, ELEMENT_LIST *eptr, double *starti
       short copied = 0;
       if (eptr->type == storedElement[i]->type && compareElements(storedElement[i], eptr) == 0 &&
           storedMatrix[i] && storedMatrix[i]->order > 0) {
+        int ii;
         M = tmalloc(sizeof(*M));
         copy_matrices(M, storedMatrix[i]);
         switch (eptr->type) {
@@ -1011,9 +1012,9 @@ VMATRIX *determineMatrixHigherOrder(RUN *run, ELEMENT_LIST *eptr, double *starti
           crbptr1->dxOffset = crbptr0->dxOffset;
           crbptr1->xAdjust = crbptr0->xAdjust;
           crbptr1->KnDelta = crbptr0->KnDelta;
-          for (int ii=0; ii<5; ii++)
+          for (ii=0; ii<5; ii++)
                  crbptr1->referenceData[ii] = crbptr0->referenceData[ii];
-          for (int ii=0; ii<4; ii++)
+          for (ii=0; ii<4; ii++)
             crbptr1->referenceTrajectory[ii] = crbptr0->referenceTrajectory[ii];
           copied = 1;
 #ifdef DEBUG_CCBEND
@@ -2577,7 +2578,8 @@ long compareElements(ELEMENT_LIST *e1, ELEMENT_LIST *e2) {
     CSBEND *csb1, *csb2;
     csb1 = (CSBEND *)e1->p_elem;
     csb2 = (CSBEND *)e2->p_elem;
-    if (csb1->e1Index != csb2->e1Index || csb1->e2Index != csb2->e2Index || csb1->edgeFlip!=csb2->edgeFlip) {
+    if (csb1->e1Index != csb2->e1Index || csb1->e2Index != csb2->e2Index || csb1->edgeFlip!=csb2->edgeFlip || 
+        csb1->edgeFlags != csb2->edgeFlags) {
       /* elements are reflections of each other */
       return -1;
     }

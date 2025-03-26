@@ -2936,8 +2936,11 @@ void incrementRadIntegrals(RADIATION_INTEGRALS *radIntegrals, double *dI, ELEMEN
   double I1, I2, I3, I4, I5;
   double alpha1, gamma1, etap1, eta2, sin_kl, cos_kl;
   double etaAve = 0, etaK1_rhoAve = 0, HAve = 0, h, K2 = 0.0, dx = 0.0;
+  static double coord0[6] = {0,0,0,0,0,0};
 
   I1 = I2 = I3 = I4 = I5 = 0;
+  if (!coord)
+    coord = &coord0[0];
 
 #ifdef DEBUG
   fprintf(stderr, (char *)"incrementRadIntegrals: %s at %e: beta=%e, alpha=%e, eta=%e, etap=%e\n",
@@ -3020,17 +3023,13 @@ void incrementRadIntegrals(RADIATION_INTEGRALS *radIntegrals, double *dI, ELEMEN
       radIntegrals->RI[4] += I5 * n_periods;
     }
   } else if (elem->type == T_CCBEND) {
-    double startingCoord[6] = {0, 0, 0, 0, 0, 0};
-    if (elem->pred && elem->pred->matrix && elem->pred->matrix->C)
-      memcpy(&startingCoord[0], elem->pred->matrix->C, sizeof(startingCoord[0]) * 6);
-    addCcbendRadiationIntegrals((CCBEND *)elem->p_elem, startingCoord, pCentral, eta0, etap0, beta0, alpha0, &I1, &I2, &I3, &I4, &I5, elem);
+    addCcbendRadiationIntegrals((CCBEND *)elem->p_elem, coord, pCentral, eta0, etap0, beta0, alpha0, &I1, &I2, &I3, &I4, &I5, elem);
     radIntegrals->RI[0] += I1;
     radIntegrals->RI[1] += I2;
     radIntegrals->RI[2] += I3;
     radIntegrals->RI[3] += I4;
     radIntegrals->RI[4] += I5;
   } else if (elem->type == T_LGBEND) {
-    double startingCoord[6] = {0, 0, 0, 0, 0, 0};
     LGBEND *lgbend;
     lgbend = (LGBEND *)elem->p_elem;
     if (lgbend->optimized != 1 && lgbend->optimizeFse) {
@@ -3038,9 +3037,7 @@ void incrementRadIntegrals(RADIATION_INTEGRALS *radIntegrals, double *dI, ELEMEN
       oneParticle = (double **)czarray_2d(sizeof(**oneParticle), 1, totalPropertiesPerParticle);
       track_through_lgbend(oneParticle, 1, elem, lgbend, pCentral, NULL, 0, NULL, NULL, NULL, NULL, NULL, -1, -1);
     }
-    if (elem->pred && elem->pred->matrix && elem->pred->matrix->C)
-      memcpy(&startingCoord[0], elem->pred->matrix->C, sizeof(startingCoord[0]) * 6);
-    addLgbendRadiationIntegrals((LGBEND *)elem->p_elem, startingCoord, pCentral, eta0, etap0, beta0, alpha0, &I1, &I2, &I3, &I4, &I5, elem);
+    addLgbendRadiationIntegrals((LGBEND *)elem->p_elem, coord, pCentral, eta0, etap0, beta0, alpha0, &I1, &I2, &I3, &I4, &I5, elem);
     radIntegrals->RI[0] += I1;
     radIntegrals->RI[1] += I2;
     radIntegrals->RI[2] += I3;
@@ -3134,6 +3131,8 @@ void incrementRadIntegrals(RADIATION_INTEGRALS *radIntegrals, double *dI, ELEMEN
       E1 = bptr->e[bptr->e1Index] * (bptr->edgeFlags & BEND_EDGE1_EFFECTS ? 1 : 0);
       E2 = bptr->e[bptr->e2Index] * (bptr->edgeFlags & BEND_EDGE2_EFFECTS ? 1 : 0);
       K1 = bptr->k1;
+      K1 /= 1 + coord[5];
+      angle *= (1 + K1*length/angle*(coord[0]-bptr->dx))/(1 + coord[5]);
     } else if (elem->type == T_KSBEND) {
       kbptr = (KSBEND *)(elem->p_elem);
       length = kbptr->length;
@@ -3141,6 +3140,8 @@ void incrementRadIntegrals(RADIATION_INTEGRALS *radIntegrals, double *dI, ELEMEN
       E1 = kbptr->e[kbptr->e1Index] * (kbptr->flags & BEND_EDGE1_EFFECTS ? 1 : 0);
       E2 = kbptr->e[kbptr->e2Index] * (kbptr->flags & BEND_EDGE2_EFFECTS ? 1 : 0);
       K1 = kbptr->k1;
+      K1 /= 1 + coord[5];
+      angle *= (1 + K1*length/angle*(coord[0]-kbptr->dx))/(1 + coord[5]);
     } else if (elem->type == T_CSBEND) {
       cbptr = (CSBEND *)(elem->p_elem);
       length = cbptr->length;
@@ -3148,6 +3149,8 @@ void incrementRadIntegrals(RADIATION_INTEGRALS *radIntegrals, double *dI, ELEMEN
       E1 = cbptr->e[cbptr->e1Index] * (cbptr->edgeFlags & BEND_EDGE1_EFFECTS ? 1 : 0);
       E2 = cbptr->e[cbptr->e2Index] * (cbptr->edgeFlags & BEND_EDGE2_EFFECTS ? 1 : 0);
       K1 = cbptr->k1;
+      K1 /= 1 + coord[5];
+      angle *= (1 + K1*length/angle*(coord[0]-cbptr->dx))/(1 + coord[5]);
     } else if (elem->type == T_CSRCSBEND) {
       csrbptr = (CSRCSBEND *)(elem->p_elem);
       length = csrbptr->length;
@@ -3155,15 +3158,13 @@ void incrementRadIntegrals(RADIATION_INTEGRALS *radIntegrals, double *dI, ELEMEN
       E1 = csrbptr->e[csrbptr->e1Index] * (csrbptr->edgeFlags & BEND_EDGE1_EFFECTS ? 1 : 0);
       E2 = csrbptr->e[csrbptr->e2Index] * (csrbptr->edgeFlags & BEND_EDGE2_EFFECTS ? 1 : 0);
       K1 = csrbptr->k1;
+      K1 /= 1 + coord[5];
+      angle *= (1 + K1*length/angle*(coord[0]-csrbptr->dx))/(1 + coord[5]);
     } else {
       isBend = 0;
     }
 
     if (isBend && angle != 0) {
-      if (coord) {
-        K1 /= 1 + coord[5];
-        angle /= 1 + coord[5];
-      }
       double tanE1, tanE2, h2, l2, l3, l4;
       rho = length / angle;
       h = 1. / rho;

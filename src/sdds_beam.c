@@ -458,7 +458,7 @@ long new_sdds_beam(
 #ifdef SDDS_MPI_IO
         MPI_Allreduce(&n0, &n0Total, 1, MPI_LONG, MPI_SUM, workers);
 #endif
-#ifdef MPI_DEBUG
+#if USE_MPI && defined(MPI_DEBUG)
         printf("Duplicating %ld-particle bunch %ld times (myid=%d)\n", n0, n_duplicates, myid);
 #endif
         n_duplicates += 1;

@@ -348,6 +348,7 @@ void fill_elem(ELEMENT_LIST *eptr, char *s, long type, FILE *fp_input) {
  */
 
 void copy_named_element(ELEMENT_LIST *eptr, char *s, ELEMENT_LIST *elem) {
+  /* This doesn't appear to be used now. */
   char *name, *match;
 
   log_entry("copy_named_element");
@@ -596,11 +597,11 @@ void copy_element(ELEMENT_LIST *e1, ELEMENT_LIST *e2, long reverse, long divisio
       KQUAD *kqptr;
       kqptr = (KQUAD *)e1->p_elem;
       if (kqptr->lEffective != 0) {
-        printf("Error: can't have non-zero LEFFECTIVE when dividing KQUAD elements\n");
+        printf("Error: can't have non-zero LEFFECTIVE when dividing KQUAD elements (name %s)\n", e2->name);
         exit(1);
       }
       if (kqptr->edge_multipoles) {
-        printf("Error: can't have EDGE_MULTIPOLES when dividing KQUAD elements\n");
+        printf("Error: can't have EDGE_MULTIPOLES when dividing KQUAD elements (name %s)\n", e2->name);
         exit(1);
       }
       if (division != 0)

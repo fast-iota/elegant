@@ -933,7 +933,7 @@ void do_optimize(NAMELIST_TEXT *nltext, RUN *run1, VARY *control1, ERRORVAL *err
   targetReached = 0;
 #endif
 
-#if MPI_DEBUG
+#if USE_MPI && defined(MPI_DEBUG)
   FILE *fpdebug = NULL;
   char sdebug[100];
   long stepDebug = 0;
@@ -1122,7 +1122,7 @@ void do_optimize(NAMELIST_TEXT *nltext, RUN *run1, VARY *control1, ERRORVAL *err
     optimization_data->UDFcreated = 1;
   }
 
-#if MPI_DEBUG
+#if USE_MPI && defined(MPI_DEBUG)
   sprintf(sdebug, "debug-%03d.sdds", myid);
   fpdebug = fopen(sdebug, "w");
   fprintf(fpdebug, "SDDS1\n&column name=Stage type=string &end\n");

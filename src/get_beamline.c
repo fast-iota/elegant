@@ -1026,14 +1026,6 @@ void free_elements(ELEMENT_LIST *elemlist) {
         free_hbookn(ftable->Bz);
       }
     }
-#ifdef DEBUG
-    printf("pointers: p_elem = %x   name = %x   matrix = %x\n",
-           eptr->p_elem, eptr->name, eptr->matrix);
-    fflush(stdout);
-    printf("          pred = %x     succ = %x  \n",
-           eptr->pred, eptr->succ);
-    fflush(stdout);
-#endif
     tfree(eptr->p_elem);
     eptr->p_elem = NULL;
     tfree(eptr->p_elem0);
@@ -1075,7 +1067,7 @@ void free_beamlines(LINE_LIST *beamline) {
     lptr = line;
     line = NULL;
 #ifdef DEBUG
-    printf("freeing main beamline list\n", NULL);
+    printf("freeing main beamline list\n");
     fflush(stdout);
 #endif
   }
@@ -1083,9 +1075,6 @@ void free_beamlines(LINE_LIST *beamline) {
 #ifdef DEBUG
     printf("*************************\nfreeing memory for beamline %s with %ld elements\n",
            lptr->name ? lptr->name : "NULL", lptr->n_elems);
-    fflush(stdout);
-    printf("pointers:   name = %x    succ = %x   pred = %x\n",
-           lptr->name, lptr->succ, lptr->pred);
     fflush(stdout);
 #endif
     if (lptr->definition) {

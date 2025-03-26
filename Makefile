@@ -24,6 +24,10 @@ endif
 
 include Makefile.rules
 
+ifeq ($(MDEBUG),1)
+  DEBUGOPTIONS = MDEBUG=1
+endif
+
 DIRS = $(GSL_REPO)
 DIRS += $(GSL_LOCAL)
 DIRS += $(SDDS_REPO)/include
@@ -100,11 +104,11 @@ xraylib: physics
 	$(MAKE) -C $@
 ifeq ($(MPI_CC),)
 src: xraylib
-	$(MAKE) -C $@
+	$(MAKE) $(DEBUGOPTIONS) -C $@ 
 else
 src: xraylib
-	$(MAKE) -C $@
-	$(MAKE) -C $@ -f Makefile.mpi
+	$(MAKE) $(DEBUGOPTIONS) -C $@
+	$(MAKE) $(DEBUGOPTIONS) -C $@ -f Makefile.mpi
 endif
 elegantTools: src
 	$(MAKE) -C $@
@@ -114,7 +118,7 @@ sddsbrightness: elegantTools
 clean:
 	$(MAKE) -C physics clean
 	$(MAKE) -C xraylib clean
-	$(MAKE) -C src clean
+	$(MAKE) -C src clean 
 	$(MAKE) -C elegantTools clean
 	$(MAKE) -C sddsbrightness clean
 

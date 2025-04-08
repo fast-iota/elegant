@@ -19,6 +19,9 @@ ifneq ($(wildcard $(DD)../.svn $(DD)../../../../.svn),)
  ifeq ($(ARCH),arm64)
     EPICS_ARCH := aarch64
  endif
+ ifeq ($(EPICS_HOST)-$(EPICS_ARCH),darwin-x86_64)
+    EPICS_ARCH := x86
+ endif
  EPICS_LIB_DIR = $(DD)../../../lib/$(EPICS_HOST)-$(EPICS_ARCH)
  EPICS_BIN_DIR = $(DD)../../../bin/$(EPICS_HOST)-$(EPICS_ARCH)
  EPICS_INC_DIR = $(DD)../../../include

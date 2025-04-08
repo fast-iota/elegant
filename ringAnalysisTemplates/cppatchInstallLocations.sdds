@@ -1,0 +1,26 @@
+SDDS1
+&parameter name=InstallLocation, type=string, &end
+&column name=TextFile, type=string,  &end
+&column name=InstallLocation, type=string,  &end
+&data mode=ascii, no_row_counts=1 &end
+! page number 1
+/home/helios/oagData/textData/cppatchInstallLocations.sdds
+oag/apps/src/elegant/ringAnalysisTemplates/BasicTemplate.ele /usr/local/oag/apps/configData/elegant/ringAnalysisTemplates/BasicTemplate.ele
+oag/apps/src/elegant/ringAnalysisTemplates/DynamicApertureErrorsTemplate.ele /usr/local/oag/apps/configData/elegant/ringAnalysisTemplates/DynamicApertureErrorsTemplate.ele
+oag/apps/src/elegant/ringAnalysisTemplates/DynamicApertureTemplate.ele /usr/local/oag/apps/configData/elegant/ringAnalysisTemplates/DynamicApertureTemplate.ele
+oag/apps/src/elegant/ringAnalysisTemplates/ErrorParametersTemplate.ele /usr/local/oag/apps/configData/elegant/ringAnalysisTemplates/ErrorParametersTemplate.ele
+oag/apps/src/elegant/ringAnalysisTemplates/ErrorsTemplate.ele /usr/local/oag/apps/configData/elegant/ringAnalysisTemplates/ErrorsTemplate.ele
+oag/apps/src/elegant/ringAnalysisTemplates/FineDynamicApertureTemplate.ele /usr/local/oag/apps/configData/elegant/ringAnalysisTemplates/FineDynamicApertureTemplate.ele
+oag/apps/src/elegant/ringAnalysisTemplates/FrequencyMap1Template.ele /usr/local/oag/apps/configData/elegant/ringAnalysisTemplates/FrequencyMap1Template.ele
+oag/apps/src/elegant/ringAnalysisTemplates/FrequencyMapDeltaErrorsTemplate.ele /usr/local/oag/apps/configData/elegant/ringAnalysisTemplates/FrequencyMapDeltaErrorsTemplate.ele
+oag/apps/src/elegant/ringAnalysisTemplates/FrequencyMapDeltaTemplate.ele /usr/local/oag/apps/configData/elegant/ringAnalysisTemplates/FrequencyMapDeltaTemplate.ele
+oag/apps/src/elegant/ringAnalysisTemplates/FrequencyMapErrorsTemplate.ele /usr/local/oag/apps/configData/elegant/ringAnalysisTemplates/FrequencyMapErrorsTemplate.ele
+oag/apps/src/elegant/ringAnalysisTemplates/FrequencyMapTemplate.ele /usr/local/oag/apps/configData/elegant/ringAnalysisTemplates/FrequencyMapTemplate.ele
+oag/apps/src/elegant/ringAnalysisTemplates/HigherOrderDispersionTemplate.ele /usr/local/oag/apps/configData/elegant/ringAnalysisTemplates/HigherOrderDispersionTemplate.ele
+oag/apps/src/elegant/ringAnalysisTemplates/KickApertureErrorsTemplate.ele /usr/local/oag/apps/configData/elegant/ringAnalysisTemplates/KickApertureErrorsTemplate.ele
+oag/apps/src/elegant/ringAnalysisTemplates/KickApertureTemplate.ele /usr/local/oag/apps/configData/elegant/ringAnalysisTemplates/KickApertureTemplate.ele
+oag/apps/src/elegant/ringAnalysisTemplates/MomentsTemplate.ele /usr/local/oag/apps/configData/elegant/ringAnalysisTemplates/MomentsTemplate.ele
+oag/apps/src/elegant/ringAnalysisTemplates/MomentumApertureTemplate.ele /usr/local/oag/apps/configData/elegant/ringAnalysisTemplates/MomentumApertureTemplate.ele
+oag/apps/src/elegant/ringAnalysisTemplates/OffMomentumDynamicApertureTemplate.ele /usr/local/oag/apps/configData/elegant/ringAnalysisTemplates/OffMomentumDynamicApertureTemplate.ele
+oag/apps/src/elegant/ringAnalysisTemplates/OffMomentumTuneTrackingTemplate.ele /usr/local/oag/apps/configData/elegant/ringAnalysisTemplates/OffMomentumTuneTrackingTemplate.ele
+oag/apps/src/elegant/ringAnalysisTemplates/PhaseSpaceTrackingTemplate.ele /usr/local/oag/apps/configData/elegant/ringAnalysisTemplates/PhaseSpaceTrackingTemplate.ele

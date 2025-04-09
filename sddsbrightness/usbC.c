@@ -19,13 +19,13 @@ void hunt(const double *X, int N, double XP, int *jlo);
 #define CV (1.0 / (8.0 * PI * PI) * C_ANG_M * C_M2_MM2)
 #define IDWMAX 128
 
-static const double C_ = 2.99792458e8;      /* Speed of light [m/s]         */
+#define C_ 2.99792458e8      /* Speed of light [m/s]         */
 static const double MEE = 0.51099906;       /* Electron rest mass [MeV]     */
-static const double EC = 1.60217733e-19;    /* Elementary charge [C]        */
-static const double H_ = 6.6260755e-34;     /* Planck~s constant [J s]      */
-static const double HBAR = 1.05457266e-34;  /* h/2Pi [J s]                  */
-static const double EPSZ = 8.854187817e-12; /* Permittivity of vacuum [F/m] */
-static const double PI = 3.14159265358979323846;
+#define EC 1.60217733e-19    /* Elementary charge [C]        */
+#define H_ 6.6260755e-34     /* Planck~s constant [J s]      */
+#define HBAR 1.05457266e-34  /* h/2Pi [J s]                  */
+#define EPSZ 8.854187817e-12 /* Permittivity of vacuum [F/m] */
+#define PI 3.14159265358979323846
 static const double PIHALF = 1.57079632679489661923;
 static const double TWOPI = 6.28318530717958647692;
 

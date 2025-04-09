@@ -379,6 +379,14 @@ long trackBRAT(double **part, long np, BRAT *brat, double pCentral, double **acc
   zero_tol = integ_tol * 10;
   useFTABLE = brat->useFTABLE;
 
+  if (brat->flip) {
+    for (ip=0; ip<np; ip++) {
+      part[ip][0] *= -1;
+      part[ip][1] *= -1;
+      part[ip][2] *= -1;
+      part[ip][3] *= -1;
+    }
+  }
   itop = np - 1;
   for (ip = 0; ip <= itop; ip++) {
     double accelCoord[6], q[10];
@@ -448,6 +456,15 @@ long trackBRAT(double **part, long np, BRAT *brat, double pCentral, double **acc
 #endif /* If not ABRAT program */
   }
 
+  if (brat->flip) {
+    for (ip=0; ip<np; ip++) {
+      part[ip][0] *= -1;
+      part[ip][1] *= -1;
+      part[ip][2] *= -1;
+      part[ip][3] *= -1;
+    }
+  }
+  
   return itop + 1;
 }
 

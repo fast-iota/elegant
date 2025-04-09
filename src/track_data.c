@@ -3506,6 +3506,7 @@ PARAMETER brat_param[N_BRAT_PARAMS] = {
   {"L", "M", IS_DOUBLE, PARAM_CHANGES_MATRIX, (long)((char *)&brat_example.length), NULL, 0.0, 0, "length"},
   {"ANGLE", "RAD", IS_DOUBLE, PARAM_CHANGES_MATRIX, (long)((char *)&brat_example.angle), NULL, 0.0, 0, "Nominal bending angle. Will be refined to match geometry specified by input/output and vertex coordinates"},
   {"FSE", NULL, IS_DOUBLE, PARAM_CHANGES_MATRIX, (long)((char *)&brat_example.fse), NULL, 0.0, 0, "fractional strength error"},
+  {"FLIP", NULL, IS_SHORT, PARAM_CHANGES_MATRIX, (long)((char *)&brat_example.flip), NULL, 0.0, 0, "flip 180 degrees?"},
   {"ACCURACY", NULL, IS_DOUBLE, PARAM_CHANGES_MATRIX, (long)((char *)&brat_example.accuracy), NULL, 0.0, 0, "integration accuracy"},
   {"METHOD", NULL, IS_STRING, PARAM_CHANGES_MATRIX, (long)((char *)&brat_example.method), NULL, 0.0, 0, "Ignored. Method defaults to Bulirsch-Stoer."},
   {"FILENAME", NULL, IS_STRING, PARAM_CHANGES_MATRIX, (long)((char *)&brat_example.filename), NULL, 0.0, 0, "name of file containing columns (x, y, z, Bx, By, Bz) for main field"},

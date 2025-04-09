@@ -1198,7 +1198,7 @@ extern char *entity_text[N_TYPES];
 #define N_EVCOR_PARAMS 16
 #define N_EHVCOR_PARAMS 18
 #define N_BMAPXYZ_PARAMS 32
-#define N_BRAT_PARAMS 32
+#define N_BRAT_PARAMS 33
 #define N_BGGEXP_PARAMS 35
 #define N_BRANCH_PARAMS 7
 #define N_SLICE_POINT_PARAMS 12
@@ -3189,7 +3189,9 @@ typedef struct {
 
 extern PARAMETER brat_param[N_BRAT_PARAMS];
 typedef struct {
-  double length, angle, fse, accuracy;
+  double length, angle, fse;
+  short flip;
+  double accuracy;
   char *method, *filename, *filenameAdditional;
   double xVertex, zVertex;
   double xEntry, zEntry;

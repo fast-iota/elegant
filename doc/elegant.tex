@@ -22,7 +22,7 @@
 \begin{document}
 
 \title{User's Manual for {\tt elegant}}
-\author{Program Version 2025.1\\Advanced Photon Source\\Michael Borland\\ \date{\today}}
+\author{Program Version 2025.2\\Advanced Photon Source\\Michael Borland\\ \date{\today}}
 \maketitle
 
 Note: another source of help for {\tt elegant} is the on-line
@@ -35,43 +35,30 @@ available from the software download page that demonstrates many features of {\t
 overview}{http://ops.aps.anl.gov/elegant.html} of {\tt elegant} is also available, which introduces the capabilities
 at a high level.
 
-\section{Highlights of What's New in Version 2025.1}
+\section{Highlights of What's New in Version 2025.2}
 
-Here is a summary of what's changed since release 2024.1  Historical change logs are collected in Section
+Here is a summary of what's changed since release 2025.2  Historical change logs are collected in Section
 \ref{sect:changeLog}.
 
 \subsection{Bug Fixes for Elements}
 
 \begin{itemize}
-\item \verb|Pelegant| no longer hangs on \verb|CENTER| elements with \verb|T=1|.
-\item There was a bug in division of \verb|CSBEND| elements when tracking-based matrices and edge effects were used,
-  as reported by V. Sajaev (APS).
-\item Fixed issues with computation of radiation integrals on large closed orbits for \verb|CCBEND| and \verb|LGBEND|
-  elements.
+\item None.
 \end{itemize}
 
 \subsection{Bug Fixes for Commands}
 \begin{itemize}
-\item Fixed a bug in the \verb|correction_matrix_output| command that caused a crash when requesting inverse matrix
-  output with \verb|use_response_from_computed_orbits=1|.
-\item The orbit computed by \verb|closed_orbit| with \verb|immediate=1| is now used by \verb|twiss_output| with
-  \verb|output_at_each_step=0|. In other words, it is possible to compute the closed orbit and twiss parameters
-  in a self-consistent fashion without a \verb|run_control| command and following commands.
-\item The \verb|profile| output from \verb|run_setup| had incorrect values in the \verb|K2L| column, as pointed
-  out by M. Abo-Bakr (HZB).
-\item The \verb|magnet| output file from  \verb|run_setup| did not show the sign of \verb|K2| values on 
-  \verb|SEXT| or \verb|KSEXT| elements, as pointed out by forum use \verb|Ikpfelix|.
+\item None.
 \end{itemize}
 
 \subsection{New and Modified Elements}
 \begin{itemize}
-\item None.
+\item Added the \verb|FLIP| parameter to \verb|BRAT| to allow turning the magnet upside down.
 \end{itemize}
 
 \subsection{New and Modified Commands}
 \begin{itemize}
-\item Trajectory and orbit correction no longer include collective effects calculations, since those were done
-  with single-particle beams and hence lacked validity. In tests, changes were very small.
+\item None.
 \end{itemize}
 
 \subsection{Changes to Examples}
@@ -88,10 +75,7 @@ are listed in Section \ref{sect:tools}.
 
 Changes to these tools in this release include
 \begin{itemize}
-\item The \verb|touschekLifetime| command allows specifying the number of superperiods, which allows using
-  the \verb|rf| option with data from a partial lattice. This issue was pointed out by forum user \verb|ranamonikaa|.
-\item The \verb|ibsEmittance| program had a bug in integration mode that gave incorrect results when $J_x \ne 1$.
-  This was reported by S. Joly (HZB).
+\item None.
 \end{itemize}
 
 \subsection{Known Bugs, Problems, and Limitations}
@@ -4203,6 +4187,7 @@ variables and covariable may be accessed via names like \verb|<element-name>.<pa
     STRING equation = NULL;
     STRING mode = "minimize";
     STRING method = "simplex";
+    STRING statistic = "sum-absolute-value";
     double tolerance = -0.01;
     double target = 0;
     long center_on_orbit = 0;
@@ -4354,6 +4339,9 @@ and not-equal functions, which have the names {\tt segt}, {\tt selt}, and
   ``rcds'', and ``sample''.  Recommended methods are ``simplex'', ``rcds'' \cite{Huang-RCDS}, and ``randomwalk''. The
   latter is very useful when the lattice is unstable or nearly so.
 
+\item \verb|statistic| --- Defines how to combine the values returned by the optimization terms. Choices are
+  ``sum-absolute-value'' (default), ``maximum'', ``minimum'', ``sum-squares'', and ``plain-sum''.
+  
 \item \verb|tolerance| --- The convergence criterion for the optimization, with a negative value indicating
 a fractional criterion.
 \item \verb|target| --- The value which, if reached, results in immediate termination of the optimization,
@@ -8579,6 +8567,65 @@ terminal input and terminal output, respectively.
 \newpage
 
 \section{Change Log\label{sect:changeLog}}
+
+\subsection{Highlights of What's New in Version 2025.1}
+
+Here is a summary of what's changed since release 2024.1  Historical change logs are collected in Section
+\ref{sect:changeLog}.
+
+\subsubsection{Bug Fixes for Elements}
+
+\begin{itemize}
+\item \verb|Pelegant| no longer hangs on \verb|CENTER| elements with \verb|T=1|.
+\item There was a bug in division of \verb|CSBEND| elements when tracking-based matrices and edge effects were used,
+  as reported by V. Sajaev (APS).
+\item Fixed issues with computation of radiation integrals on large closed orbits for \verb|CCBEND| and \verb|LGBEND|
+  elements.
+\end{itemize}
+
+\subsubsection{Bug Fixes for Commands}
+\begin{itemize}
+\item Fixed a bug in the \verb|correction_matrix_output| command that caused a crash when requesting inverse matrix
+  output with \verb|use_response_from_computed_orbits=1|.
+\item The orbit computed by \verb|closed_orbit| with \verb|immediate=1| is now used by \verb|twiss_output| with
+  \verb|output_at_each_step=0|. In other words, it is possible to compute the closed orbit and twiss parameters
+  in a self-consistent fashion without a \verb|run_control| command and following commands.
+\item The \verb|profile| output from \verb|run_setup| had incorrect values in the \verb|K2L| column, as pointed
+  out by M. Abo-Bakr (HZB).
+\item The \verb|magnet| output file from  \verb|run_setup| did not show the sign of \verb|K2| values on 
+  \verb|SEXT| or \verb|KSEXT| elements, as pointed out by forum use \verb|Ikpfelix|.
+\end{itemize}
+
+\subsubsection{New and Modified Elements}
+\begin{itemize}
+\item None.
+\end{itemize}
+
+\subsubsection{New and Modified Commands}
+\begin{itemize}
+\item Trajectory and orbit correction no longer include collective effects calculations, since those were done
+  with single-particle beams and hence lacked validity. In tests, changes were very small.
+\end{itemize}
+
+\subsubsection{Changes to Examples}
+
+\begin{itemize}
+\item None.
+\end{itemize}
+
+\subsubsection{Changes to Related Programs and Files}
+
+The {\tt elegant} distribution includes many programs and scripts that perform computations with {\tt elegant}
+output data, provide interfaces with other programs, or prepare data for use with {\tt elegant}. These
+are listed in Section \ref{sect:tools}. 
+
+Changes to these tools in this release include
+\begin{itemize}
+\item The \verb|touschekLifetime| command allows specifying the number of superperiods, which allows using
+  the \verb|rf| option with data from a partial lattice. This issue was pointed out by forum user \verb|ranamonikaa|.
+\item The \verb|ibsEmittance| program had a bug in integration mode that gave incorrect results when $J_x \ne 1$.
+  This was reported by S. Joly (HZB).
+\end{itemize}
 
 \subsection{Highlights of What's New in Version 2024.1}
 

@@ -20,12 +20,12 @@
 double eacc;
 double f1;
 
-long gaussianQuadrature(double (*fn)(), double a, double b, long n, double err, double *result);
+long gaussianQuadrature(double (*fn)(double x), double a, double b, long n, double err, double *result);
 
 int main() {
   double a, b, err, factor, eaccFinal;
   long i, n, limit, evals, decades, decade;
-  double fn(), result = 0, lastResult;
+  double fn(double x), result = 0, lastResult;
   double fn1(double x);
   char filename[500];
   FILE *fp;

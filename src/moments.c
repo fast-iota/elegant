@@ -845,7 +845,12 @@ double *AddMM1(int sum, int rows, int cols, double *M1, double *M2);
 double *MatrixProduct1(int rows1, int cols1, double *T1, int rows2, int cols2, double *T2);
 double *TransposeM(int rows, int cols, double *M);
 void MatrixPrintout1(char *string, double *AA, int N, int M);
-void dgeev_();
+#if defined(LAPACK) || defined(CLAPACK) || defined(MKL)
+  int dgeev_(char *JOBVL, char *JOBVR, int *N, double *A,
+         int *LDA, double *WR, double *WI, double *VL,
+         int *LDVL, double *VR, int *LDVR, double *work,
+         int *lwork, int *info);
+#endif
 
 void computeNaturalEmittances(VMATRIX *Mld, double *sigmaMatrix, double *emittance) {
   int i, j, k, eigenModesNumber, dim = MATDIM;

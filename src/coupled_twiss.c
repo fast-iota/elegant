@@ -17,7 +17,12 @@
 #include "track.h"
 #include "coupled_twiss.h"
 
-void dgeev_();
+#if defined(LAPACK) || defined(CLAPACK) || defined(MKL)
+  int dgeev_(char *JOBVL, char *JOBVR, int *N, double *A,
+         int *LDA, double *WR, double *WI, double *VL,
+         int *LDVL, double *VR, int *LDVR, double *work,
+         int *lwork, int *info);
+#endif
 void store_fitpoint_ctwiss_parameters(MARK *fpt, char *name, long occurence,
                                       double betax1, double betax2,
                                       double betay1, double betay2,

@@ -91,7 +91,7 @@ char *option[N_OPTIONS] = {
   "sliceAnalysis",
 };
 
-void TouschekLifeCalc();
+void TouschekLifeCalc(long verbosity);
 double FIntegral_0(double *tm, double *B1, double *B2, long index, long verbosity);
 double Fvalue_0(double t, double tm, double b1, double b2);
 double FIntegral_1(double *tm, double *B1, double *B2, long index, long verbosity);

@@ -30,7 +30,8 @@ void convert_to_transport(char *outputfile, LINE_LIST *beamline, long flip_k, do
   BEND *bend;
   DRIFT *drift;
   VCOR *vcor;
-  char *quoted_label(), s[256];
+  //char *quoted_label();
+  char s[256];
   long n_bend_k2 = 0, n_bend_gap = 0, n_bend_fint = 0;
   long n_bend_rotated_faces = 0, n_bend_curved_faces = 0;
   long n_bend_tilts = 0, n_quad_tilts = 0, n_sext_tilts = 0;

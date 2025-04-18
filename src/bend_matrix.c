@@ -48,8 +48,22 @@ VMATRIX *bend_matrix(
 
   log_entry("bend_matrix");
 
-  if (FABS(angle) < 1e-10)
-    return (drift_matrix(length, order));
+  if (FABS(angle) < 1e-10 || fabs(length/angle)>1e6) {
+    if (k1==0 && k2==0) {
+      printWarning("Bending magnet has |angle|<1e-10 or rho>1e6", "K1=K2=0 so using drift matrix");
+      return drift_matrix(length, order);
+    }
+    if (k2==0) {
+      printWarning("Bending magnet has |angle|<1e-10 or rho>1e6", "K1!=0 and K2=0 so using quadrupole matrix");
+      return quadrupole_matrix(k1, length, order, fse+fseQuadrupole, hkick, vkick, 0, 0, NULL, 0.0, 0.0, NULL, NULL, 0);
+    }
+    if (k1==0) {
+      printWarning("Bending magnet has |angle|<1e-10 or rho>1e6", "K1==0 and K2!=0 so using sextupole matrix");
+      return sextupole_matrix(k2, 0.0, 0.0, length, order, fse, hkick, vkick, 0.0);
+    }
+    printWarning("Bending magnet has |angle|<1e-10 or rho>1e6", "K1!=0 and K2!=0 so using quse (quad/sext) matrix");
+    return quse_matrix(k1, k2, length, order, fse+fseQuadrupole, fse);
+  }
   if (length == 0)
     bombElegant("zero-length bend magnet not supported", NULL);
 

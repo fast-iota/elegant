@@ -219,8 +219,8 @@ CFLAGS +=  -I$(SDDS_REPO)/include -I$(OBJ_DIR) -DIEEE_MATH -DMINIMIZE_MEMORY -DU
 CCFLAGS +=  -I$(SDDS_REPO)/include -I$(OBJ_DIR) -DIEEE_MATH -DMINIMIZE_MEMORY -DUSE_KAHAN -DUSE_GSL -DSVN_VERSION=\"$(SVN_VERSION)\"
 
 ifeq ($(MDEBUG),1)
-  CFLAGS += -DMPI_DEBUG=1
-  CCFLAGS += -DMPI_DEBUG=1
+  CFLAGS += -DMPI_DEBUG=1 -Og
+  CCFLAGS += -DMPI_DEBUG=1 -Og
 endif
 
 ifeq ($(OS), Linux)
@@ -245,6 +245,10 @@ ifeq ($(OS), Windows)
   PROD_SYS_LIBS := gsl.lib gslcblas.lib $(MKL_LIB) $(PROD_SYS_LIBS)
   PROD_LIBS_SDDS = mdbcommon.lib matlib.lib fftpack.lib SDDS1.lib namelist.lib rpnlib.lib mdbmth.lib mdblib.lib lzma.lib z.lib
   LIB_LINK_DIRS += -LIBPATH:$(SDDS_REPO)/lib/$(OS)-$(ARCH)
+endif
+
+ifeq ($(MDEBUG),1)
+  LDFLAGS += -g
 endif
 
 include ../Makefile.build

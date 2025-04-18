@@ -651,6 +651,96 @@ void computeCSBENDFieldCoefficients(double *b, double *c,
       */
 }
 
+long trackCSBENDWithLargeRadius(double **part, long n_part, CSBEND *csbend, double p_error,
+                                double Po, double **accepted,
+                                double z_start, double *sigmaDelta2, char *rootname, MAXAMP *maxamp,
+                                APCONTOUR *apContour, APERTURE_DATA *apFileData,
+                                /* If iSlice non-negative, we do one step. The caller is responsible 
+                                 * for handling the coordinates appropriately outside this routine. 
+                                 * The element must have been previously optimized to determine FSE and X offsets.
+                                 */
+                                long iSlice,
+                                ELEMENT_LIST *eptr)
+{
+  if (iSlice>=0)
+    bombElegant("Error: One or more CSBENDs have angle = 0 or radius > 1e6 but radiation matrix was requested. Please convert element to an EDRIFT, KQUAD, or KSEXT as appropriate.\n", NULL);
+  if (csbend->k1 != 0) {
+    if (csbend->k2 == 0) {
+      ELEMENT_LIST elem;
+      KQUAD kquad;
+      printWarningForTracking("CSBEND has angle = 0 or radius > 1e6 but non-zero K1.",
+                              "Treated as KQUAD; higher multipoles ignored.");
+      memset(&elem, 0, sizeof(elem));
+      memset(&kquad, 0, sizeof(kquad));
+      elem.p_elem = (void *)&kquad;
+      elem.type = T_KQUAD;
+      kquad.length = csbend->length;
+      kquad.k1 = csbend->k1;
+      kquad.tilt = csbend->tilt + csbend->etilt * csbend->etiltSign;
+      kquad.dx = csbend->dx;
+      kquad.dy = csbend->dy;
+      kquad.dz = csbend->dz;
+      kquad.synch_rad = csbend->synch_rad;
+      kquad.isr = csbend->isr;
+      kquad.isr1Particle = csbend->isr1Particle;
+      kquad.nSlices = csbend->nSlices;
+      kquad.integration_order = csbend->integration_order;
+      return multipole_tracking2(part, n_part, &elem, p_error, Po, accepted, z_start, maxamp, NULL, apFileData, sigmaDelta2, -1);
+    } else {
+      /* K1 and K2 nonzero */
+      ELEMENT_LIST elem;
+      KQUSE kquse;
+      printWarningForTracking("CSBEND has angle = 0 or radius > 1e6 but non-zero K1 and K2.",
+                              "Treated as KQUSE; higher multipoles ignored.");
+      memset(&elem, 0, sizeof(elem));
+      memset(&kquse, 0, sizeof(kquse));
+      elem.p_elem = (void *)&kquse;
+      elem.type = T_KQUSE;
+      kquse.length = csbend->length;
+      kquse.k1 = csbend->k1;
+      kquse.k2 = csbend->k2;
+      kquse.tilt = csbend->tilt + csbend->etilt * csbend->etiltSign;
+      kquse.dx = csbend->dx;
+      kquse.dy = csbend->dy;
+      kquse.dz = csbend->dz;
+      kquse.synch_rad = csbend->synch_rad;
+      kquse.isr = csbend->isr;
+      kquse.isr1Particle = csbend->isr1Particle;
+      kquse.nSlices = csbend->nSlices;
+      kquse.integration_order = csbend->integration_order;
+      return multipole_tracking2(part, n_part, &elem, p_error, Po, accepted, z_start, maxamp, NULL, apFileData, sigmaDelta2, -1);
+    }
+  } else if (csbend->k2 != 0) {
+    /* K2 nonzero */
+    ELEMENT_LIST elem;
+    KSEXT ksext;
+    printWarningForTracking("CSBEND has angle = 0 or radius > 1e6 but non-zero K1 and K2.",
+                            "Treated as KSEXT; higher multipoles ignored.");
+    memset(&elem, 0, sizeof(elem));
+    memset(&ksext, 0, sizeof(ksext));
+    elem.p_elem = (void *)&ksext;
+    elem.type = T_KSEXT;
+    ksext.length = csbend->length;
+    ksext.k2 = csbend->k2;
+    ksext.tilt = csbend->tilt + csbend->etilt * csbend->etiltSign;
+    ksext.dx = csbend->dx;
+    ksext.dy = csbend->dy;
+    ksext.dz = csbend->dz;
+    ksext.synch_rad = csbend->synch_rad;
+    ksext.isr = csbend->isr;
+    ksext.isr1Particle = csbend->isr1Particle;
+    ksext.nSlices = csbend->nSlices;
+    ksext.integration_order = csbend->integration_order;
+    return multipole_tracking2(part, n_part, &elem, p_error, Po, accepted, z_start, maxamp, NULL, apFileData, sigmaDelta2, -1);
+  } else {
+    /* K1 and K2 zero */
+    printWarningForTracking("CSBEND has radius > 1e6 with zero K1.",
+                            "Treated as EDRIFT; higher multipoles are ignored.");
+    exactDrift(part, n_part, csbend->length);
+    return n_part;
+  }
+}
+
 long track_through_csbend(double **part, long n_part, CSBEND *csbend, double p_error,
                           double Po, double **accepted,
                           double z_start, double *sigmaDelta2, char *rootname, MAXAMP *maxamp,
@@ -787,10 +877,9 @@ long track_through_csbend(double **part, long n_part, CSBEND *csbend, double p_e
   } else
     refTrajectoryMode = 0;
 
-  if (csbend->angle == 0) {
-    exactDrift(part, n_part, csbend->length);
-    return n_part;
-  }
+  if (csbend->angle == 0 || fabs(rho0 = csbend->length / csbend->angle)>1e6)
+    return trackCSBENDWithLargeRadius(part, n_part, csbend, p_error, Po, accepted, z_start, sigmaDelta2, rootname,
+                               maxamp, apContour, apFileData, iSlice, eptr);
 
   if (!(csbend->edgeFlags & BEND_EDGE_DETERMINED))
     bombElegant("CSBEND element doesn't have edge flags set.", NULL);
@@ -798,7 +887,6 @@ long track_through_csbend(double **part, long n_part, CSBEND *csbend, double p_e
   if (csbend->integration_order != 2 && csbend->integration_order != 4 && csbend->integration_order != 6)
     bombElegant("CSBEND integration_order is invalid--must be 2, 4, or 6", NULL);
 
-  rho0 = csbend->length / csbend->angle;
   if (csbend->use_bn) {
     csbend->b[0] = 0;
     csbend->b[1] = csbend->b1;
@@ -880,38 +968,6 @@ long track_through_csbend(double **part, long n_part, CSBEND *csbend, double p_e
   }
 
   setupMultApertureData(&apertureData, -tilt, apContour, maxamp, apFileData, NULL, z_start + csbend->length / 2, eptr);
-
-  if (fabs(rho0) > 1e6) {
-    if (csbend->k2 != 0)
-      bombElegant("Error: One or more CSBENDs have radius > 1e6 but non-zero K2. Best to convert this to KQUSE or KSEXT.\n", NULL);
-    if (csbend->k1 != 0) {
-      ELEMENT_LIST elem;
-      KQUAD kquad;
-      printWarningForTracking("CSBEND has radius > 1e6 but non-zero K1.",
-                              "Treated as KQUAD; higher multipoles ignored.");
-      memset(&elem, 0, sizeof(elem));
-      memset(&kquad, 0, sizeof(kquad));
-      elem.p_elem = (void *)&kquad;
-      elem.type = T_KQUAD;
-      kquad.length = csbend->length;
-      kquad.k1 = csbend->k1;
-      kquad.tilt = csbend->tilt + csbend->etilt * csbend->etiltSign;
-      kquad.dx = csbend->dx;
-      kquad.dy = csbend->dy;
-      kquad.dz = csbend->dz;
-      kquad.synch_rad = csbend->synch_rad;
-      kquad.isr = csbend->isr;
-      kquad.isr1Particle = csbend->isr1Particle;
-      kquad.nSlices = csbend->nSlices;
-      kquad.integration_order = csbend->integration_order;
-      return multipole_tracking2(part, n_part, &elem, p_error, Po, accepted, z_start, maxamp, NULL, apFileData, sigmaDelta2, -1);
-    } else {
-      printWarningForTracking("CSBEND has radius > 1e6 with zero K1.",
-                              "Treated as EDRIFT; higher multipoles are ignored.");
-      exactDrift(part, n_part, csbend->length);
-      return n_part;
-    }
-  }
 
   fse = csbend->fse + csbend->fseDipole + (csbend->fseCorrection ? csbend->fseCorrectionValue : 0);
   h = 1 / rho0;

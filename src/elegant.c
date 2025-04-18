@@ -2683,12 +2683,12 @@ void createSemaphoreFile(char *filename) {
   if (!isMaster)
     return;
 #endif
-  if (filename) {
-    printf("Creating semaphore file %s\n", filename);
+  if (filename && strlen(filename) && !is_blank(filename)) {
+    printf("Creating semaphore file \"%s\"\n", filename);
   } else
     return;
   if (!(fp = fopen(filename, "w"))) {
-    printf("Problem creating semaphore file %s\n", filename);
+    printf("Problem creating semaphore file \"%s\"\n", filename);
     exitElegant(1);
   } else { /* Put the CPU time in the .done file */
     if (wild_match(filename, "*.done"))

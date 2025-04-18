@@ -2004,7 +2004,7 @@ double optimization_function(double *value, long *invalid) {
   double conval, result = 0, psum;
   long i, iRec, recordUsedAgain;
   unsigned long unstable;
-  VMATRIX *M;
+  VMATRIX *M = NULL;
   TWISS twiss_ave, twiss_min, twiss_max;
   TWISS twiss_p99, twiss_p98, twiss_p96;
   double XYZ[3], Angle[3], XYZMin[3], XYZMax[3];
@@ -2250,7 +2250,7 @@ double optimization_function(double *value, long *invalid) {
     run_coupled_twiss_output(run, beamline, startingOrbitCoord);
     if (unstable)
       *invalid = 1;
-#if DEBUG
+#if DEBUG || MPI_DEBUG
     printf("Twiss parameters done.\n");
     printf("betax=%g, alphax=%g, etax=%g\n",
            beamline->elast->twiss->betax,
@@ -2388,11 +2388,7 @@ double optimization_function(double *value, long *invalid) {
     rpn_store(beamline->acceptance[0], NULL, twiss_mem[107]);
     rpn_store(beamline->acceptance[1], NULL, twiss_mem[108]);
 
-#if DEBUG
-    printf("Twiss parameters stored.\n");
-    fflush(stdout);
-#endif
-#if USE_MPI && MPI_DEBUG
+#if DEBUG || MPI_DEBUG
     printf("Twiss parameters stored.\n");
     fflush(stdout);
 #endif
@@ -2510,7 +2506,7 @@ double optimization_function(double *value, long *invalid) {
                             optimization_data->matrix_order < 1 ? 1 : optimization_data->matrix_order, 0);
 
 #if USE_MPI && MPI_DEBUG
-  printf("Accmulated matrices\n");
+  printf("Accumulated matrices\n");
   fflush(stdout);
 #endif
 
@@ -2647,7 +2643,7 @@ double optimization_function(double *value, long *invalid) {
 
     if (isMaster || !notSinglePart) { /* Only the master will execute the block */
       rpn_store_final_properties(final_property_value, final_property_values);
-      if (optimization_data->matrix_order > 1)
+      if (optimization_data->matrix_order > 1 && !*invalid)
         rpnStoreHigherMatrixElements(M, &optimization_data->TijkMem,
                                      &optimization_data->UijklMem,
                                      optimization_data->matrix_order);

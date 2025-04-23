@@ -3859,7 +3859,9 @@ CKICKER cKicker_example;
 
 PARAMETER ckicker_param[N_CKICKER_PARAMS] = {
   {"ID", "", IS_STRING, 0, (long)((char *)&cKicker_example.ID), NULL, 0.0, 0, "System identifier"},
-  {"STRENGTH", "", IS_DOUBLE, 0, (long)((char *)&cKicker_example.strength), NULL, 0.0, 0, "Strength factor"},
+  {"STRENGTH", "", IS_DOUBLE, 0, (long)((char *)&cKicker_example.strength), NULL, 0.0, 0, "Strength factor, assuming no amplification."},
+  {"GAIN", "DB", IS_DOUBLE, 0, (long)((char *)&cKicker_example.gain), NULL, 0.0, 0, "Gain (dB); used with the STRENGTH parameter to determine the energy kick."},
+  {"GAIN_RANGE", "PS", IS_DOUBLE, 0, (long)((char *)&cKicker_example.gainRange), NULL, -1.0, 0, "Range over which to apply the gain (ps), centered on bunch average time, to simulate laser pulse duration [ignored if negative]."},
   {"KICK_LIMIT", "", IS_DOUBLE, 0, (long)((char *)&cKicker_example.kickLimit), NULL, 0.0, 0, "Limit on applied kick, nominally in radians."},
   {"PHASE", "1/(2*Pi)", IS_DOUBLE, 0, (long)((char *)&cKicker_example.phase), NULL, 0.0, 0, "Phase of the applied voltage relative to the bunch center, with 0 being on-crest."},
   {"UPDATE_INTERVAL", "", IS_LONG, 0, (long)((char *)&cKicker_example.updateInterval), NULL, 0.0, 0, "Interval in units of pickup update interval for sampling pickup data and upda"},

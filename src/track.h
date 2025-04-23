@@ -1216,7 +1216,7 @@ extern char *entity_text[N_TYPES];
 #define N_KICKMAP_PARAMS 13
 #define N_BEAMBEAM_PARAMS 6
 #define N_CPICKUP_PARAMS 7
-#define N_CKICKER_PARAMS 17
+#define N_CKICKER_PARAMS 19
 #define N_LGBEND_PARAMS 23
 #define N_CORGPLATES_PARAMS 13
 #define N_BEDGE_PARAMS 7
@@ -3705,7 +3705,7 @@ typedef struct {
 extern PARAMETER ckicker_param[N_CKICKER_PARAMS];
 typedef struct {
   char *ID; 
-  double strength, kickLimit;
+  double strength, gain, gainRange, kickLimit;
   double phase;
   long updateInterval;
   long startPass, endPass;

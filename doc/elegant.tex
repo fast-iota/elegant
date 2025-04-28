@@ -43,12 +43,14 @@ Here is a summary of what's changed since release 2025.2  Historical change logs
 \subsection{Bug Fixes for Elements}
 
 \begin{itemize}
-\item None.
+\item The \verb|CSBEND| and \verb|SBEN| elements did not behave well when very small angles were used together with
+  non-zero gradient or sextupole terms. This was reported by forum user \verb|Skamarokha|.
 \end{itemize}
 
 \subsection{Bug Fixes for Commands}
 \begin{itemize}
-\item None.
+\item The \verb|semaphores| command issued errors if an immediate semaphore was requested even if the
+  other semaphores were blank.
 \end{itemize}
 
 \subsection{New and Modified Elements}
@@ -58,7 +60,11 @@ Here is a summary of what's changed since release 2025.2  Historical change logs
 
 \subsection{New and Modified Commands}
 \begin{itemize}
-\item None.
+\item When reporting results for elements for which the matrix is determined by tracking, the
+  \verb|matrix_output| command now provides the maximum error for each coordinate between the tracking
+  results and the matrix.
+\item Added the \verb|macro_output| command, which allows writing the values of the commandline macros to
+  a file.
 \end{itemize}
 
 \subsection{Changes to Examples}
@@ -712,6 +718,7 @@ Command name & Type & Description \\\hline
 \hyperref[subsec:linkcontrol]{\tt link\_control} & setup & Control linking of element parameters. \\ \hline
 \hyperref[subsec:linkelements]{\tt link\_elements} & setup & Define link between parameters of two elements. \\ \hline
 \hyperref[subsec:loadparameters]{\tt load\_parameters} & setup/action & Load element parameters from SDDS file. \\ \hline
+\hyperref[subsec:macrooutput]{\tt macro\_output} & action & Output commandline macros to a file. \\ \hline
 \hyperref[subsec:matrixoutput]{\tt matrix\_output} & setup/action & Output transfer matrix along beamline. \\ \hline
 \hyperref[subsec:modulateelements]{\tt modulate\_elements} & setup & Set up time-dependent modulation of elements. \\ \hline
 
@@ -3558,6 +3565,44 @@ changes to parameters.
 
 \end{itemize}
 
+
+%\begin{latexonly}
+\newpage
+\begin{center}{\Large\verb|macro_output|}\end{center}
+%\end{latexonly}
+\subsection{macro\_output \label{subsec:macrooutput}}
+
+\begin{itemize}
+\item type: action command.
+\item function: write macro values to a file.
+\item Command syntax, including use of equations and subcommands, is discussed in \ref{sect:generalCommandSyntax}.
+\end{itemize}
+
+\begin{verbatim}
+&macro_output
+    STRING filename = NULL;
+    STRING mode = "parameters";
+&end
+\end{verbatim}
+
+\begin{itemize}
+\item \verb|filename| --- The (incomplete) name of a file to which the 
+macro output will be written.   Recommended value: ``\%s.mac''.
+\item \verb|mode| --- The mode in which the data should be written. Recognized values are
+  \begin{itemize}
+  \item \verb|parameters| --- A parameter is created for each macro with the type determined by examining the value of the macro.
+    The output file has a single page, but no rows (since there are no columns).
+    It is straightforward to add these parameters to any other output file from the run, e.g.,
+\begin{verbatim}
+sddsxref run.twi run.mac -leave=* -transfer=parameter,* -reuse=page
+\end{verbatim}
+  \item \verb|columns| --- A column is created for each macro with the type determined by examining the value of the macro.
+    The output file has a single page and a single row.
+  \item \verb|dictionary| --- The output file has two columns, \verb|macroName| and \verb|macroValue|. Both have string type.
+    The output file has a single page.
+  \end{itemize}
+\end{itemize}
+
 %\begin{latexonly}
 \newpage
 \begin{center}{\Large\verb|matrix_output|}\end{center}
@@ -3618,6 +3663,14 @@ from which to begin concatenation and output.
 \item \verb|start_from_occurence| --- If \verb|start_from| is not NULL, the
   number of the occurrence of the named element from which to start.
 \end{itemize}
+
+In addition to the matrix elements, this command provides additional information for elements for which the
+matrix is determined by tracking (e.g., \verb|CSBEND| with \verb|TRACKING_MATRIX| non-zero).
+In the printout file, twelve quantities are printed below the matrix; these are the maximum absolute error and
+and mean absolute error for each coordinate, based on tracking the ensemble of probe particles through the
+element and through the matrix.
+In the SDDS output file, if \verb|individual_matrices=1|, extra columns \verb|MaxError|{\em i} are provided;
+the values are \verb|-1| if the matrix is not determined by tracking.
 
 %\begin{latexonly}
 \newpage

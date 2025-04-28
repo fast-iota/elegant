@@ -948,7 +948,7 @@ static FILE *fpdeb = NULL;
 #endif
 
 VMATRIX *determineMatrixHigherOrder(RUN *run, ELEMENT_LIST *eptr, double *startingCoord, double *stepSize, long order) {
-  double **initialCoord, **finalCoord, **coordError;
+  double **initialCoord, **finalCoord, **coordError, **finalCopy;
   long n_track, i, j, n_left;
   VMATRIX *M;
   double defaultStep[6];
@@ -957,6 +957,7 @@ VMATRIX *determineMatrixHigherOrder(RUN *run, ELEMENT_LIST *eptr, double *starti
   double dgamma, dtmp1, dP[3];
   long nPoints1 = trackingMatrixPoints;
   long maxFitOrder = trackingMatrixMaxFitOrder; 
+  double *maxError, *maError;
 #if USE_MPI
   long nWorking = 0, n_leftTotal, k, *nToTrackCounts, fiducialOnly = 0;
 #endif
@@ -1114,6 +1115,8 @@ VMATRIX *determineMatrixHigherOrder(RUN *run, ELEMENT_LIST *eptr, double *starti
     stepSize[i] *= trackingMatrixStepFactor;
 
   n_track = makeInitialParticleEnsemble(&initialCoord, startingCoord, &finalCoord, &coordError, nPoints1, stepSize);
+  finalCopy = (double**)czarray_2d(sizeof(**finalCopy), n_track, totalPropertiesPerParticle);
+    
   n_left = n_track;
   if (!announcedNTracked) {
     printf("Tracking %ld particles in total for matrix determination\n", n_track);
@@ -1457,8 +1460,32 @@ VMATRIX *determineMatrixHigherOrder(RUN *run, ELEMENT_LIST *eptr, double *starti
 
     }
 
+    /* We need to copy finalCoord for further use, because computeMatricesFromTracking modifies it
+     * to contain the fit residuals. Those are similar to, but not the same as, the residuals
+     * of the matrix itself.
+     */
+    for (j=0; j<n_track; j++)
+      memcpy(finalCopy[j], finalCoord[j], sizeof(**finalCopy)*totalPropertiesPerParticle);
     M = computeMatricesFromTracking(stdout, initialCoord, finalCoord, coordError, stepSize,
                                     maximumValue, nPoints1, n_track, maxFitOrder, 0);
+
+    /* Compute maximum and mean absolute error for each coordinate for the matrix vs tracking */
+    track_particles(finalCoord, M, initialCoord, n_track);
+    maxError = calloc(6, sizeof(*maxError));
+    maError = calloc(6, sizeof(*maError));
+    for (i=0; i<n_track; i++) {
+      double deviation;
+      for (j=0; j<6; j++) {
+        deviation = fabs(finalCoord[i][j]-finalCopy[i][j]);
+        if (deviation>maxError[j])
+          maxError[j] = deviation;
+        maError[j] += deviation;
+      }
+    }
+    for (j=0; j<6; j++)
+      maError[j] /= n_track;
+    M->maxError = maxError;
+    M->meanAbsError = maError;
 
     free_matrices_above_order(M, order);
     if (!hasSDependence && trackingMatrixCleanUp)
@@ -1561,6 +1588,7 @@ VMATRIX *determineMatrixHigherOrder(RUN *run, ELEMENT_LIST *eptr, double *starti
   free_czarray_2d((void **)initialCoord, n_track, totalPropertiesPerParticle);
   free_czarray_2d((void **)finalCoord, n_track, totalPropertiesPerParticle);
   free_czarray_2d((void **)coordError, n_track, totalPropertiesPerParticle);
+  free_czarray_2d((void **)finalCopy, n_track, totalPropertiesPerParticle);
 
 #if USE_MPI
 #  ifdef DEBUG

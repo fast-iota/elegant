@@ -216,6 +216,7 @@ typedef struct {
 typedef struct {
     double *C, **R, ***T, ****Q;
     long order;
+    double *maxError, *meanAbsError;
     /* These are needed by radiation calculations */
     struct element_list *eptr;  /* address of element structure, if any */
     } VMATRIX;

@@ -61,7 +61,7 @@ static SDDS_DEFINITION parameter_definition[N_PARAMETERS] = {
 };
 
 void SDDS_set_matrices(SDDS_TABLE *SDDS_table, VMATRIX *M, VMATRIX *M1, long order, long step,
-                       ELEMENT_LIST *elem, long i_element, long n_elements);
+                       ELEMENT_LIST *elem, long i_element, long n_elements, long individual_matrices);
 
 void setup_matrix_output(
   NAMELIST_TEXT *nltext,
@@ -172,8 +172,17 @@ void setup_matrix_output(
         sprintf(t, "units=%s &end", unit[i]);
       strcat(buffer, t);
       if (!SDDS_ProcessColumnString(SDDS_matrix + n_outputs, buffer, 0)) {
-        SDDS_SetError("Problem defining SDDS matrix output Rij columns (setup_matrix_output)");
+        SDDS_SetError("Problem defining SDDS matrix output Ci columns (setup_matrix_output)");
         SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+      }
+    }
+    if (individual_matrices) {
+      for (i = 0; i < 6; i++) {
+        sprintf(buffer, "&column name=MaxError%ld, type=double, units=%s &end", i, unit[i]);
+        if (!SDDS_ProcessColumnString(SDDS_matrix + n_outputs, buffer, 0)) {
+          SDDS_SetError("Problem defining SDDS matrix output max. error columns (setup_matrix_output)");
+          SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+        }
       }
     }
     if (SDDS_output_order >= 1) {
@@ -376,7 +385,7 @@ void run_matrix_output(
       start_elem.type = T_MARK;
       start_elem.occurence = 1;
       SDDS_set_matrices(SDDS_matrix + i_output, M1, NULL, SDDS_order[i_output],
-                        control ? control->i_step : -1, &start_elem, 0, n_SDDS_output);
+                        control ? control->i_step : -1, &start_elem, 0, n_SDDS_output, individualMatrices[i_output]);
     }
     i_SDDS_output = 1;
     member = first_member;
@@ -437,13 +446,13 @@ void run_matrix_output(
           }
           SDDS_set_matrices(SDDS_matrix + i_output, M1, member->matrix, SDDS_order[i_output],
                             control ? control->i_step : -1, member,
-                            i_SDDS_output++, n_SDDS_output);
+                            i_SDDS_output++, n_SDDS_output, individualMatrices[i_output]);
           if (individualMatrices[i_output])
             copy_doubles(M1->C, Ccopy, 6);
         } else if (member->succ == NULL) {
           SDDS_set_matrices(SDDS_matrix + i_output, M1, member->matrix, SDDS_order[i_output],
                             control ? control->i_step : -1, member,
-                            0, n_SDDS_output);
+                            0, n_SDDS_output, individualMatrices[i_output]);
         }
       }
       member = member->succ;
@@ -656,7 +665,7 @@ void finish_matrix_output() {
 }
 
 void SDDS_set_matrices(SDDS_TABLE *SDDS_table, VMATRIX *M, VMATRIX *M0, long order, long step,
-                       ELEMENT_LIST *elem, long i_element, long n_elements) {
+                       ELEMENT_LIST *elem, long i_element, long n_elements, long individual_matrices) {
   register long i, j, k, l, index;
 
   log_entry("SDDS_set_matrices");
@@ -670,6 +679,8 @@ void SDDS_set_matrices(SDDS_TABLE *SDDS_table, VMATRIX *M, VMATRIX *M0, long ord
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
     }
     if (!SDDS_SetParameters(SDDS_table, SDDS_SET_BY_NAME | SDDS_PASS_BY_VALUE, "Step", step, NULL)) {
+      SDDS_SetError("Problem setting parameters for matrix_output (SDDS_set_matrices)");
+      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
     }
   }
 
@@ -690,6 +701,15 @@ void SDDS_set_matrices(SDDS_TABLE *SDDS_table, VMATRIX *M, VMATRIX *M0, long ord
       SDDS_SetError("Problem setting row values for SDDS matrix output (SDDS_set_matrices, 2)");
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
     }
+
+  if (individual_matrices) {
+    for (i = 0; i < 6; i++)
+      if (!SDDS_SetRowValues(SDDS_table, SDDS_SET_BY_INDEX | SDDS_PASS_BY_VALUE, i_element,
+                             index++, M0 && M0->maxError?M0->maxError[i]:-1.0, -1)) {
+        SDDS_SetError("Problem setting row values for SDDS matrix output (SDDS_set_matrices, 2)");
+        SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+      }
+  }
 
   for (i = 0; i < 6; i++)
     for (j = 0; j < 6; j++)

@@ -39,6 +39,7 @@
 #include "correctDefs.h"
 #include "tuneDefs.h"
 
+void doMacroOutput(NAMELIST_TEXT *nltext, RUN *run, char **macroTag, char **macroValue, long macros);
 void traceback_handler(int code);
 void createSemaphoreFile(char *filename);
 void manageSemaphoreFiles(char *semaphore_file, char *rootname, char *semaphoreFile[3]);
@@ -82,21 +83,21 @@ void showUsageOrGreeting(unsigned long mode) {
 #if USE_MPI
 #  if HAVE_GPU
   char *USAGE = "usage: mpirun -np <number of processes> gpu-Pelegant <inputfile> [-macro=<tag>=<value>,[...]] [-rpnDefns=<filename>] [-configuration=<filename>]";
-  char *GREETING = "This is gpu-Pelegant 2025.1.0 ALPHA RELEASE, "__DATE__
+  char *GREETING = "This is gpu-Pelegant 2025.2Beta1 ALPHA RELEASE, "__DATE__
     ", by M. Borland, K. Amyx, J. Calvey, M. Carla', N. Carmignani, AJ Dick, Z. Duan, M. Ehrlichman, L. Emery, W. Guo, J.R. King, N. Kuklev, R. Lindberg, I.V. Pogorelov, V. Sajaev, R. Soliday, Y.-P. Sun, M. Wallbank, C.-X. Wang, Y. Wang, Y. Wu, and A. Xiao.\nParallelized by Y. Wang, H. Shang, and M. Borland.";
 #  else
   char *USAGE = "usage: mpirun -np <number of processes> Pelegant <inputfile> [-macro=<tag>=<value>,[...]] [-rpnDefns=<filename>] [-configuration=<filename>]";
-  char *GREETING = "This is elegant 2025.1.0 "__DATE__
+  char *GREETING = "This is elegant 2025.2Beta1 "__DATE__
     ", by M. Borland, J. Calvey, M. Carla', N. Carmignani, AJ Dick, Z. Duan, M. Ehrlichman, L. Emery, W. Guo, N. Kuklev, R. Lindberg, V. Sajaev, R. Soliday, Y.-P. Sun, M. Wallbank, C.-X. Wang, Y. Wang, Y. Wu, and A. Xiao.\nParallelized by Y. Wang, H. Shang, and M. Borland.";
 #  endif
 #else
 #  if HAVE_GPU
   char *USAGE = "usage: gpu-elegant {<inputfile>|-pipe=in} [-macro=<tag>=<value>,[...]] [-rpnDefns=<filename>] [-configuration=<filename>]";
-  char *GREETING = "This is gpu-elegant 2025.1.0 ALPHA RELEASE, "__DATE__
+  char *GREETING = "This is gpu-elegant 2025.2Beta1 ALPHA RELEASE, "__DATE__
     ", by M. Borland, K. Amyx, J. Calvey, M. Carla', N. Carmignani, AJ Dick, Z. Duan, M. Ehrlichman, L. Emery, W. Guo, J.R. King, N. Kuklev, R. Lindberg, I.V. Pogorelov, V. Sajaev, R. Soliday, Y.-P. Sun, M. Wallbank, C.-X. Wang, Y. Wang, Y. Wu, and A. Xiao.";
 #  else
   char *USAGE = "usage: elegant {<inputfile>|-pipe=in} [-macro=<tag>=<value>,[...]] [-rpnDefns=<filename>] [-configuration=<filename>]";
-  char *GREETING = "This is elegant 2025.1.0, "__DATE__
+  char *GREETING = "This is elegant 2025.2Beta1, "__DATE__
     ", by M. Borland, J. Calvey, M. Carla', N. Carmignani, AJ Dick, Z. Duan, M. Ehrlichman, L. Emery, W. Guo, N. Kuklev, R. Lindberg, V. Sajaev, R. Soliday, Y.-P. Sun, M. Wallbank, C.-X. Wang, Y. Wang, Y. Wu, and A. Xiao.";
 #  endif
 #endif
@@ -192,7 +193,8 @@ void showUsageOrGreeting(unsigned long mode) {
 #define CHANGE_END 73
 #define INCLUDE_COMMANDS 74
 #define PARTICLE_TUNES 75
-#define N_COMMANDS 76
+#define MACRO_OUTPUT 76
+#define N_COMMANDS 77
 
 char *command[N_COMMANDS] = {
   "run_setup",
@@ -271,6 +273,7 @@ char *command[N_COMMANDS] = {
   "change_end",
   "include_commands",
   "particle_tunes",
+  "macro_output",
 };
 
 char *description[N_COMMANDS] = {
@@ -349,7 +352,8 @@ char *description[N_COMMANDS] = {
   "change_start                     modify the beamline to start at a named location",
   "change_end                       modify the beamline to end at a named location",
   "include_commands                 include commands from a file",
-  "particle_tunes                   accumulate data and find tunes for each particle in a multi-particle beam"};
+  "particle_tunes                   accumulate data and find tunes for each particle in a multi-particle beam",
+  "macro_output                     output values of commandline macros to a file"};
 
 #define NAMELIST_BUFLEN 65536
 
@@ -410,6 +414,25 @@ void finishElasticScattering();
 void setupInelasticScattering(NAMELIST_TEXT *nltext, RUN *run, VARY *control);
 long runInelasticScattering(RUN *run, VARY *control, ERRORVAL *errcon, LINE_LIST *beamline, double *startingCoord);
 void finishInelasticScattering();
+
+char *getNamelist(char *s, long n, FILE *fp, long *errorCode) {
+#if USE_MPI
+  if (fp==stdin) {
+    /* only the master can read stdin */
+    s[0] = 0;
+    if (myid==0) {
+      while (!get_namelist_e(s, NAMELIST_BUFLEN, fp, errorCode)) {
+        s[0] = 0;
+      }
+      fprintf(stderr, "namelist error code = %ld\n", *errorCode);
+    }
+    MPI_Bcast(s, NAMELIST_BUFLEN, MPI_BYTE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(errorCode, 1, MPI_LONG, 0, MPI_COMM_WORLD);
+    return s;
+  } else
+#endif
+    return get_namelist_e(s, NAMELIST_BUFLEN, fp, errorCode);
+}
 
 int main(argc, argv)
      int argc;
@@ -488,9 +511,12 @@ int main(argc, argv)
   MPI_Comm_size(MPI_COMM_WORLD, &n_processors);
   MPI_Comm_rank(MPI_COMM_WORLD, &myid);
 
-  if (n_processors <= 1)
+  if (n_processors <= 1) {
+    // NOTE: MPICH will eat the bomb elegant error and instead print weird "Fatal error in PMPI_Comm_free"
+    isSlave = 0;
     bombElegant("You must specify at least 2 processors to run Pelegant.", "mpiexec -np N Pelegant, where N is greater than 1.");
-
+  }
+  
   /* create a new communicator group with the slave processors only */
   ranks[0] = 0; /* first process is master */
   MPI_Comm_group(MPI_COMM_WORLD, &world_group);
@@ -767,7 +793,7 @@ int main(argc, argv)
       fpIn[0] = fopen_e(inputfile, "r", 0);
     while (fpIndex >= 0) {
       commandCode = -1;
-      while (get_namelist_e(s, NAMELIST_BUFLEN, fpIn[fpIndex], &namelistErrorCode)) {
+      while (getNamelist(s, NAMELIST_BUFLEN, fpIn[fpIndex], &namelistErrorCode)) {
         if (namelistErrorCode != NAMELIST_NO_ERROR)
           break;
         substituteTagValue(s, NAMELIST_BUFLEN, macroTag, macroValue, macros);
@@ -1660,6 +1686,11 @@ int main(argc, argv)
           if (!run_setuped || !run_controled)
             bombElegant("run_setup and run_control must precede particle_tunes namelist", NULL);
           setupParticleTunes(&namelist_text, &run_conditions, &run_control, &(output_data->particleTunes));
+          break;
+        case MACRO_OUTPUT:
+          if (!run_setuped)
+            bombElegant("run_setup must precede macro_output namelist", NULL);
+          doMacroOutput(&namelist_text, &run_conditions, macroTag, macroValue, macros);
           break;
         case TUNE_FOOTPRINT:
         case FIND_APERTURE:
@@ -3122,7 +3153,8 @@ void bombElegant(const char *error, const char *usage) {
   MPI_Barrier(MPI_COMM_WORLD);
   if (isSlave)
     MPI_Comm_free(&workers);
-  MPI_Group_free(&worker_group);
+  if (worker_group)
+    MPI_Group_free(&worker_group);
   close(fdStdout);
   MPI_Finalize();
 #endif
@@ -3304,4 +3336,297 @@ void manageSemaphoreFiles(char *semaphore_file, char *rootname, char *semaphoreF
       createSemaphoreFile(semaphoreFile[0]);
     free(lastSem);
   }
+}
+
+long SDDS_IdentifyTypeOfData(char *data0)
+{
+#define DATA_IS_INT 0x01UL
+#define DATA_IS_FLOAT 0x02UL
+  unsigned long flags = DATA_IS_INT|DATA_IS_FLOAT;
+  short exponentialSeen=0, periodSeen=0;
+  char *data;
+  long longValue;
+  double doubleValue;
+
+  data = data0;
+  if (*data=='+' || *data=='-')
+    data++;
+
+  while (*data && flags) {
+    if (*data<='/') {
+      flags = 0;
+      break;
+    }
+    if (*data>=':') {
+      flags |= ~DATA_IS_INT;
+      if (*data=='.' && flags&DATA_IS_FLOAT) {
+        if (periodSeen)
+          /* can't have two periods */
+          flags |= ~DATA_IS_FLOAT;
+        periodSeen = 1;
+        if (data!=data0 && !(isdigit(*(data-1)) || *(data-1)=='+' || *(data-1)=='-'))
+          /* Period is not preceed by a number or sign */
+          flags |= ~DATA_IS_FLOAT;
+      }
+      if ((*data=='e' || *data=='E') && flags&DATA_IS_FLOAT) {
+        if (exponentialSeen)
+          flags |= ~DATA_IS_FLOAT;
+        else {
+          /* exponent if [.0123456789]e[+-0123456789] */
+          if (data==data0 || (!isdigit(*(data-1)) && *(data-1)!='.'))
+            flags |= ~DATA_IS_FLOAT;
+          else if (*(data+1)=='+' || *(data+1)=='-' || isdigit(*(data+1))) {
+            data ++;
+            exponentialSeen = 1;
+          } else {
+            flags |= ~DATA_IS_FLOAT;
+          }
+        }
+      }
+    }
+    data++;
+  }
+  if (flags&DATA_IS_INT && sscanf(data, "%ld", &longValue)==1)
+    return SDDS_LONG;
+  if (flags&DATA_IS_FLOAT && sscanf(data, "%lf", &doubleValue)==1)
+    return SDDS_DOUBLE;
+  return SDDS_STRING;
+}
+
+void doMacroOutput(NAMELIST_TEXT *nltext, RUN *run, char **macroTag, char **macroValue, long macros)
+{
+  char *filename;
+#define COLUMN_MACRO_MODE 0
+#define PARAMETER_MACRO_MODE 1
+#define DICTIONARY_MACRO_MODE 2
+#define N_MACRO_MODES 3
+  char *option[N_MACRO_MODES] = {"columns", "parameters", "dictionary"};
+  SDDS_DATASET SDDSout;
+  long i, *type, longValue;
+  double doubleValue;
+
+  set_namelist_processing_flags(STICKY_NAMELIST_DEFAULTS);
+  set_print_namelist_flags(0);
+  if (processNamelist(&macro_output, nltext) == NAMELIST_ERROR)
+    bombElegant(NULL, NULL);
+  if (echoNamelists)
+    print_namelist(stdout, &macro_output);
+
+  if (macros==0)
+    bombElegant("Requested macro output but no macros defined", NULL);
+
+  filename = compose_filename(macro_output_struct.filename, run->rootname);
+  type = tmalloc(sizeof(*type)*macros);
+
+#if USE_MPI 
+  if (myid==0) {
+#endif
+    if (!SDDS_InitializeOutputElegant(&SDDSout, SDDS_BINARY, 0, NULL, NULL, filename)) {
+#if USE_MPI
+      fprintf(stderr,  "Problem creating macro output file %s\n", filename);
+      MPI_Abort(MPI_COMM_WORLD, 1);
+#else
+      bombElegantVA("Problem creating macro output file %s\n", filename);
+#endif
+    }
+#if USE_MPI
+  }
+#endif
+
+  switch (match_string(macro_output_struct.mode, option, N_MACRO_MODES, 0)) {
+  case COLUMN_MACRO_MODE:
+#if USE_MPI 
+    if (myid==0) {
+#endif
+      for (i=0; i<macros; i++) {
+        type[i] = SDDS_IdentifyTypeOfData(macroValue[i]);
+        if (!SDDS_DefineSimpleColumn(&SDDSout, macroTag[i], NULL, type[i])) {
+          SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
+#if USE_MPI
+          MPI_Abort(MPI_COMM_WORLD, 1);
+#else
+          exitElegant(1);
+#endif       
+        }
+      }
+      if (!SDDS_WriteLayout(&SDDSout) || !SDDS_StartPage(&SDDSout, 1)) {
+        SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
+#if USE_MPI
+        MPI_Abort(MPI_COMM_WORLD, 1);
+#else
+        exitElegant(1);
+#endif       
+      }
+      for (i=0; i<macros; i++) {
+        switch (type[i]) {
+        case SDDS_LONG:
+          if (!sscanf(macroValue[i], "%ld", &longValue) ||
+              !SDDS_SetRowValues(&SDDSout, SDDS_SET_BY_INDEX|SDDS_PASS_BY_VALUE, 0, i, longValue, -1)) {
+            fprintf(stderr, "Problem setting or scanning value %s for macro %s\n",
+                    macroValue[i], macroTag[i]);
+            SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
+#if USE_MPI
+            MPI_Abort(MPI_COMM_WORLD, 1);
+#else
+            exitElegant(1);
+#endif       
+          }
+          break;
+        case SDDS_FLOAT:
+          if (!sscanf(macroValue[i], "%lf", &doubleValue) ||
+              !SDDS_SetRowValues(&SDDSout, SDDS_SET_BY_INDEX|SDDS_PASS_BY_VALUE, 0, i, doubleValue, -1)) {
+            fprintf(stderr, "Problem setting or scanning value %s for macro %s\n",
+                    macroValue[i], macroTag[i]);
+            SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
+#if USE_MPI
+            MPI_Abort(MPI_COMM_WORLD, 1);
+#else
+            exitElegant(1);
+#endif       
+          }
+          break;
+        case SDDS_STRING:
+          if (!SDDS_SetRowValues(&SDDSout, SDDS_SET_BY_INDEX|SDDS_PASS_BY_VALUE, 0, i, macroValue[i], -1)) {
+            fprintf(stderr, "Problem setting or scanning value %s for macro %s\n",
+                    macroValue[i], macroTag[i]);
+            SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
+#if USE_MPI
+            MPI_Abort(MPI_COMM_WORLD, 1);
+#else
+            exitElegant(1);
+#endif       
+          }
+          break;
+        default:
+          break;
+        }
+      }
+#if USE_MPI 
+    }
+#endif
+    break;
+  case PARAMETER_MACRO_MODE:
+#if USE_MPI 
+    if (myid==0) {
+#endif
+      for (i=0; i<macros; i++) {
+        type[i] = SDDS_IdentifyTypeOfData(macroValue[i]);
+        if (!SDDS_DefineSimpleParameter(&SDDSout, macroTag[i], NULL, type[i])) {
+          SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
+#if USE_MPI
+          MPI_Abort(MPI_COMM_WORLD, 1);
+#else
+          exitElegant(1);
+#endif       
+        }
+      }
+      if (!SDDS_WriteLayout(&SDDSout) || !SDDS_StartPage(&SDDSout, 1)) {
+        SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
+#if USE_MPI
+        MPI_Abort(MPI_COMM_WORLD, 1);
+#else
+        exitElegant(1);
+#endif       
+      }
+      for (i=0; i<macros; i++) {
+        switch (type[i]) {
+        case SDDS_LONG:
+          if (!sscanf(macroValue[i], "%ld", &longValue) ||
+              !SDDS_SetParameters(&SDDSout, SDDS_SET_BY_INDEX|SDDS_PASS_BY_VALUE, i, longValue, -1)) {
+            fprintf(stderr, "Problem setting or scanning value %s for macro %s\n",
+                    macroValue[i], macroTag[i]);
+            SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
+#if USE_MPI
+            MPI_Abort(MPI_COMM_WORLD, 1);
+#else
+            exitElegant(1);
+#endif       
+          }
+          break;
+        case SDDS_FLOAT:
+          if (!sscanf(macroValue[i], "%lf", &doubleValue) ||
+              !SDDS_SetParameters(&SDDSout, SDDS_SET_BY_INDEX|SDDS_PASS_BY_VALUE, i, doubleValue, -1)) {
+            fprintf(stderr, "Problem setting or scanning value %s for macro %s\n",
+                    macroValue[i], macroTag[i]);
+            SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
+#if USE_MPI
+            MPI_Abort(MPI_COMM_WORLD, 1);
+#else
+            exitElegant(1);
+#endif       
+          }
+          break;
+        case SDDS_STRING: 
+          if (!SDDS_SetParameters(&SDDSout, SDDS_SET_BY_INDEX|SDDS_PASS_BY_VALUE, i, macroValue[i], -1)) {
+            fprintf(stderr, "Problem setting or scanning value %s for macro %s\n",
+                    macroValue[i], macroTag[i]);
+            SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
+#if USE_MPI
+            MPI_Abort(MPI_COMM_WORLD, 1);
+#else
+            exitElegant(1);
+#endif       
+          }
+          break;
+        default:
+#if USE_MPI
+          fprintf(stderr, "Invalid data type writing macro file\n");
+          MPI_Abort(MPI_COMM_WORLD, 1);
+#else
+          bombElegant("data type writing macro file\n", NULL);
+#endif       
+          break;
+        }
+      }
+#if USE_MPI 
+    }
+#endif
+    break;
+  case DICTIONARY_MACRO_MODE:
+#if USE_MPI 
+    if (myid==0) {
+#endif
+      if (!SDDS_DefineSimpleColumn(&SDDSout, "MacroTag", NULL, SDDS_STRING) ||
+          !SDDS_DefineSimpleColumn(&SDDSout, "MacroStringValue", NULL, SDDS_STRING)) {
+        SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
+#if USE_MPI
+        MPI_Abort(MPI_COMM_WORLD, 1);
+#else
+        exitElegant(1);
+#endif       
+      }
+      if (!SDDS_WriteLayout(&SDDSout) || !SDDS_StartPage(&SDDSout, macros) ||
+          !SDDS_SetColumn(&SDDSout, SDDS_SET_BY_INDEX, macroTag, macros, 0) ||
+          !SDDS_SetColumn(&SDDSout, SDDS_SET_BY_INDEX, macroValue, macros, 1)) {
+        SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
+#if USE_MPI
+        MPI_Abort(MPI_COMM_WORLD, 1);
+#else
+        exitElegant(1);
+#endif       
+      }
+#if USE_MPI 
+    }
+#endif
+    break;
+  default:
+    bombElegantVA("unknown mode \"%s\" for macro_output\n", macro_output_struct.mode);
+    break;
+  }
+
+#if USE_MPI
+  if (myid==0) {
+#endif
+    if (!SDDS_WritePage(&SDDSout) || !SDDS_Terminate(&SDDSout)) {
+      fprintf(stderr, "Problem writing macro_output file %s\n", filename);
+      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
+#if USE_MPI
+      MPI_Abort(MPI_COMM_WORLD, 1);
+#else
+      bombElegant(NULL, NULL);
+#endif       
+    }
+#if USE_MPI
+  }
+#endif
 }

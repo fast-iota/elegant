@@ -79,6 +79,18 @@ void print_matrices1(FILE *fp, char *string, char *format, VMATRIX *M) {
       }
     }
   }
+  
+  if (M->maxError) {
+    fprintf(fp, "MaxErr: ");
+    for (j=0; j<6; j++)
+      fprintf(fp, format, M->maxError[j]);
+    fprintf(fp, "\n");
+    fprintf(fp, "MAErr:  ");
+    for (j=0; j<6; j++)
+      fprintf(fp, format, M->meanAbsError[j]);
+    fprintf(fp, "\n");
+  }
+
   log_exit("print_matrices");
 }
 
@@ -90,6 +102,7 @@ void initialize_matrices(VMATRIX *M, long order) {
 
   log_entry("initialize_matrices");
   M->eptr = NULL;
+  M->maxError = M->meanAbsError = NULL;
 
   // Contiguous memory regions will allow strided access and vectorization
   // Actually...maybe not, this ragged array stuff in order 2/3 is not good
@@ -480,6 +493,12 @@ void free_matrices(VMATRIX *M) {
 
   set_matrix_pointers(&C, &R, &T, &Q, M);
 
+  if (M->maxError)
+    free(M->maxError);
+  if (M->meanAbsError)
+    free(M->meanAbsError);
+  M->maxError = M->meanAbsError = NULL;
+
   if (M->order > 3 || M->order < 1) {
     printf("invalid order: %ld  (free_matrices)\n", M->order);
     fflush(stdout);
@@ -809,6 +828,11 @@ void copy_matrices(VMATRIX *M1, VMATRIX *M0) {
             M1->Q[i][j][k][l] = M0->Q[i][j][k][l];
   }
 
+  if (M1->maxError && M0->maxError)
+    memcpy(M1->maxError, M0->maxError, sizeof(*(M1->maxError))*6);
+  if (M1->meanAbsError && M0->meanAbsError)
+    memcpy(M1->meanAbsError, M0->meanAbsError, sizeof(*(M1->meanAbsError))*6);
+  
   log_exit("copy_matrices");
 }
 

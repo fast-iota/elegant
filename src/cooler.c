@@ -24,42 +24,44 @@
 
 #define DEBUG 0
 
-#define DEBUG_OMP 0
-#define USE_OMP_CPICKUP 0
-#define USE_OMP_CKICKER 0
 
 // temp, this lives in manual.h on svn
+// These commands aim to enable useful parts of fast math without destroying NaN/Inf handling
+// attribute version is used for functions, and start/end can be used for blocks/regions (depends on compiler)
+// Note that this will result in numeric differences between compilers - use with caution
 #if defined(__GNUC__) && !defined(__clang__)
-#define FAST_MATH [[gnu::optimize("-ffast-math")]]
-#define FAST_MATH_BEGIN_BLOCK _Pragma("GCC push_options") _Pragma("GCC optimize (\"fast-math\")")
-#define FAST_MATH_END_BLOCK   _Pragma("GCC pop_options")
+//#define FAST_MATH [[gnu::optimize("-funsafe-math-optimizations")]]
+#define FAST_MATH __attribute__((optimize("no-trapping-math,associative-math,reciprocal-math,no-signed-zeros,no-signaling-nans,fp-contract=fast")))
+#define FAST_MATH_BEGIN _Pragma("GCC push_options") \
+                        _Pragma("GCC optimize (\"no-trapping-math,associative-math,reciprocal-math,no-signed-zeros,no-signaling-nans,fp-contract=fast\")")
+#define FAST_MATH_END   _Pragma("GCC pop_options")
 #elif defined(__clang__)
-#define FAST_MATH __attribute__((target("-ffast-math")))
-// Omitting push - use within compound statements
-// This is a recent addition to clang at v21
-//#define FAST_MATH_BEGIN_BLOCK _Pragma(float_control(precise, off)) \
-//                              _Pragma(fp_contract(on))
-#define FAST_MATH_BEGIN_BLOCK _Pragma(clang fp reassociate(on) reciprocal(on) contract(fast))
-//#define FAST_MATH_END_BLOCK _Pragma(float_control(precise, on)) \
+#define FAST_MATH __attribute__((target("fp-model=fast"))) // roughly equivalent to -funsafe-math-optimizations in GCC
+// To use outside compound statements, add push
+// float_control is a recent addition to clang at v21
+//#define FAST_MATH_BEGIN _Pragma(float_control(precise, off)) \
+//                        _Pragma(fp_contract(on))
+// reciprocal(on) not supported on clang 16
+#define FAST_MATH_BEGIN _Pragma("clang fp reassociate(on) contract(fast)")
+//#define FAST_MATH_END _Pragma(float_control(precise, on)) \
 //                            _Pragma(fp_contract(off))
-#define FAST_MATH_END_BLOCK _Pragma(clang fp reassociate(off) reciprocal(off) contract(on))
+// reciprocal(off)
+#define FAST_MATH_END _Pragma("clang fp reassociate(off) contract(on)")
 #elif defined(_MSC_VER)
 // MSVC: Use pragmas around the function definition.
 #define FAST_MATH
-#define FAST_MATH_BEGIN_BLOCK __pragma(float_control(push)) \
-                              __pragma(float_control(precise, off)) \
-                              __pragma(float_control(except, off)) \
-                              __pragma(fp_contract(on)) // Allow fused multiply-add etc.
-#define FAST_MATH_END_BLOCK   __pragma(float_control(pop))
+#define FAST_MATH_BEGIN __pragma(float_control(push)) \
+                        __pragma(float_control(precise, off)) \
+                        __pragma(float_control(except, off)) \
+                        __pragma(fp_contract(on))
+#define FAST_MATH_END   __pragma(float_control(pop))
 #else
 #define FAST_MATH
-#define FAST_MATH_BEGIN_BLOCK
-#define FAST_MATH_END_BLOCK
+#define FAST_MATH_BEGIN
+#define FAST_MATH_END
 #endif
 
-
-#if USE_OMP_CPICKUP == 0
-
+FAST_MATH
 void coolerPickup(CPICKUP *cpickup, double **part0, long np0, long pass, double Po, long idSlotsPerBunch) {
   /*Initialize some variables */
   double t_sum, t_min, t_max;
@@ -254,7 +256,6 @@ void coolerPickup(CPICKUP *cpickup, double **part0, long np0, long pass, double 
   fflush(stdout);
 #endif
 }
-#endif
 
 // Pickup initialization function
 void initializeCoolerPickup(CPICKUP *cpickup) {
@@ -311,7 +312,7 @@ void coolerKicker(CKICKER *ckicker, double **part0, long np0, LINE_LIST *beamlin
   exit(1);
 }
 
-#elif USE_OMP_CKICKER == 0
+#else
 
 FAST_MATH
 void coolerKicker(CKICKER *restrict ckicker, double **restrict part0, const long np0, LINE_LIST *restrict beamline,
@@ -588,7 +589,8 @@ void coolerKicker(CKICKER *restrict ckicker, double **restrict part0, const long
           // Radiation at pickup
           for (int rad_bin = 0; rad_bin < rad_particle_nbins; ++rad_bin) {
             double phi = (2. * ckicker->Nu * rad_bin / rad_particle_nbins) + ckicker->phase;
-            double envelope = (rad_particle_nbins / 2. - fabs(rad_particle_nbins / 2. - rad_bin)) / (rad_particle_nbins / 2.);
+            double envelope =
+                (rad_particle_nbins / 2. - fabs(rad_particle_nbins / 2. - rad_bin)) / (rad_particle_nbins / 2.);
             node_pickup_rad[bin_start + rad_bin] += ckicker->strength * envelope * sin(twopi * phi);
           } // bin
         } // particle
@@ -638,7 +640,7 @@ void coolerKicker(CKICKER *restrict ckicker, double **restrict part0, const long
           double gain_i = amp_gain;
           if (ckicker->gainRange >= 0 && fabs(time_i_ku - t_bunch_av) > (ckicker->gainRange * 1.e-12) / 2.)
             gain_i = 1.;
-            
+
           // Coherent kick
           double c_over_lambda = (c_mks / ckicker->lambda_rad);
           double coherent_phi = (dt_i - dt_ref) * c_over_lambda;
@@ -751,6 +753,7 @@ void coolerKicker(CKICKER *restrict ckicker, double **restrict part0, const long
     MPI_Barrier(MPI_COMM_WORLD);
 #endif
 }
+#endif
 
 // Kicker initialization function
 void initializeCoolerKicker(CKICKER *ckicker, LINE_LIST *beamline, long nPasses, char *rootname, double Po) {

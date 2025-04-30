@@ -546,8 +546,8 @@ void coolerKicker(CKICKER *restrict ckicker, double **restrict part0, const long
           node_pickup_times = NULL;
         }
 #else
-      all_pickup_times = node_pickup_times;
-      node_pickup_times = NULL;
+	all_pickup_times = node_pickup_times;
+	node_pickup_times = NULL;
 #endif
       } // incoherent
 
@@ -632,7 +632,8 @@ void coolerKicker(CKICKER *restrict ckicker, double **restrict part0, const long
 
           // Get the times the particle went through the pickup and kicker
           // Note: node_pickup_times[i] = ckicker->pickup->long_coords[ib][sourceIndex[i]];
-          double time_i_pu = all_pickup_times[i];
+	  // MW: The above statement is incorrect -- it's actually node_pickup_times[i+ibOffset].  And it requires node_pickup_times to be filled, which is only done in INCOHERENT_MODE, so I'll revert to the old way.
+	  double time_i_pu = ckicker->pickup->long_coords[ib][sourceIndex[i]];
           double time_i_ku = time0[ipBucket[ib][i]];
           double dt_i = time_i_ku - time_i_pu;
 
@@ -680,7 +681,7 @@ void coolerKicker(CKICKER *restrict ckicker, double **restrict part0, const long
           if (ckicker->incoherentMode != 0) {
             // Convert to 'global' bucket index - this relies on MPI consistently ordering particles by
             // node, which I believe it does!
-            long i_gbucket = i + ibOffset;
+            // long i_gbucket = i + ibOffset;
             const double envelope_length = (ckicker->Nu * ckicker->lambda_rad) / c_mks;
 
             // Consider the kicks from each of the other particles

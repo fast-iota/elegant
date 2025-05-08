@@ -3705,17 +3705,16 @@ typedef struct {
 extern PARAMETER ckicker_param[N_CKICKER_PARAMS];
 typedef struct {
   char *ID; 
-  double strength, gain, gainRange, kickLimit;
-  double phase;
   long updateInterval;
   long startPass, endPass;
-  short bunchedBeamMode; 
+  short bunchedBeamMode;
+  double strength, gain, gainRange, kickLimit;
+  double phase;
   double lambda_rad;
   short transverseMode, incoherentMode, numericalMode;
   short dtClosedOrbit;
-  double angle_rad; 
+  double angle_rad, rad_fudge;
   double magnification;
-  double modulation_freq;
   long Nu; 
 
   /* internal parameters */

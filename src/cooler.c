@@ -349,7 +349,10 @@ void coolerKicker(CKICKER *restrict ckicker, double **restrict part0, const long
     size_t neval;
     gsl_function F;
 
-    struct E_params params = {0, 0, Po, ckicker->lambda_rad}; // {x, y, gamma, lambda}
+    // {x, y, gamma, lambda}
+    // Fudge factor here is to improve agreement of this simplified model (Eq. 6.14 of the
+    // IOTA OSC CDR) with the complete simulation of the radiation fields from SRW
+    struct E_params params = {0, 0, Po, ckicker->lambda_rad*ckicker->rad_fudge};
 
     F.function = &Ex;
     F.params = &params;
@@ -651,10 +654,7 @@ void coolerKicker(CKICKER *restrict ckicker, double **restrict part0, const long
           /* double envelope_strength = (2.0/twopi)*(atan(100*(total_phi+ckicker->Nu)) */
           /*                                         + atan(-100*(total_phi-ckicker->Nu))) * (1 - abs(total_phi)/ckicker->Nu); */
           double envelope_strength = fabs(total_phi) <= ckicker->Nu ? 1 - fabs(total_phi) / ckicker->Nu : 0;
-          double modulation_phase = ckicker->modulation_freq * pass * twopi;
-          double modulation_strength = pow(cos(modulation_phase), 2);
-          double coherent_kick =
-              ckicker->strength * gain_i * envelope_strength * modulation_strength * sin(total_phi * twopi);
+          double coherent_kick = ckicker->strength * gain_i * envelope_strength * sin(total_phi * twopi);
 #if DEBUG
           printf("Giving particle %ld (global id %ld) a coherent kick %le\n", i, i + ibOffset, coherent_kick);
           fflush(stdout);
@@ -669,7 +669,8 @@ void coolerKicker(CKICKER *restrict ckicker, double **restrict part0, const long
                 part0[ipBucket[ib][i]][0] - ckicker->magnification * ckicker->pickup->horz_coords[ib][sourceIndex[i]];
             double deltay_i =
                 part0[ipBucket[ib][i]][2] - ckicker->magnification * ckicker->pickup->vert_coords[ib][sourceIndex[i]];
-            struct E_params params = {deltax_i, deltay_i, Po, ckicker->lambda_rad}; // {x, y, gamma, lambda}
+	    // {x, y, gamma, lambda}
+            struct E_params params = {deltax_i, deltay_i, Po, ckicker->lambda_rad*ckicker->rad_fudge};
             F.function = &Ex;
             F.params = &params;
 

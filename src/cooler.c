@@ -771,11 +771,11 @@ void initializeCoolerKicker(CKICKER *ckicker, LINE_LIST *beamline, long nPasses,
       pickupFound = 1;
       ckicker->pickup = ((CPICKUP *)eptr->p_elem);
       if (ckicker->dtClosedOrbit != 0)
-        memcpy(pickup_coord, beamline->closed_orbit[beamlineElemIt - beamline->i_recirc].centroid, sizeof(double) * 6);
+        memcpy(pickup_coord, beamline->closed_orbit[beamlineElemIt].centroid, sizeof(double)*6);
     }
     if (eptr->type == T_CKICKER && strcmp(ckicker->ID, ((CKICKER *)eptr->p_elem)->ID) == 0 &&
         ckicker->dtClosedOrbit != 0)
-      memcpy(kicker_coord, beamline->closed_orbit[beamlineElemIt - beamline->i_recirc].centroid, sizeof(double) * 6);
+      memcpy(kicker_coord, beamline->closed_orbit[beamlineElemIt].centroid, sizeof(double)*6);
     eptr = eptr->succ;
   }
   if (!pickupFound)

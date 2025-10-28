@@ -631,6 +631,10 @@ void coolerKicker(CKICKER *restrict ckicker, double **restrict part0, const long
       } else {
         // Analytical mode
         for (long i = 0; i < npBucket[ib]; ++i) {
+#if DEBUG
+	  printf("Particle %ld has beta*gamma %le; reference %.20lf.\n",
+		 i, part0[ipBucket[ib][i]][5], Po);
+#endif
           double kick = 0.;
 
           // Get the times the particle went through the pickup and kicker
@@ -656,7 +660,7 @@ void coolerKicker(CKICKER *restrict ckicker, double **restrict part0, const long
           double envelope_strength = fabs(total_phi) <= ckicker->Nu ? 1 - fabs(total_phi) / ckicker->Nu : 0;
           double coherent_kick = ckicker->strength * gain_i * envelope_strength * sin(total_phi * twopi);
 #if DEBUG
-          printf("Giving particle %ld (global id %ld) a coherent kick %le\n", i, i + ibOffset, coherent_kick);
+          printf("Giving particle %ld (global id %ld) a coherent kick %le (dt_i %le).\n", i, i+ibOffset, coherent_kick, dt_i);
           fflush(stdout);
 #endif
 
@@ -705,8 +709,8 @@ void coolerKicker(CKICKER *restrict ckicker, double **restrict part0, const long
               }
 
 #if DEBUG
-              printf("Giving particle %ld (global id %ld) a kick %le from particle %ld\n", i, i_gbucket,
-                     incoherent_kick, j);
+              printf("Giving particle %ld (global id %ld) a kick %le from particle %ld (dt_pu %le).\n", i, i+ibOffset,
+                     incoherent_kick, j, dt_ij_pu);
               fflush(stdout);
 #endif
               kick += incoherent_kick;
@@ -718,6 +722,7 @@ void coolerKicker(CKICKER *restrict ckicker, double **restrict part0, const long
             // time_j_pu = time_i_pu;
             // dt_ij_pu = 0;
             // incoherent_phi = 0;
+	    // TODO MIKE: What's better than all of this, probably, is to just keep the logic above in the case of incoherent mode, and to only do the 'original' coherent-only kick when we don't want incoherent.  That saves kicking it twice (same kick) and then subtracting one of them :)
             if (fabs(total_phi) <= ckicker->Nu) {
               double incoherent_strength = 1 - fabs(total_phi) / ckicker->Nu;
               double incoherent_kick = ckicker->strength * gain_i * incoherent_strength * sin(total_phi * twopi);
